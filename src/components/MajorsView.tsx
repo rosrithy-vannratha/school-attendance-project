@@ -17,13 +17,15 @@ interface MajorsViewProps {
   classes: Classroom[];
   students: Student[];
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
+  isReadOnly?: boolean;
 }
 
 export const MajorsView: React.FC<MajorsViewProps> = ({
   majors,
   classes,
   students,
-  showToast
+  showToast,
+  isReadOnly = false
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMajor, setEditingMajor] = useState<Major | null>(null);
@@ -35,6 +37,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   const [formYears, setFormYears] = useState(4);
 
   const openAddModal = () => {
+    if (isReadOnly) return;
     setEditingMajor(null);
     setFormCode(`MAJ-${String(majors.length + 1)}`);
     setFormNameKhmer('');
@@ -56,6 +59,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (!formNameKhmer.trim()) {
       showToast('សូមបញ្ចូលឈ្មោះជំនាញ!', 'error');
       return;
@@ -80,6 +87,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (window.confirm(`តើអ្នកពិតជាចង់លុបជំនាញ "${name}" មែនទេ?`)) {
       try {
         await instituteService.deleteMajor(id);
@@ -108,13 +119,15 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ បន្ថែមជំនាញថ្មី</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ បន្ថែមជំនាញថ្មី</span>
+          </button>
+        )}
       </div>
 
       {/* Majors Grid */}
@@ -165,16 +178,19 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(maj)}
+                    title={isReadOnly ? 'ពិនិត្យព័ត៌មានជំនាញ' : 'កែប្រែជំនាញ'}
                     className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(maj.id, maj.nameKhmer)}
-                    className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => handleDelete(maj.id, maj.nameKhmer)}
+                      className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -187,9 +203,16 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
-                {editingMajor ? 'កែប្រែជំនាញ' : 'បន្ថែមជំនាញថ្មី'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                  {isReadOnly ? 'ព័ត៌មានជំនាញ (Major Info)' : editingMajor ? 'កែប្រែជំនាញ' : 'បន្ថែមជំនាញថ្មី'}
+                </h3>
+                {isReadOnly && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
+                    Read-Only
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
@@ -204,10 +227,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 <input
                   type="text"
                   required
+                  disabled={isReadOnly}
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                   placeholder="EDU-CN"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -216,10 +240,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 <input
                   type="text"
                   required
+                  disabled={isReadOnly}
                   value={formNameKhmer}
                   onChange={(e) => setFormNameKhmer(e.target.value)}
                   placeholder="គរុកោសល្យភាសាចិន"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -227,10 +252,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះឡាតាំង (Name Latin)</label>
                 <input
                   type="text"
+                  disabled={isReadOnly}
                   value={formNameLatin}
                   onChange={(e) => setFormNameLatin(e.target.value)}
                   placeholder="Chinese Language Pedagogy"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -238,10 +264,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ការពិពណ៌នា</label>
                 <textarea
                   rows={3}
+                  disabled={isReadOnly}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="គោលបំណង និងការបណ្តុះបណ្តាល..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -251,14 +278,16 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
                 >
-                  បោះបង់
+                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
-                >
-                  រក្សាទុក
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                  >
+                    រក្សាទុក
+                  </button>
+                )}
               </div>
             </form>
           </div>
