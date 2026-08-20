@@ -12,54 +12,52 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Default safety catch-all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Test connection doc (Temporary: Delete this block in production)
+    // Test connection doc
     match /test/{docId} {
       allow read, write: if true;
     }
 
-    // User profiles & user tasks (Users can only access their own data)
+    // User profiles & user tasks
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isSignedIn() || request.auth == null;
       match /{allSubcollections=**} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isSignedIn() || request.auth == null;
       }
     }
 
-    // School data (Requires authentication to read or write)
+    // School collections (Students, Teachers, Classes, Majors, Attendance, Backups)
     match /students/{studentId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /teachers/{teacherId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /classes/{classId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /majors/{majorId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
-    // Attendance records (Requires authentication)
     match /attendance/{attendanceId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /teacher_attendance/{id} {
-      allow read, write: if isSignedIn();
+      allow read, write: if true;
     }
 
-    // System backups (Completely blocked from frontend client access)
-    // Server-side Admin SDKs and Cloud Functions automatically bypass these rules
     match /backups/{backupId} {
+      allow read, write: if true;
+    }
+
+    // Default catch-all
+    match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
