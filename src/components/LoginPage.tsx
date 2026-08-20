@@ -409,6 +409,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           </p>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
             ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦
+            Tel: 087494969
           </p>
         </div>
       </footer>
