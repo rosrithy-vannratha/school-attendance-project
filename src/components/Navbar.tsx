@@ -176,21 +176,39 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {user ? (
                 <div className="flex items-center gap-2 bg-white/10 px-2.5 py-1 rounded-full border border-white/20">
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user.displayName || 'User'}
-                      referrerPolicy="no-referrer"
-                      className="w-5 h-5 rounded-full object-cover border border-white/40"
-                    />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[10px] font-bold flex items-center justify-center">
-                      {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                  {user.role === 'Guest' || user.isAnonymous ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1">
+                        <span>👁️ ភ្ញៀវ (Guest)</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={onLogin}
+                        className="text-[10.5px] font-bold text-emerald-200 hover:text-white underline ml-1 cursor-pointer"
+                        title="ចូលគណនីដើម្បីទទួលបានសិទ្ធិពេញលេញ"
+                      >
+                        ចូលគណនី
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName || 'User'}
+                          referrerPolicy="no-referrer"
+                          className="w-5 h-5 rounded-full object-cover border border-white/40"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-emerald-700 text-white text-[10px] font-bold flex items-center justify-center">
+                          {(user.displayName || user.email || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-white text-xs font-medium max-w-[100px] truncate hidden md:inline">
+                        {user.displayName || user.email}
+                      </span>
+                    </>
                   )}
-                  <span className="text-white text-xs font-medium max-w-[100px] truncate hidden md:inline">
-                    {user.displayName || user.email}
-                  </span>
                   <button
                     onClick={onLogout}
                     title="ចាកចេញ (Sign Out)"
