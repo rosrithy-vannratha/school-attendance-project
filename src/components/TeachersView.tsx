@@ -29,9 +29,14 @@ import {
 interface TeachersViewProps {
   teachers: Teacher[];
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
+  isReadOnly?: boolean;
 }
 
-export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast }) => {
+export const TeachersView: React.FC<TeachersViewProps> = ({
+  teachers,
+  showToast,
+  isReadOnly = false
+}) => {
   const [search, setSearch] = useState('');
   const [selectedShift, setSelectedShift] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -55,6 +60,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
   const [formStatus, setFormStatus] = useState<TeacherStatus>('active');
 
   const openAddModal = () => {
+    if (isReadOnly) return;
     setEditingTeacher(null);
     setFormTeacherCode(`ICI-TCH-${String(teachers.length + 1).padStart(3, '0')}`);
     setFormNameKhmer('');
@@ -84,6 +90,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (!formNameKhmer.trim()) {
       showToast('សូមបញ្ចូលឈ្មោះសាស្ត្រាចារ្យ!', 'error');
       return;
@@ -113,6 +123,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (window.confirm(`តើអ្នកពិតជាចង់លុបសាស្ត្រាចារ្យ "${name}" មែនទេ?`)) {
       try {
         await instituteService.deleteTeacher(id);
@@ -124,6 +138,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
   };
 
   const handleDeleteAllTeachers = async () => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     setIsDeletingAll(true);
     try {
       await instituteService.deleteAllTeachers();
@@ -137,6 +155,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -237,29 +259,33 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Delete All Data */}
-          <button
-            onClick={() => setIsDeleteAllModalOpen(true)}
-            disabled={teachers.length === 0}
-            title="លុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់"
-            className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-            <span>លុបទិន្នន័យទាំងអស់ (Delete All)</span>
-          </button>
+          {!isReadOnly && (
+            <>
+              {/* Delete All Data */}
+              <button
+                onClick={() => setIsDeleteAllModalOpen(true)}
+                disabled={teachers.length === 0}
+                title="លុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់"
+                className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <span>លុបទិន្នន័យទាំងអស់ (Delete All)</span>
+              </button>
 
-          {/* Import Excel */}
-          <label className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700">
-            <Upload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-            <span>{isImporting ? 'កំពុង Import...' : 'Import Excel'}</span>
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              onChange={handleFileUpload}
-              className="hidden"
-              disabled={isImporting}
-            />
-          </label>
+              {/* Import Excel */}
+              <label className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700">
+                <Upload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
+                <span>{isImporting ? 'កំពុង Import...' : 'Import Excel'}</span>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={isImporting}
+                />
+              </label>
+            </>
+          )}
 
           {/* Export Excel */}
           <button
@@ -270,23 +296,27 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
             <span>Export Excel ({filteredTeachers.length})</span>
           </button>
 
-          {/* Template Download */}
-          <button
-            onClick={downloadTeacherTemplate}
-            title="ទាញយកគំរូ Excel សម្រាប់សាស្ត្រាចារ្យ"
-            className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+          {!isReadOnly && (
+            <>
+              {/* Template Download */}
+              <button
+                onClick={downloadTeacherTemplate}
+                title="ទាញយកគំរូ Excel សម្រាប់សាស្ត្រាចារ្យ"
+                className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+              </button>
 
-          {/* Add Teacher */}
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ បន្ថែមសាស្ត្រាចារ្យ</span>
-          </button>
+              {/* Add Teacher */}
+              <button
+                onClick={openAddModal}
+                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ បន្ថែមសាស្ត្រាចារ្យ</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -450,14 +480,16 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                   className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
-                  <span>កែប្រែ</span>
+                  <span>{isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}</span>
                 </button>
-                <button
-                  onClick={() => handleDelete(t.id, t.nameKhmer)}
-                  className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={() => handleDelete(t.id, t.nameKhmer)}
+                    className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -469,9 +501,16 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
-                {editingTeacher ? 'កែប្រែព័ត៌មានសាស្ត្រាចារ្យ' : 'បន្ថែមសាស្ត្រាចារ្យថ្មី'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                  {isReadOnly ? 'ព័ត៌មានលម្អិតសាស្ត្រាចារ្យ (Faculty Profile)' : editingTeacher ? 'កែប្រែព័ត៌មានសាស្ត្រាចារ្យ' : 'បន្ថែមសាស្ត្រាចារ្យថ្មី'}
+                </h3>
+                {isReadOnly && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
+                    Read-Only
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
@@ -486,9 +525,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <input
                   type="text"
                   required
+                  disabled={isReadOnly}
                   value={formTeacherCode}
                   onChange={(e) => setFormTeacherCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -498,20 +538,22 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                   <input
                     type="text"
                     required
+                    disabled={isReadOnly}
                     value={formNameKhmer}
                     onChange={(e) => setFormNameKhmer(e.target.value)}
                     placeholder="ឡុង សុខា"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះឡាតាំង</label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formNameLatin}
                     onChange={(e) => setFormNameLatin(e.target.value)}
                     placeholder="Long Sokha"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -520,9 +562,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ភេទ</label>
                   <select
+                    disabled={isReadOnly}
                     value={formGender}
                     onChange={(e) => setFormGender(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="male">ប្រុស (Male)</option>
                     <option value="female">ស្រី (Female)</option>
@@ -533,10 +576,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                   <input
                     type="text"
                     required
+                    disabled={isReadOnly}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="012 889 901"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -545,9 +589,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនបង្រៀន</label>
                   <select
+                    disabled={isReadOnly}
                     value={formShift}
                     onChange={(e) => setFormShift(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="morning">វេនព្រឹក (Morning)</option>
                     <option value="afternoon">វេនរសៀល (Afternoon)</option>
@@ -558,9 +603,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ស្ថានភាព</label>
                   <select
+                    disabled={isReadOnly}
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as TeacherStatus)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="active">កំពុងបង្រៀន (Active)</option>
                     <option value="on_leave">សុំច្បាប់សម្រាក (On Leave)</option>
@@ -573,10 +619,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អ៊ីមែល (Email)</label>
                 <input
                   type="email"
+                  disabled={isReadOnly}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="teacher@ici.edu.kh"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -584,10 +631,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">មុខវិជ្ជាទទួលបន្ទុក</label>
                 <input
                   type="text"
+                  disabled={isReadOnly}
                   value={formSubjects}
                   onChange={(e) => setFormSubjects(e.target.value)}
                   placeholder="គរុកោសល្យទូទៅ, វេយ្យាករណ៍ភាសាចិន..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -597,14 +645,16 @@ export const TeachersView: React.FC<TeachersViewProps> = ({ teachers, showToast 
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
                 >
-                  បោះបង់
+                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
-                >
-                  រក្សាទុក
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                  >
+                    រក្សាទុក
+                  </button>
+                )}
               </div>
             </form>
           </div>
