@@ -98,6 +98,44 @@ function wasWrittenLocallyJustNow(key: string): boolean {
   return Date.now() - (lastLocalWriteAt[key] || 0) < REMOTE_OVERWRITE_GUARD_MS;
 }
 
+/**
+ * Recursively removes all keys with `undefined` values from an object.
+ * Firestore throws a fatal error if any field is undefined.
+ */
+export function sanitizeDoc<T extends Record<string, any>>(obj: T): Record<string, any> {
+  if (obj === null || obj === undefined) return {};
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        clean[key] = sanitizeDoc(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
+}
+
+/**
+ * Commits items to Firestore in batches of up to 400 documents (limit is 500)
+ */
+async function commitInChunks(
+  dbInstance: any,
+  collectionName: string,
+  items: Array<{ id: string; [k: string]: any }>
+): Promise<void> {
+  const CHUNK_SIZE = 400;
+  for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+    const chunk = items.slice(i, i + CHUNK_SIZE);
+    const batch = writeBatch(dbInstance);
+    for (const item of chunk) {
+      batch.set(doc(dbInstance, collectionName, item.id), sanitizeDoc(item));
+    }
+    await batch.commit();
+  }
+}
+
 // Convert Firebase User to AppUser
 export function mapFirebaseUser(user: FirebaseUser | null): AppUser | null {
   if (!user) return null;
@@ -364,10 +402,18 @@ export const instituteService = {
           });
           setLocal(LS_KEYS.MAJORS, list);
           callback(list);
+        } else {
+          const currentLocal = getLocal<Major>(LS_KEYS.MAJORS, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'majors', currentLocal).catch(() => {});
+            callback(currentLocal);
+          }
         }
       },
       (err) => {
         console.warn('Majors snapshot error (using local cache):', err);
+        const currentLocal = getLocal<Major>(LS_KEYS.MAJORS, INITIAL_MAJORS);
+        callback(currentLocal);
       }
     );
 
@@ -386,7 +432,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.MAJORS, local);
 
     try {
-      await setDoc(doc(db, 'majors', major.id), major);
+      await setDoc(doc(db, 'majors', major.id), sanitizeDoc(major));
     } catch (e) {
       console.warn('Error saving major to Firestore:', e);
     }
@@ -414,9 +460,6 @@ export const instituteService = {
     const unsubFirestore = onSnapshot(
       collection(db, 'classes'),
       (snap) => {
-        // Skip a remote snapshot that arrives right after a local edit/delete —
-        // it's very likely stale data from before that write reached the
-        // server, and applying it would silently undo what the user just did.
         if (wasWrittenLocallyJustNow(LS_KEYS.CLASSES)) return;
 
         if (!snap.empty) {
@@ -439,10 +482,18 @@ export const instituteService = {
           });
           setLocal(LS_KEYS.CLASSES, list);
           callback(list);
+        } else {
+          const currentLocal = getLocal<Classroom>(LS_KEYS.CLASSES, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'classes', currentLocal).catch(() => {});
+            callback(currentLocal);
+          }
         }
       },
       (err) => {
-        console.warn('Classes snapshot error:', err);
+        console.warn('Classes snapshot error (using local cache):', err);
+        const currentLocal = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
+        callback(currentLocal);
       }
     );
 
@@ -458,10 +509,10 @@ export const instituteService = {
     if (idx >= 0) local[idx] = cls;
     else local.push(cls);
     setLocal(LS_KEYS.CLASSES, local);
-    notifyLocal(LS_KEYS.CLASSES, local); // reflect on screen immediately
+    notifyLocal(LS_KEYS.CLASSES, local);
 
     try {
-      await setDoc(doc(db, 'classes', cls.id), cls);
+      await setDoc(doc(db, 'classes', cls.id), sanitizeDoc(cls));
     } catch (e) {
       console.warn('Error saving class:', e);
     }
@@ -470,7 +521,7 @@ export const instituteService = {
   async deleteClass(id: string): Promise<void> {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES).filter((c) => c.id !== id);
     setLocal(LS_KEYS.CLASSES, local);
-    notifyLocal(LS_KEYS.CLASSES, local); // reflect on screen immediately
+    notifyLocal(LS_KEYS.CLASSES, local);
 
     try {
       await deleteDoc(doc(db, 'classes', id));
@@ -511,12 +562,22 @@ export const instituteService = {
           setLocal(LS_KEYS.TEACHERS, list);
           callback(list);
         } else {
-          setLocal(LS_KEYS.TEACHERS, []);
-          callback([]);
+          // If Firestore is empty, check if we have local teachers.
+          // If so, preserve local data and back-sync to Firestore!
+          const currentLocal = getLocal<Teacher>(LS_KEYS.TEACHERS, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'teachers', currentLocal).catch(() => {});
+            callback(currentLocal);
+          } else {
+            setLocal(LS_KEYS.TEACHERS, []);
+            callback([]);
+          }
         }
       },
       (err) => {
-        console.warn('Teachers snapshot error:', err);
+        console.warn('Teachers snapshot error (using local cache):', err);
+        const currentLocal = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS);
+        callback(currentLocal);
       }
     );
 
@@ -535,7 +596,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.TEACHERS, local);
 
     try {
-      await setDoc(doc(db, 'teachers', teacher.id), teacher);
+      await setDoc(doc(db, 'teachers', teacher.id), sanitizeDoc(teacher));
     } catch (e) {
       console.warn('Error saving teacher:', e);
     }
@@ -550,11 +611,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.TEACHERS, merged);
 
     try {
-      const batch = writeBatch(db);
-      for (const t of teachers) {
-        batch.set(doc(db, 'teachers', t.id), t);
-      }
-      await batch.commit();
+      await commitInChunks(db, 'teachers', merged);
     } catch (e) {
       console.warn('Error saving bulk teachers:', e);
     }
@@ -629,13 +686,22 @@ export const instituteService = {
           setLocal(LS_KEYS.STUDENTS, list);
           callback(list);
         } else {
-          // Empty snapshot means collection was cleared
-          setLocal(LS_KEYS.STUDENTS, []);
-          callback([]);
+          // If Firestore is empty, check if we have local students.
+          // If so, preserve local data and back-sync to Firestore!
+          const currentLocal = getLocal<Student>(LS_KEYS.STUDENTS, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'students', currentLocal).catch(() => {});
+            callback(currentLocal);
+          } else {
+            setLocal(LS_KEYS.STUDENTS, []);
+            callback([]);
+          }
         }
       },
       (err) => {
-        console.warn('Students snapshot error:', err);
+        console.warn('Students snapshot error (using local cache):', err);
+        const currentLocal = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS);
+        callback(currentLocal);
       }
     );
 
@@ -654,7 +720,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.STUDENTS, local);
 
     try {
-      await setDoc(doc(db, 'students', student.id), student);
+      await setDoc(doc(db, 'students', student.id), sanitizeDoc(student));
     } catch (e) {
       console.warn('Error saving student:', e);
     }
@@ -669,11 +735,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.STUDENTS, merged);
 
     try {
-      const batch = writeBatch(db);
-      for (const s of students) {
-        batch.set(doc(db, 'students', s.id), s);
-      }
-      await batch.commit();
+      await commitInChunks(db, 'students', merged);
     } catch (e) {
       console.warn('Error saving bulk students:', e);
     }
@@ -736,10 +798,18 @@ export const instituteService = {
           });
           setLocal(LS_KEYS.ATTENDANCE, list);
           callback(list);
+        } else {
+          const currentLocal = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'attendance', currentLocal).catch(() => {});
+            callback(currentLocal);
+          }
         }
       },
       (err) => {
-        console.warn('Attendance snapshot error:', err);
+        console.warn('Attendance snapshot error (using local cache):', err);
+        const currentLocal = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, INITIAL_ATTENDANCE);
+        callback(currentLocal);
       }
     );
 
@@ -758,11 +828,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.ATTENDANCE, merged);
 
     try {
-      const batch = writeBatch(db);
-      for (const r of records) {
-        batch.set(doc(db, 'attendance', r.id), r);
-      }
-      await batch.commit();
+      await commitInChunks(db, 'attendance', merged);
     } catch (e) {
       console.warn('Error batch saving attendance:', e);
     }
@@ -797,10 +863,18 @@ export const instituteService = {
           });
           setLocal(LS_KEYS.TEACHER_ATT, list);
           callback(list);
+        } else {
+          const currentLocal = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
+          if (currentLocal && currentLocal.length > 0) {
+            commitInChunks(db, 'teacher_attendance', currentLocal).catch(() => {});
+            callback(currentLocal);
+          }
         }
       },
       (err) => {
-        console.warn('Teacher attendance snapshot error:', err);
+        console.warn('Teacher attendance snapshot error (using local cache):', err);
+        const currentLocal = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
+        callback(currentLocal);
       }
     );
 
@@ -819,11 +893,7 @@ export const instituteService = {
     notifyLocal(LS_KEYS.TEACHER_ATT, merged);
 
     try {
-      const batch = writeBatch(db);
-      for (const r of records) {
-        batch.set(doc(db, 'teacher_attendance', r.id), r);
-      }
-      await batch.commit();
+      await commitInChunks(db, 'teacher_attendance', merged);
     } catch (e) {
       console.warn('Error batch saving teacher attendance:', e);
     }
