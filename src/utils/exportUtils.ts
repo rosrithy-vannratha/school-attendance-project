@@ -81,7 +81,7 @@ export function exportTeachersToExcel(teachers: Teacher[], filename = 'teacher_f
     'អត្តលេខ (ID)': t.teacherCode,
     'គោត្តនាម-នាម (Khmer)': t.nameKhmer,
     'អក្សរឡាតាំង (Latin)': t.nameLatin,
-    'ភេទ (Gender)': t.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)',
+    'ភេទ (Gender)': t.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)' : 'បុព្វជិក (Monk)',
     'លេខទូរសព្ទ (Phone)': t.phone || '-',
     'អ៊ីមែល (Email)': t.email || '-',
     'មុខវិជ្ជាបង្រៀន (Subjects)': t.subjects,
