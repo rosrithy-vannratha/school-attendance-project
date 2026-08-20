@@ -402,7 +402,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ស្វែងរកតាមឈ្មោះ, អត្តលេខ, ទូរស័ព្ទ..."
+              placeholder="ស្វែងរកតាមឈ្មោះ, អត្តលេខ, ទូរសព្ទ..."
               className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-hidden transition-all"
             />
             {search && (
@@ -524,7 +524,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 <th className="py-3.5 px-4">ភេទ & ថ្ងៃកំណើត</th>
                 <th className="py-3.5 px-4">ថ្នាក់ & ជំនាញ</th>
                 <th className="py-3.5 px-4">វេន & ឆ្នាំ</th>
-                <th className="py-3.5 px-4">ទូរស័ព្ទ / អាណាព្យាបាល</th>
+                <th className="py-3.5 px-4">ទូរសព្ទ / អាណាព្យាបាល</th>
                 <th className="py-3.5 px-4">ស្ថានភាព</th>
                 <th className="py-3.5 px-4 text-right">សកម្មភាព</th>
               </tr>
@@ -822,7 +822,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">លេខទូរស័ព្ទ (Phone)</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">លេខទូរសព្ទ (Phone)</label>
                   <input
                     type="text"
                     value={formPhone}
