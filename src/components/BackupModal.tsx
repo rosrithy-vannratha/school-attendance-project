@@ -34,6 +34,20 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   showToast,
   onRefreshData
 }) => {
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
+  const handleForceCloudSync = async () => {
+    setIsSyncingCloud(true);
+    try {
+      const res = await instituteService.forceSyncAll();
+      showToast(res.message, res.success ? 'success' : 'error');
+      if (onRefreshData) onRefreshData();
+    } catch (e: any) {
+      showToast('សមកាលកម្មទិន្នន័យបានបរាជ័យ', 'error');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
   const [cloudBackups, setCloudBackups] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -216,6 +230,35 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 <span>ទាញយកឯកសារ Backup (.json)</span>
               </button>
             </div>
+          </div>
+
+          {/* Real-time Cloud Sync Trigger */}
+          <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
+                <RefreshCw className={`w-4 h-4 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-emerald-950 dark:text-emerald-200 flex items-center gap-2">
+                  <span>ធ្វើសមកាលកម្មទិន្នន័យផ្ទាល់ (Real-Time Sync)</span>
+                  <span className="text-[10px] bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 font-bold px-1.5 py-0.5 rounded-full">
+                    Live
+                  </span>
+                </h4>
+                <p className="text-[10.5px] text-zinc-600 dark:text-zinc-400">
+                  ទាញយក និងបញ្ជូនបច្ចុប្បន្នភាពទិន្នន័យចុងក្រោយបង្អស់រវាងម៉ាស៊ីន និង Cloud Firestore
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleForceCloudSync}
+              disabled={isSyncingCloud}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? 'animate-spin' : ''}`} />
+              <span>{isSyncingCloud ? 'កំពុងធ្វើសមកាលកម្ម...' : 'Sync ទិន្នន័យឥឡូវនេះ'}</span>
+            </button>
           </div>
 
           {/* Local File Restore Option */}
