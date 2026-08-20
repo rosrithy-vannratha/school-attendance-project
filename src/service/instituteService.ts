@@ -473,9 +473,13 @@ export const instituteService = {
     const local = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.TEACHERS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'teachers'),
       (snap) => {
+        if (wasWrittenLocallyJustNow(LS_KEYS.TEACHERS)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -504,6 +508,11 @@ export const instituteService = {
         console.warn('Teachers snapshot error:', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveTeacher(teacher: Teacher): Promise<void> {
@@ -512,6 +521,7 @@ export const instituteService = {
     if (idx >= 0) local[idx] = teacher;
     else local.push(teacher);
     setLocal(LS_KEYS.TEACHERS, local);
+    notifyLocal(LS_KEYS.TEACHERS, local);
 
     try {
       await setDoc(doc(db, 'teachers', teacher.id), teacher);
@@ -526,6 +536,7 @@ export const instituteService = {
     for (const t of teachers) map.set(t.id, t);
     const merged = Array.from(map.values());
     setLocal(LS_KEYS.TEACHERS, merged);
+    notifyLocal(LS_KEYS.TEACHERS, merged);
 
     try {
       const batch = writeBatch(db);
@@ -541,6 +552,7 @@ export const instituteService = {
   async deleteTeacher(id: string): Promise<void> {
     const local = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS).filter((t) => t.id !== id);
     setLocal(LS_KEYS.TEACHERS, local);
+    notifyLocal(LS_KEYS.TEACHERS, local);
 
     try {
       await deleteDoc(doc(db, 'teachers', id));
@@ -551,6 +563,7 @@ export const instituteService = {
 
   async deleteAllTeachers(): Promise<void> {
     setLocal(LS_KEYS.TEACHERS, []);
+    notifyLocal(LS_KEYS.TEACHERS, []);
 
     try {
       const snap = await getDocs(collection(db, 'teachers'));
@@ -569,9 +582,13 @@ export const instituteService = {
     const local = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.STUDENTS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'students'),
       (snap) => {
+        if (wasWrittenLocallyJustNow(LS_KEYS.STUDENTS)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -610,6 +627,11 @@ export const instituteService = {
         console.warn('Students snapshot error:', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveStudent(student: Student): Promise<void> {
@@ -618,6 +640,7 @@ export const instituteService = {
     if (idx >= 0) local[idx] = student;
     else local.push(student);
     setLocal(LS_KEYS.STUDENTS, local);
+    notifyLocal(LS_KEYS.STUDENTS, local);
 
     try {
       await setDoc(doc(db, 'students', student.id), student);
@@ -632,6 +655,7 @@ export const instituteService = {
     for (const s of students) map.set(s.id, s);
     const merged = Array.from(map.values());
     setLocal(LS_KEYS.STUDENTS, merged);
+    notifyLocal(LS_KEYS.STUDENTS, merged);
 
     try {
       const batch = writeBatch(db);
@@ -647,6 +671,7 @@ export const instituteService = {
   async deleteStudent(id: string): Promise<void> {
     const local = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS).filter((s) => s.id !== id);
     setLocal(LS_KEYS.STUDENTS, local);
+    notifyLocal(LS_KEYS.STUDENTS, local);
 
     try {
       await deleteDoc(doc(db, 'students', id));
@@ -657,6 +682,7 @@ export const instituteService = {
 
   async deleteAllStudents(): Promise<void> {
     setLocal(LS_KEYS.STUDENTS, []);
+    notifyLocal(LS_KEYS.STUDENTS, []);
 
     try {
       const snap = await getDocs(collection(db, 'students'));
