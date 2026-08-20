@@ -2,8 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper: Check if user is authenticated
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    // Helper: Check if user is accessing their own profile
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     // Default safety catch-all
@@ -11,52 +17,49 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Test connection doc
+    // Test connection doc (Temporary: Delete this block in production)
     match /test/{docId} {
       allow read, write: if true;
     }
 
-    // User profiles & user tasks
+    // User profiles & user tasks (Users can only access their own data)
     match /users/{userId} {
-      allow get, list, write: if isSignedIn();
+      allow read, write: if isOwner(userId);
       match /{allSubcollections=**} {
-        allow read, write: if isSignedIn();
+        allow read, write: if isOwner(userId);
       }
     }
 
-    // Students collection
+    // School data (Requires authentication to read or write)
     match /students/{studentId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Teachers collection
     match /teachers/{teacherId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Classes collection
     match /classes/{classId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Majors collection
     match /majors/{majorId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Student Attendance collection
+    // Attendance records (Requires authentication)
     match /attendance/{attendanceId} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Teacher Attendance collection
     match /teacher_attendance/{id} {
-      allow read, write: if true;
+      allow read, write: if isSignedIn();
     }
 
-    // Full system backups collection
+    // System backups (Completely blocked from frontend client access)
+    // Server-side Admin SDKs and Cloud Functions automatically bypass these rules
     match /backups/{backupId} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
