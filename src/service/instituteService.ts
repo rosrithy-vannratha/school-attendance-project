@@ -343,9 +343,13 @@ export const instituteService = {
     const local = getLocal<Major>(LS_KEYS.MAJORS, INITIAL_MAJORS);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.MAJORS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'majors'),
       (snap) => {
+        if (wasWrittenLocallyJustNow(LS_KEYS.MAJORS)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -366,6 +370,11 @@ export const instituteService = {
         console.warn('Majors snapshot error (using local cache):', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveMajor(major: Major): Promise<void> {
@@ -374,6 +383,7 @@ export const instituteService = {
     if (idx >= 0) local[idx] = major;
     else local.push(major);
     setLocal(LS_KEYS.MAJORS, local);
+    notifyLocal(LS_KEYS.MAJORS, local);
 
     try {
       await setDoc(doc(db, 'majors', major.id), major);
@@ -385,6 +395,7 @@ export const instituteService = {
   async deleteMajor(id: string): Promise<void> {
     const local = getLocal<Major>(LS_KEYS.MAJORS, INITIAL_MAJORS).filter((m) => m.id !== id);
     setLocal(LS_KEYS.MAJORS, local);
+    notifyLocal(LS_KEYS.MAJORS, local);
 
     try {
       await deleteDoc(doc(db, 'majors', id));
@@ -701,9 +712,13 @@ export const instituteService = {
     const local = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, INITIAL_ATTENDANCE);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.ATTENDANCE, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'attendance'),
       (snap) => {
+        if (wasWrittenLocallyJustNow(LS_KEYS.ATTENDANCE)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -727,6 +742,11 @@ export const instituteService = {
         console.warn('Attendance snapshot error:', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveAttendanceBatch(records: AttendanceRecord[]): Promise<void> {
@@ -735,6 +755,7 @@ export const instituteService = {
     for (const r of records) map.set(r.id, r);
     const merged = Array.from(map.values());
     setLocal(LS_KEYS.ATTENDANCE, merged);
+    notifyLocal(LS_KEYS.ATTENDANCE, merged);
 
     try {
       const batch = writeBatch(db);
@@ -752,9 +773,13 @@ export const instituteService = {
     const local = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.TEACHER_ATT, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'teacher_attendance'),
       (snap) => {
+        if (wasWrittenLocallyJustNow(LS_KEYS.TEACHER_ATT)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -778,6 +803,11 @@ export const instituteService = {
         console.warn('Teacher attendance snapshot error:', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveTeacherAttendanceBatch(records: TeacherAttendance[]): Promise<void> {
@@ -786,6 +816,7 @@ export const instituteService = {
     for (const r of records) map.set(r.id, r);
     const merged = Array.from(map.values());
     setLocal(LS_KEYS.TEACHER_ATT, merged);
+    notifyLocal(LS_KEYS.TEACHER_ATT, merged);
 
     try {
       const batch = writeBatch(db);
@@ -904,6 +935,7 @@ export const instituteService = {
 
     if (students && Array.isArray(students)) {
       setLocal(LS_KEYS.STUDENTS, students);
+      notifyLocal(LS_KEYS.STUDENTS, students);
       const batch = writeBatch(db);
       for (const s of students) batch.set(doc(db, 'students', s.id), s);
       await batch.commit().catch((e) => console.warn(e));
@@ -911,6 +943,7 @@ export const instituteService = {
 
     if (teachers && Array.isArray(teachers)) {
       setLocal(LS_KEYS.TEACHERS, teachers);
+      notifyLocal(LS_KEYS.TEACHERS, teachers);
       const batch = writeBatch(db);
       for (const t of teachers) batch.set(doc(db, 'teachers', t.id), t);
       await batch.commit().catch((e) => console.warn(e));
@@ -918,6 +951,7 @@ export const instituteService = {
 
     if (classes && Array.isArray(classes)) {
       setLocal(LS_KEYS.CLASSES, classes);
+      notifyLocal(LS_KEYS.CLASSES, classes);
       const batch = writeBatch(db);
       for (const c of classes) batch.set(doc(db, 'classes', c.id), c);
       await batch.commit().catch((e) => console.warn(e));
@@ -925,6 +959,7 @@ export const instituteService = {
 
     if (majors && Array.isArray(majors)) {
       setLocal(LS_KEYS.MAJORS, majors);
+      notifyLocal(LS_KEYS.MAJORS, majors);
       const batch = writeBatch(db);
       for (const m of majors) batch.set(doc(db, 'majors', m.id), m);
       await batch.commit().catch((e) => console.warn(e));
@@ -932,6 +967,7 @@ export const instituteService = {
 
     if (attendance && Array.isArray(attendance)) {
       setLocal(LS_KEYS.ATTENDANCE, attendance);
+      notifyLocal(LS_KEYS.ATTENDANCE, attendance);
       const batch = writeBatch(db);
       for (const a of attendance) batch.set(doc(db, 'attendance', a.id), a);
       await batch.commit().catch((e) => console.warn(e));
@@ -939,6 +975,7 @@ export const instituteService = {
 
     if (teacherAttendance && Array.isArray(teacherAttendance)) {
       setLocal(LS_KEYS.TEACHER_ATT, teacherAttendance);
+      notifyLocal(LS_KEYS.TEACHER_ATT, teacherAttendance);
       const batch = writeBatch(db);
       for (const ta of teacherAttendance) batch.set(doc(db, 'teacher_attendance', ta.id), ta);
       await batch.commit().catch((e) => console.warn(e));
