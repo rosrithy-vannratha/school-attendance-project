@@ -25,6 +25,7 @@ interface ClassesViewProps {
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
+  isReadOnly?: boolean;
 }
 
 export const ClassesView: React.FC<ClassesViewProps> = ({
@@ -34,7 +35,8 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   students,
   isAddModalOpen = false,
   onCloseAddModal,
-  showToast
+  showToast,
+  isReadOnly = false
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpen);
   const [editingClass, setEditingClass] = useState<Classroom | null>(null);
@@ -50,12 +52,13 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const [formTeacherId, setFormTeacherId] = useState(teachers[0]?.id || '');
 
   React.useEffect(() => {
-    if (isAddModalOpen) {
+    if (isAddModalOpen && !isReadOnly) {
       openAddModal();
     }
-  }, [isAddModalOpen]);
+  }, [isAddModalOpen, isReadOnly]);
 
   const openAddModal = () => {
+    if (isReadOnly) return;
     setEditingClass(null);
     setFormClassCode(`ED-Y1-${String(classes.length + 1)}`);
     setFormName('');
@@ -89,6 +92,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (!formName.trim()) {
       showToast('សូមបញ្ចូលឈ្មោះថ្នាក់រៀន!', 'error');
       return;
@@ -122,6 +129,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   };
 
   const handleDelete = async (id: string, name: string) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     if (window.confirm(`តើអ្នកពិតជាចង់លុបថ្នាក់ "${name}" មែនទេ?`)) {
       try {
         await instituteService.deleteClass(id);
@@ -150,13 +161,15 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ បង្កើតថ្នាក់រៀនថ្មី</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ បង្កើតថ្នាក់រៀនថ្មី</span>
+          </button>
+        )}
       </div>
 
       {/* Class Cards Grid */}
@@ -221,16 +234,19 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(cls)}
+                    title={isReadOnly ? 'ពិនិត្យព័ត៌មានថ្នាក់' : 'កែប្រែថ្នាក់'}
                     className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(cls.id, cls.name)}
-                    className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => handleDelete(cls.id, cls.name)}
+                      className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -243,9 +259,16 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
-                {editingClass ? 'កែប្រែថ្នាក់រៀន' : 'បង្កើតថ្នាក់រៀនថ្មី'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                  {isReadOnly ? 'ព័ត៌មានថ្នាក់រៀន (Classroom Info)' : editingClass ? 'កែប្រែថ្នាក់រៀន' : 'បង្កើតថ្នាក់រៀនថ្មី'}
+                </h3>
+                {isReadOnly && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
+                    Read-Only
+                  </span>
+                )}
+              </div>
               <button
                 onClick={closeModal}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
@@ -260,10 +283,11 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <input
                   type="text"
                   required
+                  disabled={isReadOnly}
                   value={formClassCode}
                   onChange={(e) => setFormClassCode(e.target.value)}
                   placeholder="ED-Y1-M1"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -272,10 +296,11 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <input
                   type="text"
                   required
+                  disabled={isReadOnly}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ (ព្រឹក)"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -283,9 +308,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ជំនាញ (Major)</label>
                   <select
+                    disabled={isReadOnly}
                     value={formMajorId}
                     onChange={(e) => setFormMajorId(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {majors.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -298,9 +324,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ</label>
                   <select
+                    disabled={isReadOnly}
                     value={formYear}
                     onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
                     <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
@@ -314,9 +341,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា</label>
                   <select
+                    disabled={isReadOnly}
                     value={formShift}
                     onChange={(e) => setFormShift(e.target.value as ShiftType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="morning">វេនព្រឹក</option>
                     <option value="afternoon">វេនរសៀល</option>
@@ -329,10 +357,11 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">បន្ទប់រៀន (Room)</label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formRoom}
                     onChange={(e) => setFormRoom(e.target.value)}
                     placeholder="បន្ទប់ A101"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -340,9 +369,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               <div>
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">សាស្ត្រាចារ្យទទួលបន្ទុក</label>
                 <select
+                  disabled={isReadOnly}
                   value={formTeacherId}
                   onChange={(e) => setFormTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="">-- មិនទាន់ចាត់តាំង --</option>
                   {teachers.map((t) => (
@@ -359,14 +389,16 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                   onClick={closeModal}
                   className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
                 >
-                  បោះបង់
+                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
-                >
-                  រក្សាទុក
-                </button>
+                {!isReadOnly && (
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                  >
+                    រក្សាទុក
+                  </button>
+                )}
               </div>
             </form>
           </div>
