@@ -52,9 +52,12 @@ const LS_KEYS = {
 function getLocal<T>(key: string, defaultData: T[]): T[] {
   try {
     const raw = localStorage.getItem(key);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      // Only fall back to seed data when nothing has been saved yet.
+      // A legitimately empty array (e.g. user deleted everything) must
+      // NOT be replaced by the defaults.
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn('Error reading local cache:', e);
@@ -68,6 +71,31 @@ function setLocal<T>(key: string, data: T[]): void {
   } catch (e) {
     console.warn('Error writing local cache:', e);
   }
+}
+
+// --- Instant local UI updates, independent of Firestore ---
+// Edit/delete/save must be reflected on screen immediately, even if the
+// Firestore write is slow, blocked, or fails silently. Firestore is treated
+// as a background sync target, not the source of truth for the live UI.
+const localListeners: Record<string, Set<(data: any[]) => void>> = {};
+const lastLocalWriteAt: Record<string, number> = {};
+// How long to ignore incoming Firestore snapshots after a local write, so a
+// stale/late remote snapshot can't silently revert what the user just did.
+const REMOTE_OVERWRITE_GUARD_MS = 8000;
+
+function registerLocalListener(key: string, cb: (data: any[]) => void): () => void {
+  if (!localListeners[key]) localListeners[key] = new Set();
+  localListeners[key].add(cb);
+  return () => localListeners[key]?.delete(cb);
+}
+
+function notifyLocal<T>(key: string, data: T[]): void {
+  lastLocalWriteAt[key] = Date.now();
+  localListeners[key]?.forEach((cb) => cb(data));
+}
+
+function wasWrittenLocallyJustNow(key: string): boolean {
+  return Date.now() - (lastLocalWriteAt[key] || 0) < REMOTE_OVERWRITE_GUARD_MS;
 }
 
 // Convert Firebase User to AppUser
@@ -370,9 +398,16 @@ export const instituteService = {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
     callback(local);
 
-    return onSnapshot(
+    const unregisterLocal = registerLocalListener(LS_KEYS.CLASSES, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
       collection(db, 'classes'),
       (snap) => {
+        // Skip a remote snapshot that arrives right after a local edit/delete —
+        // it's very likely stale data from before that write reached the
+        // server, and applying it would silently undo what the user just did.
+        if (wasWrittenLocallyJustNow(LS_KEYS.CLASSES)) return;
+
         if (!snap.empty) {
           const list = snap.docs.map((d) => {
             const data = d.data();
@@ -399,6 +434,11 @@ export const instituteService = {
         console.warn('Classes snapshot error:', err);
       }
     );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
   },
 
   async saveClass(cls: Classroom): Promise<void> {
@@ -407,6 +447,7 @@ export const instituteService = {
     if (idx >= 0) local[idx] = cls;
     else local.push(cls);
     setLocal(LS_KEYS.CLASSES, local);
+    notifyLocal(LS_KEYS.CLASSES, local); // reflect on screen immediately
 
     try {
       await setDoc(doc(db, 'classes', cls.id), cls);
@@ -418,6 +459,7 @@ export const instituteService = {
   async deleteClass(id: string): Promise<void> {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES).filter((c) => c.id !== id);
     setLocal(LS_KEYS.CLASSES, local);
+    notifyLocal(LS_KEYS.CLASSES, local); // reflect on screen immediately
 
     try {
       await deleteDoc(doc(db, 'classes', id));
