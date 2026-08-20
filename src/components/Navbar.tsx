@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   Users,
@@ -15,9 +15,13 @@ import {
   Sun,
   Sunset,
   Moon,
-  Calendar
+  Calendar,
+  RefreshCw,
+  CheckCircle,
+  WifiOff
 } from 'lucide-react';
 import { ActiveTab, AppUser } from '../types';
+import { subscribeSyncInfo, SyncInfo, instituteService } from '../service/instituteService';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -42,6 +46,28 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleDarkMode,
   onOpenBackup
 }) => {
+  const [syncInfo, setSyncInfo] = useState<SyncInfo>({
+    status: 'synced',
+    lastSyncedAt: new Date(),
+    message: 'Cloud Sync Active'
+  });
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeSyncInfo((info) => setSyncInfo(info));
+    return () => unsub();
+  }, []);
+
+  const handleManualSync = async () => {
+    if (isManualSyncing) return;
+    setIsManualSyncing(true);
+    try {
+      await instituteService.forceSyncAll();
+    } finally {
+      setIsManualSyncing(false);
+    }
+  };
+
   const tabs = [
     { id: 'dashboard', labelKh: 'ផ្ទាំងគ្រប់គ្រង', labelEn: 'Dashboard', icon: BarChart3 },
     { id: 'students', labelKh: 'និស្សិត', labelEn: 'Students', icon: Users, badge: totalStudents },
@@ -86,6 +112,47 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Real-time Sync Status Pill */}
+              <div
+                title={syncInfo.message || (syncInfo.status === 'synced' ? 'ទិន្នន័យបានធ្វើសមកាលកម្មស្វ័យប្រវត្តិលើ Cloud Firestore' : 'កំពុងធ្វើសមកាលកម្មទិន្នន័យ...')}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-emerald-950/70 dark:bg-black/50 border-emerald-700/40 text-emerald-200"
+              >
+                {syncInfo.status === 'syncing' || isManualSyncing ? (
+                  <>
+                    <RefreshCw className="w-3 h-3 text-emerald-300 animate-spin" />
+                    <span className="text-emerald-300">កំពុង Sync...</span>
+                  </>
+                ) : syncInfo.status === 'offline' ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span className="text-amber-300">Offline Cache</span>
+                  </>
+                ) : syncInfo.status === 'error' ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                    <span className="text-rose-300">Sync Error</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                    </span>
+                    <span className="text-emerald-200">Real-Time Sync</span>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleManualSync}
+                  title="ចុចដើម្បីទាញទិន្នន័យចុងក្រោយបង្អស់ពី Cloud ឡើងវិញ"
+                  disabled={isManualSyncing}
+                  className="ml-0.5 p-0.5 hover:text-white rounded transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-2.5 h-2.5 ${isManualSyncing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
               {/* Cloud Backup Hub Button */}
               <button
                 type="button"
