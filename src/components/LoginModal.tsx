@@ -420,6 +420,45 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </div>
                 <LogIn className="w-4 h-4 text-amber-700 dark:text-amber-400 opacity-70 group-hover:opacity-100" />
               </button>
+
+              {/* Guest / Visitor (Read-Only) */}
+              <button
+                type="button"
+                onClick={() => {
+                  const guestUser: AppUser = {
+                    uid: 'guest-' + Date.now(),
+                    displayName: 'ភ្ញៀវ (Guest)',
+                    email: 'guest@ici.edu.kh',
+                    photoURL: null,
+                    role: 'Guest',
+                    isAnonymous: true
+                  };
+                  onSuccess(guestUser);
+                  onClose();
+                  showToast('បានចូលមើលជាភ្ញៀវ (Guest Mode - Read Only)', 'info');
+                }}
+                className="w-full p-3 rounded-2xl border border-purple-200 dark:border-purple-800/50 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100/70 dark:hover:bg-purple-900/50 text-left flex items-center justify-between transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 group-hover:text-purple-900 dark:group-hover:text-purple-300">
+                        ចូលមើលជាភ្ញៀវ (Explore as Guest)
+                      </h4>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-200 dark:bg-purple-900/80 text-purple-800 dark:text-purple-200">
+                        Read-Only
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400">
+                      បានត្រឹមតែមើលព័ត៌មាន (បិទមុខងារបង្កើត កែ និងលុប)
+                    </p>
+                  </div>
+                </div>
+                <LogIn className="w-4 h-4 text-purple-700 dark:text-purple-400 opacity-70 group-hover:opacity-100" />
+              </button>
             </div>
           )}
         </div>
