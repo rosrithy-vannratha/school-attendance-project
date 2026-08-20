@@ -8,7 +8,7 @@ export function exportStudentsToExcel(students: Student[], filename = 'student_l
     'គោត្តនាម-នាម (Khmer)': s.nameKhmer,
     'អក្សរឡាតាំង (Latin)': s.nameLatin,
     'ឈ្មោះចិន (Chinese)': s.nameChinese || '-',
-    'ភេទ (Gender)': s.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)',
+    'ភេទ (Gender)': s.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)' : 'បុព្វជិក (Monk)',
     'ថ្ងៃខែឆ្នាំកំណើត (DOB)': s.dob || '-',
     'លេខទូរស័ព្ទ (Phone)': s.phone || '-',
     'ជំនាញ (Major)': s.majorName,
