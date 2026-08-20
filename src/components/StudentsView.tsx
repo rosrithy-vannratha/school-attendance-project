@@ -232,25 +232,59 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       const defaultMajor = majors[0];
       const defaultClass = classes[0];
 
-      const fullStudents: Student[] = parsed.map((p, index) => ({
-        id: `stu_imp_${Date.now()}_${index}`,
-        studentCode: p.studentCode || `CPI-IMP-${index + 1}`,
-        nameKhmer: p.nameKhmer || 'និស្សិត',
-        nameLatin: p.nameLatin || '',
-        nameChinese: p.nameChinese,
-        gender: p.gender || 'female',
-        dob: p.dob || '2004-01-01',
-        phone: p.phone || '',
-        majorId: defaultMajor?.id || 'maj_pedagogy',
-        majorName: defaultMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
-        classId: defaultClass?.id || '',
-        className: defaultClass?.name || 'ថ្នាក់ឆ្នាំទី១',
-        shift: p.shift || 'morning',
-        year: p.year || 'Year 1',
-        status: 'active',
-        guardianPhone: p.guardianPhone,
-        createdAt: new Date().toISOString(),
-      }));
+      const fullStudents: Student[] = parsed.map((p, index) => {
+        // Resolve Major from Excel row or fallback
+        let matchedMajor = defaultMajor;
+        if (p.majorName) {
+          const rawMajor = (p.majorName || '').toLowerCase().trim();
+          const found = majors.find(
+            (m) =>
+              m.id.toLowerCase() === rawMajor ||
+              m.nameKhmer.toLowerCase().includes(rawMajor) ||
+              rawMajor.includes(m.nameKhmer.toLowerCase()) ||
+              (m.nameLatin && m.nameLatin.toLowerCase().includes(rawMajor)) ||
+              (m.code && m.code.toLowerCase() === rawMajor)
+          );
+          if (found) matchedMajor = found;
+        }
+
+        // Resolve Classroom from Excel row or fallback
+        let matchedClass = defaultClass;
+        if (p.className) {
+          const rawClass = (p.className || '').toLowerCase().trim();
+          const found = classes.find(
+            (c) =>
+              c.id.toLowerCase() === rawClass ||
+              c.name.toLowerCase().includes(rawClass) ||
+              rawClass.includes(c.name.toLowerCase()) ||
+              (c.classCode && c.classCode.toLowerCase() === rawClass)
+          );
+          if (found) matchedClass = found;
+        }
+
+        return {
+          id: `stu_imp_${Date.now()}_${index}`,
+          studentCode: p.studentCode || `ICI-2025-${String(students.length + index + 1).padStart(3, '0')}`,
+          nameKhmer: p.nameKhmer || 'និស្សិត',
+          nameLatin: p.nameLatin || '',
+          nameChinese: p.nameChinese || undefined,
+          gender: p.gender || 'female',
+          dob: p.dob || '2004-01-01',
+          phone: p.phone || '',
+          email: p.email || undefined,
+          majorId: matchedMajor?.id || 'maj_pedagogy',
+          majorName: matchedMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
+          classId: matchedClass?.id || (classes[0]?.id || ''),
+          className: matchedClass?.name || 'ថ្នាក់ឆ្នាំទី១',
+          shift: p.shift || 'morning',
+          year: p.year || 'Year 1',
+          status: p.status || 'active',
+          guardianPhone: p.guardianPhone || undefined,
+          address: p.address || undefined,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      });
 
       await instituteService.saveStudentsBulk(fullStudents);
       showToast(`បានបញ្ចូលនិស្សិតចំនួន ${fullStudents.length} នាក់ពី Excel ដោយជោគជ័យ!`, 'success');
