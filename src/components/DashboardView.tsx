@@ -107,7 +107,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>ប្រព័ន្ធគ្រប់គ្រងអប់រំ និងវត្តមានឆ្នាំសិក្សា ២០២៥-២០២៦</span>
+              <span>ប្រព័ន្ធគ្រប់គ្រងអប់រំ និងវត្តមានឆ្នាំសិក្សា ២០២6-២០២7</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               សួស្តី! សូមស្វាគមន៍មកកាន់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
