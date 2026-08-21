@@ -214,6 +214,22 @@ export const authService = {
     return DEFAULT_ADMIN_USER;
   },
 
+  loginWithAdminCredentials(username: string, pass: string): { success: boolean; error?: string; user?: AppUser } {
+    const cleanUser = (username || '').trim().toLowerCase();
+    const cleanPass = (pass || '').trim();
+
+    if ((cleanUser === 'admin' || cleanUser === 'admin@ici.edu.kh' || cleanUser === 'admin@cpi.edu.kh') && cleanPass === 'admin123') {
+      localStorage.setItem(LS_KEYS.APP_USER, JSON.stringify(DEFAULT_ADMIN_USER));
+      dispatchAuthChange(DEFAULT_ADMIN_USER);
+      return { success: true, user: DEFAULT_ADMIN_USER };
+    }
+
+    return {
+      success: false,
+      error: 'ឈ្មោះអ្នកប្រើប្រាស់ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (សូមប្រើ Admin / admin123)'
+    };
+  },
+
   async signInWithGoogle(): Promise<AppUser> {
     try {
       const provider = new GoogleAuthProvider();
@@ -343,15 +359,14 @@ export const authService = {
         if (parsed && parsed.uid) {
           callback(parsed);
         } else {
-          callback(DEFAULT_ADMIN_USER);
+          callback(null);
         }
       } catch (e) {
         console.warn('Error parsing local user:', e);
-        callback(DEFAULT_ADMIN_USER);
+        callback(null);
       }
     } else {
-      // Default to single Admin user directly
-      callback(DEFAULT_ADMIN_USER);
+      callback(null);
     }
 
     // 2. Listen to custom event for instantaneous local updates
@@ -373,10 +388,10 @@ export const authService = {
           try {
             callback(JSON.parse(local));
           } catch {
-            callback(DEFAULT_ADMIN_USER);
+            callback(null);
           }
         } else {
-          callback(DEFAULT_ADMIN_USER);
+          callback(null);
         }
       }
     });
