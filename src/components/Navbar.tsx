@@ -176,11 +176,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {user ? (
                 <div className="flex items-center gap-2 bg-white dark:bg-white px-3 py-1 rounded-full border border-emerald-300 dark:border-zinc-400 text-black shadow-2xs">
-                  <div className="w-5 h-5 rounded-full bg-emerald-800 text-white text-[10px] font-black flex items-center justify-center">
-                    A
-                  </div>
+                  {user.role === 'Guest' || user.isAnonymous ? (
+                    <div className="w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-black flex items-center justify-center">
+                      G
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-emerald-800 text-white text-[10px] font-black flex items-center justify-center">
+                      A
+                    </div>
+                  )}
                   <span className="text-black text-xs font-extrabold max-w-[130px] truncate">
-                    {user.displayName || 'Admin (អ្នកគ្រប់គ្រង)'}
+                    {user.displayName || (user.role === 'Guest' ? 'Guest User' : 'Admin')}
                   </span>
                   <button
                     type="button"
