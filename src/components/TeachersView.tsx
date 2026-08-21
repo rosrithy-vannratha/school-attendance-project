@@ -14,7 +14,14 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
-  Filter
+  Filter,
+  Camera,
+  FileText,
+  Paperclip,
+  Image as ImageIcon,
+  ExternalLink,
+  FileCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { Teacher, TeacherStatus, ShiftType } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -58,6 +65,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
   const [formSubjects, setFormSubjects] = useState('');
   const [formShift, setFormShift] = useState('morning');
   const [formStatus, setFormStatus] = useState<TeacherStatus>('active');
+  const [formDegree, setFormDegree] = useState('');
+  const [formNotes, setFormNotes] = useState('');
+  const [formPhotoUrl, setFormPhotoUrl] = useState<string | undefined>(undefined);
+  const [formCvName, setFormCvName] = useState<string | undefined>(undefined);
+  const [formCvUrl, setFormCvUrl] = useState<string | undefined>(undefined);
 
   const openAddModal = () => {
     if (isReadOnly) return;
@@ -71,6 +83,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setFormSubjects('');
     setFormShift('morning');
     setFormStatus('active');
+    setFormDegree('បរិញ្ញាបត្រជាន់ខ្ពស់ (Master\'s)');
+    setFormNotes('');
+    setFormPhotoUrl(undefined);
+    setFormCvName(undefined);
+    setFormCvUrl(undefined);
     setIsModalOpen(true);
   };
 
@@ -84,8 +101,57 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setFormEmail(t.email || '');
     setFormSubjects(t.subjects);
     setFormShift(t.shift || 'morning');
-    setFormStatus(t.status);
+    setFormStatus(t.status || 'active');
+    setFormDegree(t.degree || 'បរិញ្ញាបត្រជាន់ខ្ពស់ (Master\'s)');
+    setFormNotes(t.notes || '');
+    setFormPhotoUrl(t.photoUrl || undefined);
+    setFormCvName(t.cvName || undefined);
+    setFormCvUrl(t.cvUrl || undefined);
     setIsModalOpen(true);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('សូមជ្រើសរើសឯកសាររូបភាព (JPG, PNG, WebP)!', 'error');
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      showToast('ទំហំរូបភាពត្រូវតិចជាង 3MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setFormPhotoUrl(result);
+      showToast('បានផ្ទុកឡើងរូបថតសាស្ត្រាចារ្យជោគជ័យ!', 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('ទំហំឯកសារ CV ត្រូវតិចជាង 8MB', 'error');
+      return;
+    }
+
+    setFormCvName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setFormCvUrl(result);
+      showToast(`បានភ្ជាប់ឯកសារ CV "${file.name}" ជោគជ័យ!`, 'success');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -101,7 +167,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
 
     const data: Teacher = {
       id: editingTeacher ? editingTeacher.id : `tch_${Date.now()}`,
-      teacherCode: formTeacherCode || `ICI-TCH-${Date.now().toString().slice(-4)}`,
+      teacherCode: formTeacherCode.trim() || (editingTeacher ? editingTeacher.teacherCode : `ICI-TCH-${Date.now().toString().slice(-4)}`),
       nameKhmer: formNameKhmer.trim(),
       nameLatin: formNameLatin.trim(),
       gender: formGender,
@@ -110,7 +176,13 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       subjects: formSubjects.trim() || 'ភាសាចិន',
       shift: formShift,
       status: formStatus,
-      createdAt: editingTeacher ? editingTeacher.createdAt : new Date().toISOString()
+      degree: formDegree.trim() || undefined,
+      notes: formNotes.trim() || undefined,
+      photoUrl: formPhotoUrl || undefined,
+      cvName: formCvName || undefined,
+      cvUrl: formCvUrl || undefined,
+      createdAt: editingTeacher ? editingTeacher.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     try {
@@ -170,22 +242,85 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
         return;
       }
 
-      const fullTeachers: Teacher[] = parsed.map((p, idx) => ({
-        id: `tch_import_${Date.now()}_${idx}`,
-        teacherCode: p.teacherCode || `ICI-TCH-${String(teachers.length + idx + 1).padStart(3, '0')}`,
-        nameKhmer: p.nameKhmer || 'សាស្ត្រាចារ្យ',
-        nameLatin: p.nameLatin || '',
-        gender: p.gender || 'male',
-        phone: p.phone || '',
-        email: p.email || '',
-        subjects: p.subjects || 'ភាសាចិន',
-        shift: p.shift || 'morning',
-        status: p.status || 'active',
-        createdAt: new Date().toISOString(),
-      }));
+      let insertedCount = 0;
+      let updatedCount = 0;
 
-      await instituteService.saveTeachersBulk(fullTeachers);
-      showToast(`បានបញ្ចូលសាស្ត្រាចារ្យចំនួន ${fullTeachers.length} នាក់ពី Excel ដោយជោគជ័យ!`, 'success');
+      // Build map of existing teachers to prevent duplicates
+      const teacherMap = new Map<string, Teacher>();
+      teachers.forEach((t) => {
+        teacherMap.set(t.id, t);
+      });
+
+      const processedBatch: Teacher[] = [];
+
+      parsed.forEach((p, idx) => {
+        const targetCode = (p.teacherCode || '').trim().toLowerCase();
+        const targetNameKhmer = (p.nameKhmer || '').trim().toLowerCase();
+        const targetPhone = (p.phone || '').trim().replace(/\D/g, '');
+
+        let existingMatch: Teacher | undefined;
+
+        if (targetCode) {
+          existingMatch = Array.from(teacherMap.values()).find(
+            (t) => t.teacherCode.trim().toLowerCase() === targetCode
+          );
+        }
+
+        if (!existingMatch && targetNameKhmer && targetPhone) {
+          existingMatch = Array.from(teacherMap.values()).find(
+            (t) =>
+              t.nameKhmer.trim().toLowerCase() === targetNameKhmer &&
+              (t.phone || '').replace(/\D/g, '') === targetPhone
+          );
+        }
+
+        if (existingMatch) {
+          // Update existing teacher record
+          updatedCount++;
+          const updated: Teacher = {
+            ...existingMatch,
+            teacherCode: p.teacherCode || existingMatch.teacherCode,
+            nameKhmer: p.nameKhmer || existingMatch.nameKhmer,
+            nameLatin: p.nameLatin || existingMatch.nameLatin,
+            gender: p.gender || existingMatch.gender,
+            phone: p.phone || existingMatch.phone,
+            email: p.email || existingMatch.email,
+            subjects: p.subjects || existingMatch.subjects,
+            shift: p.shift || existingMatch.shift,
+            status: p.status || existingMatch.status,
+            degree: p.degree || existingMatch.degree,
+            notes: p.notes || existingMatch.notes,
+            updatedAt: new Date().toISOString()
+          };
+          teacherMap.set(updated.id, updated);
+          processedBatch.push(updated);
+        } else {
+          // Insert new teacher record
+          insertedCount++;
+          const newId = `tch_imp_${Date.now()}_${idx}`;
+          const newTeacher: Teacher = {
+            id: newId,
+            teacherCode: p.teacherCode || `ICI-TCH-${String(teachers.length + insertedCount).padStart(3, '0')}`,
+            nameKhmer: p.nameKhmer || 'សាស្ត្រាចារ្យ',
+            nameLatin: p.nameLatin || '',
+            gender: p.gender || 'male',
+            phone: p.phone || '',
+            email: p.email || undefined,
+            subjects: p.subjects || 'ភាសាចិន',
+            shift: p.shift || 'morning',
+            status: p.status || 'active',
+            degree: p.degree || undefined,
+            notes: p.notes || undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          teacherMap.set(newId, newTeacher);
+          processedBatch.push(newTeacher);
+        }
+      });
+
+      await instituteService.saveTeachersBulk(processedBatch);
+      showToast(`បានបញ្ចូលសាស្ត្រាចារ្យថ្មី ${insertedCount} នាក់ និងធ្វើបច្ចុប្បន្នភាព ${updatedCount} នាក់ដោយជោគជ័យ!`, 'success');
     } catch (err) {
       console.error(err);
       showToast('ទម្រង់ឯកសារ Excel មិនត្រឹមត្រូវ', 'error');
@@ -410,21 +545,37 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm ${
-                        t.gender === 'female'
-                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                      }`}
-                    >
-                      {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
-                    </div>
+                    {t.photoUrl ? (
+                      <img
+                        src={t.photoUrl}
+                        alt={t.nameKhmer}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-xs shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 ${
+                          t.gender === 'female'
+                            ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
+                        }`}
+                      >
+                        {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{t.nameKhmer}</h3>
                       <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin || '-'}</p>
-                      <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
-                        {t.teacherCode}
-                      </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
+                          {t.teacherCode}
+                        </span>
+                        {t.degree && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium truncate max-w-[120px]">
+                            {t.degree}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -434,6 +585,8 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                         ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
                         : t.status === 'on_leave'
                         ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                        : t.status === 'retired'
+                        ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300'
                         : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                     }`}
                   >
@@ -470,6 +623,25 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       <span className="text-zinc-600 dark:text-zinc-400 truncate font-medium">{t.email}</span>
                     </div>
                   )}
+
+                  {/* CV document badge if uploaded */}
+                  {t.cvName && (
+                    <div className="flex items-center justify-between pt-1 text-[11px] bg-emerald-50/60 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-xl border border-emerald-200/50 dark:border-emerald-800/40">
+                      <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium truncate">
+                        <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="truncate">{t.cvName}</span>
+                      </div>
+                      {t.cvUrl && (
+                        <a
+                          href={t.cvUrl}
+                          download={t.cvName}
+                          className="text-emerald-700 dark:text-emerald-300 font-bold hover:underline shrink-0 text-[10px]"
+                        >
+                          ទាញយក CV
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -498,8 +670,8 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
@@ -519,7 +691,128 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-3 text-xs">
+            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
+              {/* Photo Upload & Preview */}
+              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-13 h-13 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 shadow-xs">
+                    {formPhotoUrl ? (
+                      <img
+                        src={formPhotoUrl}
+                        alt="Teacher"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <Camera className="w-5 h-5 text-zinc-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>រូបថតសាស្ត្រាចារ្យ (Photo)</span>
+                    </h4>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">JPG, PNG, WebP (អតិបរមា 3MB)</p>
+                  </div>
+                </div>
+
+                {!isReadOnly && (
+                  <div className="flex items-center gap-1.5">
+                    <label className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer shadow-xs">
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{formPhotoUrl ? 'ប្តូររូប' : 'ជ្រើសរើសរូប'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {formPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormPhotoUrl(undefined)}
+                        className="px-2 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800/60 cursor-pointer"
+                      >
+                        លុប
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Buttons Selector */}
+              <div>
+                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1.5">
+                  ស្ថានភាពបង្រៀន (Status) *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('active')}
+                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'active'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                    <span>កំពុងបង្រៀន</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('on_leave')}
+                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'on_leave'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    <span>សុំច្បាប់</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('resigned')}
+                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'resigned'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
+                    <span>ឈប់បង្រៀន</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('retired')}
+                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'retired'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
+                    <span>ចូលនិវត្តន៍</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អត្តលេខគ្រូ *</label>
                 <input
@@ -601,17 +894,15 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ស្ថានភាព</label>
-                  <select
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតសញ្ញាបត្រ (Degree)</label>
+                  <input
+                    type="text"
                     disabled={isReadOnly}
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as TeacherStatus)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="active">កំពុងបង្រៀន (Active)</option>
-                    <option value="on_leave">សុំច្បាប់សម្រាក (On Leave)</option>
-                    <option value="resigned">ឈប់បង្រៀន (Resigned)</option>
-                  </select>
+                    value={formDegree}
+                    onChange={(e) => setFormDegree(e.target.value)}
+                    placeholder="ឧ. បរិញ្ញាបត្រជាន់ខ្ពស់ / បណ្ឌិត"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
                 </div>
               </div>
 
@@ -636,6 +927,76 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   onChange={(e) => setFormSubjects(e.target.value)}
                   placeholder="គរុកោសល្យទូទៅ, វេយ្យាករណ៍ភាសាចិន..."
                   className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                />
+              </div>
+
+              {/* CV Attachment Upload Bar */}
+              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200 text-xs flex items-center gap-1.5">
+                    <Paperclip className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>ឯកសារប្រវត្តិរូបសង្ខេប (CV / Resume)</span>
+                  </span>
+                  {!isReadOnly && (
+                    <label className="px-2.5 py-1 rounded-xl bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 text-zinc-800 dark:text-zinc-200 font-bold text-[10.5px] inline-flex items-center gap-1 cursor-pointer">
+                      <Upload className="w-3 h-3" />
+                      <span>{formCvName ? 'ប្តូរ CV' : 'ជ្រើសរើសឯកសារ CV'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.txt"
+                        onChange={handleCvUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {formCvName ? (
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/40">
+                    <div className="flex items-center gap-1.5 text-emerald-900 dark:text-emerald-300 font-medium truncate text-[11px]">
+                      <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate">{formCvName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {formCvUrl && (
+                        <a
+                          href={formCvUrl}
+                          download={formCvName}
+                          className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700"
+                        >
+                          ទាញយក
+                        </a>
+                      )}
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormCvName(undefined);
+                            setFormCvUrl(undefined);
+                          }}
+                          className="text-rose-600 dark:text-rose-400 font-bold text-[10px] hover:underline cursor-pointer"
+                        >
+                          ដកចេញ
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                    គាំទ្រឯកសារ PDF, DOC, DOCX (អតិបរមា 8MB)
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កំណត់សម្គាល់បន្ថែម (Notes)</label>
+                <textarea
+                  rows={2}
+                  disabled={isReadOnly}
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                  placeholder="កំណត់សម្គាល់បន្ថែមអំពីសាស្ត្រាចារ្យ..."
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
