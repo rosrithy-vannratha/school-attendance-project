@@ -9,11 +9,21 @@ import {
   Search,
   BookOpen,
   Calendar,
-  Users
+  Users,
+  FileSpreadsheet,
+  Download,
+  Upload,
+  BarChart3,
+  Layers
 } from 'lucide-react';
 import { Teacher, TeacherAttendance, TeacherAttendanceStatus, ShiftType } from '../types';
 import { instituteService } from '../service/instituteService';
-import { getShiftLabel } from '../utils/exportUtils';
+import {
+  getShiftLabel,
+  exportTeacherMonthlyAttendanceToExcel,
+  downloadTeacherMonthlyTemplate,
+  parseTeacherMonthlyAttendanceExcel
+} from '../utils/exportUtils';
 
 interface TeacherAttendanceViewProps {
   teachers: Teacher[];
@@ -28,12 +38,19 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
   showToast,
   isReadOnly = false
 }) => {
+  const [activeTab, setActiveTab] = useState<'daily' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
   const [selectedShift, setSelectedShift] = useState<string>('morning');
   const [search, setSearch] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Monthly stats state
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
 
   // Draft state: teacherId -> { status, note, subject }
   const [draft, setDraft] = useState<
@@ -146,6 +163,80 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
     }
   };
 
+  const handleMonthlyExport = () => {
+    try {
+      const yearMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+      exportTeacherMonthlyAttendanceToExcel(teachers, attendance, yearMonth);
+      showToast(`បានទាញយករបាយការណ៍វត្តមានប្រចាំខែ ${selectedMonth}/${selectedYear} ជោគជ័យ!`, 'success');
+    } catch (e) {
+      showToast('បរាជ័យក្នុងការ Export ឯកសារ', 'error');
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    try {
+      const yearMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+      downloadTeacherMonthlyTemplate(teachers, yearMonth);
+      showToast(`បានទាញយកទម្រង់គំរូវត្តមានខែ ${selectedMonth}/${selectedYear} ជោគជ័យ!`, 'success');
+    } catch (e) {
+      showToast('បរាជ័យក្នុងការទាញយកគំរូ', 'error');
+    }
+  };
+
+  const handleMonthlyImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const yearMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+      const parsedRecords = await parseTeacherMonthlyAttendanceExcel(file, teachers, yearMonth);
+      if (parsedRecords.length === 0) {
+        showToast('មិនមានទិន្នន័យត្រឹមត្រូវក្នុងឯកសារ Excel ទេ', 'error');
+        return;
+      }
+
+      await instituteService.saveTeacherAttendanceBatch(parsedRecords);
+      showToast(`បានបញ្ចូលទិន្នន័យវត្តមានចំនួន ${parsedRecords.length} កំណត់ត្រាដោយជោគជ័យ!`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('ទម្រង់ឯកសារ Excel មិនត្រឹមត្រូវ', 'error');
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
+  };
+
+  // Monthly summary calculations
+  const monthlySummary = useMemo(() => {
+    const monthStr = String(selectedMonth).padStart(2, '0');
+    const prefix = `${selectedYear}-${monthStr}`;
+
+    const monthRecords = attendance.filter((a) => a.date.startsWith(prefix));
+
+    return activeTeachers.map((t) => {
+      const teacherRecords = monthRecords.filter((a) => a.teacherId === t.id);
+      const present = teacherRecords.filter((a) => a.status === 'present').length;
+      const permission = teacherRecords.filter((a) => a.status === 'permission').length;
+      const absent = teacherRecords.filter((a) => a.status === 'absent').length;
+      const substituted = teacherRecords.filter((a) => a.status === 'substituted').length;
+      const total = teacherRecords.length;
+
+      return {
+        teacher: t,
+        present,
+        permission,
+        absent,
+        substituted,
+        total
+      };
+    });
+  }, [activeTeachers, attendance, selectedMonth, selectedYear]);
+
   const filteredTeachers = activeTeachers.filter((t) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -153,6 +244,16 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
       (t.nameKhmer || '').toLowerCase().includes(q) ||
       (t.nameLatin || '').toLowerCase().includes(q) ||
       (t.teacherCode || '').toLowerCase().includes(q)
+    );
+  });
+
+  const filteredMonthlySummary = monthlySummary.filter((item) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      (item.teacher.nameKhmer || '').toLowerCase().includes(q) ||
+      (item.teacher.nameLatin || '').toLowerCase().includes(q) ||
+      (item.teacher.teacherCode || '').toLowerCase().includes(q)
     );
   });
 
@@ -170,213 +271,403 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
             </h2>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 font-medium">
-            កត់ត្រាវត្តមាន និងម៉ោងបង្រៀនរបស់គ្រូប្រចាំវេនសិក្សា
+            គ្រប់គ្រងវត្តមានប្រចាំថ្ងៃ និងរបាយការណ៍វត្តមានប្រចាំខែ Export/Import Excel
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {!isReadOnly && (
-            <>
-              <button
-                onClick={handleMarkAllPresent}
-                className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>វត្តមានទាំងអស់ (All Present)</span>
-              </button>
-
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isSaving ? 'កំពុងរក្សាទុក...' : 'រក្សាទុកវត្តមានគ្រូ'}</span>
-              </button>
-            </>
-          )}
-          {isReadOnly && (
-            <span className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-bold text-xs">
-              របៀបមើលព័ត៌មាន (Read-Only Mode)
-            </span>
-          )}
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800/80 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+          <button
+            onClick={() => setActiveTab('daily')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === 'daily'
+                ? 'bg-white dark:bg-[#182620] text-emerald-700 dark:text-emerald-400 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+            }`}
+          >
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>កត់ត្រាប្រចាំថ្ងៃ</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('monthly')}
+            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === 'monthly'
+                ? 'bg-white dark:bg-[#182620] text-emerald-700 dark:text-emerald-400 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>របាយការណ៍/វត្តមានប្រចាំខែ</span>
+          </button>
         </div>
       </div>
 
-      {/* Date & Shift Selectors */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-              កាលបរិច្ឆេទ (Date)
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono"
-            />
+      {activeTab === 'daily' ? (
+        <>
+          {/* Daily Controls */}
+          <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                  កាលបរិច្ឆេទ (Date)
+                </label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                  វេនបង្រៀន (Teaching Shift)
+                </label>
+                <select
+                  value={selectedShift}
+                  onChange={(e) => setSelectedShift(e.target.value)}
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                >
+                  <option value="morning">វេនព្រឹក (Morning)</option>
+                  <option value="afternoon">វេនរសៀល (Afternoon)</option>
+                  <option value="evening">វេនយប់ (Evening)</option>
+                  <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                  ស្វែងរកសាស្ត្រាចារ្យ
+                </label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="ឈ្មោះ ឬអត្តលេខ..."
+                    className="w-full pl-8 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                សាស្ត្រាចារ្យសរុប: <b className="text-zinc-900 dark:text-zinc-100">{filteredTeachers.length}</b> នាក់
+              </span>
+
+              <div className="flex items-center gap-2">
+                {!isReadOnly && (
+                  <>
+                    <button
+                      onClick={handleMarkAllPresent}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>វត្តមានទាំងអស់</span>
+                    </button>
+
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-4 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{isSaving ? 'កំពុងរក្សាទុក...' : 'រក្សាទុកវត្តមាន'}</span>
+                    </button>
+                  </>
+                )}
+                {isReadOnly && (
+                  <span className="px-3 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-bold text-[11px]">
+                    របៀបមើលព័ត៌មាន (Read-Only)
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-              វេនបង្រៀន (Teaching Shift)
-            </label>
-            <select
-              value={selectedShift}
-              onChange={(e) => setSelectedShift(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
-            >
-              <option value="morning">វេនព្រឹក (Morning)</option>
-              <option value="afternoon">វេនរសៀល (Afternoon)</option>
-              <option value="evening">វេនយប់ (Evening)</option>
-              <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
-            </select>
-          </div>
+          {/* Daily Table */}
+          <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-100/90 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">ល.រ</th>
+                    <th className="py-3 px-4">អត្តលេខ</th>
+                    <th className="py-3 px-4">ឈ្មោះសាស្ត្រាចារ្យ</th>
+                    <th className="py-3 px-4">មុខវិជ្ជាទទួលបន្ទុក</th>
+                    <th className="py-3 px-4 text-center">ស្ថានភាពវត្តមាន</th>
+                    <th className="py-3 px-4">សម្គាល់ / គ្រូបង្រៀនជំនួស</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                  {filteredTeachers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
+                        <UserCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2" />
+                        <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមានទិន្នន័យសាស្ត្រាចារ្យទេ</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTeachers.map((t, index) => {
+                      const d = draft[t.id] || { status: 'present', note: '', subject: t.subjects };
+                      return (
+                        <tr key={t.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors">
+                          <td className="py-3 px-4 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                            {index + 1}
+                          </td>
+                          <td className="py-3 px-4 font-mono font-bold text-zinc-800 dark:text-zinc-200">
+                            {t.teacherCode}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</div>
+                            <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin}</div>
+                          </td>
+                          <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200">
+                            {t.subjects || '-'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => handleSetStatus(t.id, 'present')}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                                  isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                                } ${
+                                  d.status === 'present'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                                } ${isReadOnly && d.status !== 'present' ? 'opacity-40' : ''}`}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>វត្តមាន</span>
+                              </button>
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-              ស្វែងរកសាស្ត្រាចារ្យ
-            </label>
+                              <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => handleSetStatus(t.id, 'permission')}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                                  isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                                } ${
+                                  d.status === 'permission'
+                                    ? 'bg-amber-600 text-white shadow-xs'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                                } ${isReadOnly && d.status !== 'permission' ? 'opacity-40' : ''}`}
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>សុំច្បាប់</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => handleSetStatus(t.id, 'absent')}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                                  isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                                } ${
+                                  d.status === 'absent'
+                                    ? 'bg-rose-600 text-white shadow-xs'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                                } ${isReadOnly && d.status !== 'absent' ? 'opacity-40' : ''}`}
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>អវត្តមាន</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => handleSetStatus(t.id, 'substituted')}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
+                                  isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                                } ${
+                                  d.status === 'substituted'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                                } ${isReadOnly && d.status !== 'substituted' ? 'opacity-40' : ''}`}
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span>ជំនួស</span>
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <input
+                              type="text"
+                              disabled={isReadOnly}
+                              value={d.note}
+                              onChange={(e) => handleSetNote(t.id, e.target.value)}
+                              placeholder={isReadOnly ? '-' : 'សម្គាល់ / គ្រូជំនួស...'}
+                              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Monthly Controls Bar */}
+          <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                    ខែ (Month)
+                  </label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        ខែ {i + 1} (Month {i + 1})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                    ឆ្នាំ (Year)
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>ទាញយកគំរូ Excel (Template)</span>
+                </button>
+
+                <button
+                  onClick={handleMonthlyExport}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Export របាយការណ៍ប្រចាំខែ</span>
+                </button>
+
+                {!isReadOnly && (
+                  <label
+                    className={`px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                      isImporting ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isImporting ? 'កំពុង Import...' : 'Import វត្តមានពី Excel'}</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleMonthlyImport}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Search */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ឈ្មោះសាស្ត្រាចារ្យ..."
+                placeholder="ស្វែងរកតាមឈ្មោះសាស្ត្រាចារ្យ ឬអត្តលេខ..."
                 className="w-full pl-8 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden"
               />
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Teachers Attendance Table */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-100/90 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3 px-4 w-12 text-center">ល.រ</th>
-                <th className="py-3 px-4">អត្តលេខ</th>
-                <th className="py-3 px-4">ឈ្មោះសាស្ត្រាចារ្យ</th>
-                <th className="py-3 px-4">មុខវិជ្ជាទទួលបន្ទុក</th>
-                <th className="py-3 px-4 text-center">ស្ថានភាពវត្តមាន</th>
-                <th className="py-3 px-4">សម្គាល់ / គ្រូបង្រៀនជំនួស</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
-              {filteredTeachers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
-                    <UserCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2" />
-                    <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមានទិន្នន័យសាស្ត្រាចារ្យទេ</p>
-                  </td>
-                </tr>
-              ) : (
-                filteredTeachers.map((t, index) => {
-                  const d = draft[t.id] || { status: 'present', note: '', subject: t.subjects };
-                  return (
-                    <tr key={t.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors">
-                      <td className="py-3 px-4 text-center font-bold text-zinc-500 dark:text-zinc-400">
-                        {index + 1}
-                      </td>
-                      <td className="py-3 px-4 font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                        {t.teacherCode}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</div>
-                        <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin}</div>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200">
-                        {t.subjects || '-'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => handleSetStatus(t.id, 'present')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
-                              isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              d.status === 'present'
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                            } ${isReadOnly && d.status !== 'present' ? 'opacity-40' : ''}`}
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>វត្តមាន</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => handleSetStatus(t.id, 'permission')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
-                              isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              d.status === 'permission'
-                                ? 'bg-amber-600 text-white shadow-xs'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                            } ${isReadOnly && d.status !== 'permission' ? 'opacity-40' : ''}`}
-                          >
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>សុំច្បាប់</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => handleSetStatus(t.id, 'absent')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
-                              isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              d.status === 'absent'
-                                ? 'bg-rose-600 text-white shadow-xs'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                            } ${isReadOnly && d.status !== 'absent' ? 'opacity-40' : ''}`}
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>អវត្តមាន</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => handleSetStatus(t.id, 'substituted')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all ${
-                              isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                            } ${
-                              d.status === 'substituted'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                            } ${isReadOnly && d.status !== 'substituted' ? 'opacity-40' : ''}`}
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                            <span>ជំនួស</span>
-                          </button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <input
-                          type="text"
-                          disabled={isReadOnly}
-                          value={d.note}
-                          onChange={(e) => handleSetNote(t.id, e.target.value)}
-                          placeholder={isReadOnly ? '-' : 'សម្គាល់ / គ្រូជំនួស...'}
-                          className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
-                        />
+          {/* Monthly Table Summary */}
+          <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-100/90 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4 w-12 text-center">ល.រ</th>
+                    <th className="py-3 px-4">អត្តលេខ</th>
+                    <th className="py-3 px-4">ឈ្មោះសាស្ត្រាចារ្យ</th>
+                    <th className="py-3 px-4">មុខវិជ្ជា</th>
+                    <th className="py-3 px-4 text-center text-emerald-700 dark:text-emerald-400">វត្តមាន (P)</th>
+                    <th className="py-3 px-4 text-center text-amber-700 dark:text-amber-400">សុំច្បាប់ (L)</th>
+                    <th className="py-3 px-4 text-center text-rose-700 dark:text-rose-400">អវត្តមាន (A)</th>
+                    <th className="py-3 px-4 text-center text-blue-700 dark:text-blue-400">ជំនួស (S)</th>
+                    <th className="py-3 px-4 text-center">សរុបកត់ត្រា</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+                  {filteredMonthlySummary.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
+                        <UserCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2" />
+                        <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមានទិន្នន័យសាស្ត្រាចារ្យទេ</p>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  ) : (
+                    filteredMonthlySummary.map((item, index) => (
+                      <tr key={item.teacher.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors">
+                        <td className="py-3 px-4 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                          {index + 1}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-bold text-zinc-800 dark:text-zinc-200">
+                          {item.teacher.teacherCode}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-zinc-900 dark:text-zinc-100">{item.teacher.nameKhmer}</div>
+                          <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{item.teacher.nameLatin}</div>
+                        </td>
+                        <td className="py-3 px-4 font-medium text-zinc-800 dark:text-zinc-200">
+                          {item.teacher.subjects || '-'}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-emerald-700 dark:text-emerald-400">
+                          {item.present}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-amber-700 dark:text-amber-400">
+                          {item.permission}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-rose-700 dark:text-rose-400">
+                          {item.absent}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-blue-700 dark:text-blue-400">
+                          {item.substituted}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-zinc-900 dark:text-zinc-100">
+                          {item.total} ថ្ងៃ
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
