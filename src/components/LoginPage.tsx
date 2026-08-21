@@ -72,16 +72,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   return (
     <div className="min-h-screen bg-[#f5f8f6] dark:bg-[#0a110e] text-zinc-900 dark:text-zinc-100 flex flex-col justify-between selection:bg-emerald-600 selection:text-white transition-colors">
       {/* Top Header Bar */}
-      <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-emerald-900/10 dark:border-emerald-800/30 bg-white/70 dark:bg-[#0f1b15]/70 backdrop-blur-md sticky top-0 z-20">
+      <header className="px-4 sm:px-8 py-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-300 bg-white dark:bg-zinc-100 backdrop-blur-md sticky top-0 z-20 text-black">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-800 text-emerald-200 flex items-center justify-center font-black shadow-md border border-emerald-700/50">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-black shadow-md border border-emerald-700/50">
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-sm sm:text-base leading-tight text-emerald-950 dark:text-emerald-300">
+            <h1 className="font-extrabold text-sm sm:text-base leading-tight text-black">
               វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
             </h1>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+            <p className="text-[11px] text-black font-semibold">
               International Chinese Education & Teachers Institute
             </p>
           </div>
@@ -93,9 +93,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             type="button"
             onClick={onToggleDarkMode}
             title={isDarkMode ? 'ប្តូរទៅ Light Mode' : 'ប្តូរទៅ Dark Mode'}
-            className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl border border-zinc-300 dark:border-zinc-400 bg-white text-black hover:bg-zinc-100 transition-colors cursor-pointer shadow-2xs"
           >
-            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-600" /> : <Moon className="w-4 h-4 text-black" />}
           </button>
         </div>
       </header>
@@ -125,8 +125,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">គ្រប់គ្រងបញ្ជីនិស្សិត និងសាស្ត្រាចារ្យ</h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Import / Export Excel ពេញលេញ</p>
+                  <h4 className="text-xs font-bold text-zinc-950 dark:text-zinc-100">គ្រប់គ្រងបញ្ជីនិស្សិត និងសាស្ត្រាចារ្យ</h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">Import / Export Excel ពេញលេញ</p>
                 </div>
               </div>
 
@@ -135,8 +135,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <CalendarCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">កត់ត្រាវត្តមានឌីជីថលប្រចាំថ្ងៃ</h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">តាមដានអវត្តមាន និងស្ថិតិស្វ័យប្រវត្តិ</p>
+                  <h4 className="text-xs font-bold text-zinc-950 dark:text-zinc-100">កត់ត្រាវត្តមានឌីជីថលប្រចាំថ្ងៃ</h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">តាមដានអវត្តមាន និងស្ថិតិស្វ័យប្រវត្តិ</p>
                 </div>
               </div>
 
@@ -145,8 +145,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <BookOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">គ្រប់គ្រងថ្នាក់ វេន និងឯកទេស</h4>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">បែងចែកតាមកាលវិភាគច្បាស់លាស់</p>
+                  <h4 className="text-xs font-bold text-zinc-950 dark:text-zinc-100">គ្រប់គ្រងថ្នាក់ វេន និងឯកទេស</h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">បែងចែកតាមកាលវិភាគច្បាស់លាស់</p>
                 </div>
               </div>
             </div>
@@ -412,12 +412,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900/10 dark:border-emerald-800/30 py-4 bg-white/70 dark:bg-[#0f1b15]/70 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="font-semibold text-emerald-900 dark:text-emerald-300">
+      <footer className="border-t border-zinc-200 dark:border-zinc-300 py-4 bg-white dark:bg-zinc-100 text-center text-xs text-black">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-black">
+          <p className="font-extrabold text-black">
             វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់ &bull; International Chinese Education and Teachers Institute
           </p>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          <p className="text-[11px] text-black font-semibold">
             ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦
           </p>
         </div>
