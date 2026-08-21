@@ -180,7 +180,7 @@ export default function App() {
     );
   }
 
-  const isReadOnly = false;
+  const isReadOnly = user?.role === 'Guest' || user?.isAnonymous || false;
 
   return (
     <div className="min-h-screen bg-[#f7faf8] dark:bg-[#0c1410] text-zinc-900 dark:text-zinc-100 flex flex-col selection:bg-emerald-600 selection:text-white font-sans antialiased transition-colors">
