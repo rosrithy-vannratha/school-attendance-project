@@ -9,14 +9,13 @@ import {
   Sun,
   Moon,
   AlertCircle,
-  CheckCircle2,
-  ShieldCheck,
 } from 'lucide-react';
 import { authService } from '../service/instituteService';
 import { AppUser } from '../types';
 
 interface LoginPageProps {
   onSuccess: (user: AppUser) => void;
+  onContinueAsGuest?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
@@ -24,12 +23,13 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onSuccess,
+  onContinueAsGuest,
   showToast,
   isDarkMode,
   onToggleDarkMode,
 }) => {
-  const [username, setUsername] = useState('Admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,14 +53,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }, 300);
   };
 
-  const handleFillAdmin = () => {
-    setUsername('Admin');
-    setPassword('admin123');
-    setErrorMessage('');
+  const handleGuestLogin = () => {
+    if (onContinueAsGuest) {
+      onContinueAsGuest();
+      return;
+    }
+    const guestUser: AppUser = {
+      uid: 'guest_' + Date.now(),
+      email: 'guest@ici.edu.kh',
+      displayName: 'Guest User (ភ្ញៀវ)',
+      photoURL: null,
+      role: 'Guest',
+      isAnonymous: true,
+    };
+    showToast('បានចូលមើលជា Guest User (Read-Only Mode)', 'info');
+    onSuccess(guestUser);
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f8f6] dark:bg-[#0a110e] text-zinc-900 dark:text-zinc-100 flex flex-col justify-between selection:bg-emerald-600 selection:text-white transition-colors">
+    <div className="min-h-screen bg-[#f5f8f6] dark:bg-[#0a110e] text-black flex flex-col justify-between selection:bg-emerald-600 selection:text-white transition-colors">
       {/* Top Header Bar */}
       <header className="px-4 sm:px-8 py-3.5 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-300 bg-white dark:bg-zinc-100 backdrop-blur-md sticky top-0 z-20 text-black">
         <div className="flex items-center gap-3">
@@ -93,7 +104,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-md">
           {/* Card Box */}
-          <div className="bg-white dark:bg-[#121e18] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/40 shadow-xl overflow-hidden">
+          <div className="bg-white dark:bg-zinc-50 rounded-3xl border border-zinc-200 dark:border-zinc-300 shadow-xl overflow-hidden text-black">
             {/* Card Header */}
             <div className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-6 text-center text-white relative">
               <div className="w-14 h-14 rounded-2xl bg-white/10 text-emerald-300 border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
@@ -108,89 +119,74 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </div>
 
             {/* Form Content */}
-            <div className="p-6 sm:p-8 space-y-5">
+            <div className="p-6 sm:p-8 space-y-5 text-black">
               {/* Error Message if any */}
               {errorMessage && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-850 dark:text-rose-200 font-bold flex items-start gap-2 animate-shake">
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-300 text-xs text-black font-bold flex items-start gap-2 animate-shake">
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <span>{errorMessage}</span>
+                  <span className="text-black">{errorMessage}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                 {/* Username Input */}
                 <div>
-                  <label className="block text-xs font-extrabold text-zinc-900 dark:text-zinc-100 mb-1.5">
+                  <label className="block text-xs font-black text-black mb-1.5">
                     ឈ្មោះអ្នកប្រើប្រាស់ (Username) <span className="text-rose-600">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                      <User className="w-4 h-4" />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-black">
+                      <User className="w-4 h-4 text-black" />
                     </div>
                     <input
                       id="login-username-input"
                       type="text"
                       required
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       value={username}
                       onChange={(e) => {
                         setUsername(e.target.value);
                         setErrorMessage('');
                       }}
                       placeholder="Enter username"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 bg-white text-black placeholder:text-zinc-500 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all shadow-2xs"
                     />
                   </div>
                 </div>
 
                 {/* Password Input */}
                 <div>
-                  <label className="block text-xs font-extrabold text-zinc-900 dark:text-zinc-100 mb-1.5">
+                  <label className="block text-xs font-black text-black mb-1.5">
                     ពាក្យសម្ងាត់ (Password) <span className="text-rose-600">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                      <Lock className="w-4 h-4" />
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-black">
+                      <Lock className="w-4 h-4 text-black" />
                     </div>
                     <input
                       id="login-password-input"
                       type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
                         setErrorMessage('');
                       }}
                       placeholder="input password"
-                      className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-zinc-300 bg-white text-black placeholder:text-zinc-500 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all shadow-2xs"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-black hover:text-emerald-700 cursor-pointer"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="w-4 h-4 text-black" /> : <Eye className="w-4 h-4 text-black" />}
                     </button>
                   </div>
-                </div>
-
-                {/* Credential Quick Pill */}
-                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 p-3 rounded-xl flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
-                    <div className="text-[11.5px] leading-tight">
-                      <span className="font-extrabold text-emerald-950 dark:text-emerald-200">គណនី Admin: </span>
-                      <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded text-[11px]">
-                        Admin / admin123
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleFillAdmin}
-                    className="text-[11px] font-black text-emerald-800 dark:text-emerald-300 hover:underline cursor-pointer shrink-0"
-                  >
-                    បំពេញស្វ័យប្រវត្ត
-                  </button>
                 </div>
 
                 {/* Submit Button */}
@@ -198,26 +194,46 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   id="btn-login-submit"
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-750 hover:bg-emerald-850 text-white font-extrabold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-2"
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-black text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 mt-3"
                 >
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>កំពុងផ្ទៀងផ្ទាត់...</span>
+                      <span className="text-white">កំពុងផ្ទៀងផ្ទាត់...</span>
                     </>
                   ) : (
                     <>
-                      <LogIn className="w-4 h-4" />
-                      <span>ចូលគណនី (Sign In)</span>
+                      <LogIn className="w-4 h-4 text-white" />
+                      <span className="text-white">Login</span>
                     </>
                   )}
+                </button>
+
+                {/* Divider */}
+                <div className="relative flex items-center justify-center py-2">
+                  <div className="border-t border-zinc-300 w-full" />
+                  <span className="bg-white dark:bg-zinc-50 px-3 text-[11px] font-extrabold text-black uppercase tracking-wider whitespace-nowrap">
+                    ឬ (OR)
+                  </span>
+                  <div className="border-t border-zinc-300 w-full" />
+                </div>
+
+                {/* As a Guest User Button */}
+                <button
+                  id="btn-login-guest"
+                  type="button"
+                  onClick={handleGuestLogin}
+                  className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-200 dark:hover:bg-zinc-300 text-black border-2 border-zinc-300 dark:border-zinc-400 font-black text-sm shadow-2xs hover:shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-black" />
+                  <span className="text-black">As a Guest User</span>
                 </button>
               </form>
 
               {/* System Features note */}
-              <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-center">
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-                  ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងកត់ត្រាវត្តមានឌីជីថល
+              <div className="pt-3 border-t border-zinc-200 text-center">
+                <p className="text-[11px] text-black font-bold">
+                  ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងកត់ត្រាវត្តមានឌីជីថល រៀបចំដោយ លោក រស់រិទ្ធី វ៉ាន់រដ្ឋា ក្រុមការងារវិទ្យាស្ថាន
                 </p>
               </div>
             </div>
@@ -232,7 +248,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់ &bull; International Chinese Education and Teachers Institute
           </p>
           <p className="text-[11px] text-black font-semibold">
-            ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល @rosrithyvannratha &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦
+            ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦ @rosrithyvannratha
           </p>
         </div>
       </footer>
