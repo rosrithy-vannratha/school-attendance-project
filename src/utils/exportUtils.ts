@@ -1,5 +1,17 @@
 import * as XLSX from 'xlsx';
-import { Student, Teacher, Classroom, Major, AttendanceRecord, ShiftType, AcademicYearType, StudentStatus, TeacherStatus } from '../types';
+import {
+  Student,
+  Teacher,
+  Classroom,
+  Major,
+  AttendanceRecord,
+  ShiftType,
+  AcademicYearType,
+  StudentStatus,
+  TeacherStatus,
+  TeacherAttendance,
+  TeacherAttendanceStatus
+} from '../types';
 
 // Helper: Normalize string for matching (strip spaces, punctuation, lowercase)
 function normalizeKey(str: string): string {
@@ -597,8 +609,191 @@ export function getTeacherStatusLabel(status: string): string {
     case 'active': return 'កំពុងបង្រៀន (Active)';
     case 'on_leave': return 'សុំច្បាប់សម្រាក (On Leave)';
     case 'resigned': return 'ឈប់បង្រៀន (Resigned)';
+    case 'retired': return 'ចូលនិវត្តន៍ (Retired)';
     default: return status || 'កំពុងបង្រៀន';
   }
+}
+
+export function exportTeacherMonthlyAttendanceToExcel(
+  teachers: Teacher[],
+  attendance: TeacherAttendance[],
+  yearMonth: string // YYYY-MM
+): void {
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // Filter records for this month
+  const monthlyRecords = attendance.filter((a) => a.date.startsWith(yearMonth));
+
+  const formattedData = teachers.map((t, index) => {
+    const row: Record<string, any> = {
+      'ល.រ (No)': index + 1,
+      'អត្តលេខ (ID)': t.teacherCode,
+      'ឈ្មោះខ្មែរ (Name Khmer)': t.nameKhmer,
+      'អក្សរឡាតាំង (Name Latin)': t.nameLatin,
+      'ភេទ (Gender)': t.gender === 'female' ? 'ស្រី' : 'ប្រុស',
+      'មុខវិជ្ជា (Subject)': t.subjects || 'ភាសាចិន',
+      'វេន (Shift)': getShiftLabel(String(t.shift || 'morning')),
+    };
+
+    let present = 0;
+    let permission = 0;
+    let absent = 0;
+    let substituted = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${yearMonth}-${String(day).padStart(2, '0')}`;
+      const rec = monthlyRecords.find((r) => r.teacherId === t.id && r.date === dateKey);
+      if (rec) {
+        if (rec.status === 'present') {
+          row[`ថ្ងៃទី ${day}`] = 'P';
+          present++;
+        } else if (rec.status === 'permission') {
+          row[`ថ្ងៃទី ${day}`] = 'E';
+          permission++;
+        } else if (rec.status === 'absent') {
+          row[`ថ្ងៃទី ${day}`] = 'A';
+          absent++;
+        } else if (rec.status === 'substituted') {
+          row[`ថ្ងៃទី ${day}`] = 'S';
+          substituted++;
+        }
+      } else {
+        row[`ថ្ងៃទី ${day}`] = '-';
+      }
+    }
+
+    const totalMarked = present + permission + absent + substituted;
+    const rate = totalMarked > 0 ? Math.round(((present + permission) / totalMarked) * 100) : 100;
+
+    row['វត្តមាន (Present)'] = present;
+    row['សុំច្បាប់ (Permission)'] = permission;
+    row['អវត្តមាន (Absent)'] = absent;
+    row['បង្រៀនជំនួស (Substituted)'] = substituted;
+    row['អត្រាវត្តមាន (%)'] = `${rate}%`;
+
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, `Teacher_Att_${yearMonth}`);
+  XLSX.writeFile(workbook, `Teacher_Monthly_Attendance_${yearMonth}.xlsx`);
+}
+
+export function downloadTeacherMonthlyTemplate(teachers: Teacher[], yearMonth: string): void {
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const templateData = (teachers.length > 0 ? teachers : [
+    { id: '1', teacherCode: 'ICI-TCH-001', nameKhmer: 'សាស្ត្រាចារ្យ ឡុង សុខា', nameLatin: 'Long Sokha', gender: 'male', subjects: 'ភាសាចិន', shift: 'morning', status: 'active', createdAt: '' } as Teacher,
+    { id: '2', teacherCode: 'ICI-TCH-002', nameKhmer: 'សាស្ត្រាចារ្យ ចេង វ៉ាន់នី', nameLatin: 'Cheng Vanny', gender: 'female', subjects: 'គរុកោសល្យ', shift: 'evening', status: 'active', createdAt: '' } as Teacher,
+  ]).map((t, index) => {
+    const row: Record<string, any> = {
+      'អត្តលេខគ្រូ (ID)': t.teacherCode,
+      'ឈ្មោះគ្រូ (Name)': t.nameKhmer,
+      'មុខវិជ្ជា (Subject)': t.subjects || 'ភាសាចិន',
+      'វេន (Shift)': t.shift || 'morning',
+    };
+    for (let day = 1; day <= daysInMonth; day++) {
+      row[`ថ្ងៃទី ${day}`] = 'P'; // P: present, E: permission, A: absent, S: substituted
+    }
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(templateData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'TeacherAttendance');
+  XLSX.writeFile(workbook, `Teacher_Attendance_Template_${yearMonth}.xlsx`);
+}
+
+export function parseTeacherMonthlyAttendanceExcel(
+  file: File,
+  teachers: Teacher[],
+  yearMonth: string
+): Promise<TeacherAttendance[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rawJson: Record<string, any>[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        const [yearStr, monthStr] = yearMonth.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        const records: TeacherAttendance[] = [];
+
+        rawJson.forEach((row) => {
+          const teacherCode = String(
+            getRowValue(row, ['អត្តលេខគ្រូ (ID)', 'អត្តលេខ', 'ID', 'Teacher Code', 'Code']) || ''
+          ).trim();
+          const teacherName = String(
+            getRowValue(row, ['ឈ្មោះគ្រូ (Name)', 'ឈ្មោះ', 'Name', 'Teacher Name', 'ឈ្មោះសាស្ត្រាចារ្យ']) || ''
+          ).trim();
+          const subject = String(
+            getRowValue(row, ['មុខវិជ្ជា (Subject)', 'មុខវិជ្ជា', 'Subject']) || 'ភាសាចិន'
+          ).trim();
+          const shiftRaw = String(getRowValue(row, ['វេន (Shift)', 'វេន', 'Shift']) || 'morning').trim();
+
+          const matchedTeacher = teachers.find(
+            (t) =>
+              (teacherCode && t.teacherCode.toLowerCase() === teacherCode.toLowerCase()) ||
+              (teacherName && t.nameKhmer.toLowerCase().includes(teacherName.toLowerCase())) ||
+              (teacherName && t.nameLatin.toLowerCase().includes(teacherName.toLowerCase()))
+          );
+
+          if (!matchedTeacher && !teacherName) return;
+
+          const teacherId = matchedTeacher ? matchedTeacher.id : `tch_imp_${Date.now()}`;
+          const finalName = matchedTeacher ? matchedTeacher.nameKhmer : teacherName;
+          const finalShift = (matchedTeacher?.shift || shiftRaw || 'morning') as ShiftType;
+
+          for (let day = 1; day <= daysInMonth; day++) {
+            const val = String(
+              row[`ថ្ងៃទី ${day}`] || row[`Day ${day}`] || row[`D${day}`] || row[String(day)] || ''
+            ).trim().toUpperCase();
+
+            if (!val || val === '-') continue;
+
+            let status: TeacherAttendanceStatus = 'present';
+            if (val === 'E' || val.includes('ច្បាប់') || val.includes('PERM')) status = 'permission';
+            else if (val === 'A' || val.includes('អវត្ត') || val.includes('ABS')) status = 'absent';
+            else if (val === 'S' || val.includes('ជំនួស') || val.includes('SUB')) status = 'substituted';
+            else if (val === 'P' || val.includes('វត្ត') || val.includes('PRES')) status = 'present';
+
+            const dateKey = `${yearMonth}-${String(day).padStart(2, '0')}`;
+            records.push({
+              id: `t_att_${dateKey}_${finalShift}_${teacherId}`,
+              date: dateKey,
+              teacherId,
+              teacherName: finalName,
+              shift: finalShift,
+              subject: subject || matchedTeacher?.subjects || 'ភាសាចិន',
+              status,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        });
+
+        resolve(records);
+      } catch (err) {
+        console.error('Error parsing monthly teacher attendance:', err);
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 export function getShiftLabel(shift: string): string {
