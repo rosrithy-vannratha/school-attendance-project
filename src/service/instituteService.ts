@@ -381,6 +381,10 @@ export const authService = {
 export const instituteService = {
   // --- SEED DATABASE IF EMPTY ---
   async seedInitialDataIfEmpty(): Promise<void> {
+    const SEED_KEY = 'cpi_db_seeded_v3';
+    if (localStorage.getItem(SEED_KEY)) {
+      return; // Already seeded before; do not re-seed over user changes or deletes
+    }
     try {
       const snap = await getDocs(collection(db, 'majors'));
       if (snap.empty) {
@@ -392,6 +396,7 @@ export const instituteService = {
         await commitInChunks(db, 'attendance', INITIAL_ATTENDANCE);
         console.log('Seed completed successfully!');
       }
+      localStorage.setItem(SEED_KEY, 'true');
     } catch (e) {
       console.warn('Firestore seeding check (using local fallback if unauthenticated):', e);
     }
@@ -423,11 +428,8 @@ export const instituteService = {
           callback(list);
           updateSyncStatus('synced', 'Majors synced in real-time');
         } else {
-          const currentLocal = getLocal<Major>(LS_KEYS.MAJORS, []);
-          if (currentLocal && currentLocal.length > 0) {
-            commitInChunks(db, 'majors', currentLocal).catch(() => {});
-            callback(currentLocal);
-          }
+          setLocal(LS_KEYS.MAJORS, []);
+          callback([]);
           updateSyncStatus('synced');
         }
       },
@@ -510,11 +512,8 @@ export const instituteService = {
           callback(list);
           updateSyncStatus('synced', 'Classes synced in real-time');
         } else {
-          const currentLocal = getLocal<Classroom>(LS_KEYS.CLASSES, []);
-          if (currentLocal && currentLocal.length > 0) {
-            commitInChunks(db, 'classes', currentLocal).catch(() => {});
-            callback(currentLocal);
-          }
+          setLocal(LS_KEYS.CLASSES, []);
+          callback([]);
           updateSyncStatus('synced');
         }
       },
@@ -588,24 +587,22 @@ export const instituteService = {
               email: data.email || '',
               subjects: data.subjects || 'ភាសាចិន',
               shift: data.shift || 'morning',
+              degree: data.degree || '',
               status: data.status || 'active',
-              createdAt: data.createdAt || new Date().toISOString()
+              photoUrl: data.photoUrl || undefined,
+              cvName: data.cvName || undefined,
+              cvUrl: data.cvUrl || undefined,
+              notes: data.notes || undefined,
+              createdAt: data.createdAt || new Date().toISOString(),
+              updatedAt: data.updatedAt || undefined
             } as Teacher;
           });
           setLocal(LS_KEYS.TEACHERS, list);
           callback(list);
           updateSyncStatus('synced', 'Teachers synced in real-time');
         } else {
-          // If Firestore is empty, check if we have local teachers.
-          // If so, preserve local data and back-sync to Firestore!
-          const currentLocal = getLocal<Teacher>(LS_KEYS.TEACHERS, []);
-          if (currentLocal && currentLocal.length > 0) {
-            commitInChunks(db, 'teachers', currentLocal).catch(() => {});
-            callback(currentLocal);
-          } else {
-            setLocal(LS_KEYS.TEACHERS, []);
-            callback([]);
-          }
+          setLocal(LS_KEYS.TEACHERS, []);
+          callback([]);
           updateSyncStatus('synced');
         }
       },
@@ -642,7 +639,7 @@ export const instituteService = {
   },
 
   async saveTeachersBulk(teachers: Teacher[]): Promise<void> {
-    const local = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS);
+    const local = getLocal<Teacher>(LS_KEYS.TEACHERS, []);
     const map = new Map(local.map((t) => [t.id, t]));
     for (const t of teachers) map.set(t.id, t);
     const merged = Array.from(map.values());
@@ -651,7 +648,7 @@ export const instituteService = {
     updateSyncStatus('syncing', `Uploading ${teachers.length} teachers to cloud...`);
 
     try {
-      await commitInChunks(db, 'teachers', merged);
+      await commitInChunks(db, 'teachers', teachers);
       updateSyncStatus('synced', `${teachers.length} teachers synced to cloud`);
     } catch (e: any) {
       console.warn('Error saving bulk teachers:', e);
@@ -723,6 +720,7 @@ export const instituteService = {
               status: data.status || 'active',
               guardianPhone: data.guardianPhone || undefined,
               address: data.address || undefined,
+              notes: data.notes || undefined,
               photoUrl: data.photoUrl || undefined,
               createdAt: data.createdAt || new Date().toISOString(),
               updatedAt: data.updatedAt || new Date().toISOString()
@@ -732,16 +730,8 @@ export const instituteService = {
           callback(list);
           updateSyncStatus('synced', 'Students synced in real-time');
         } else {
-          // If Firestore is empty, check if we have local students.
-          // If so, preserve local data and back-sync to Firestore!
-          const currentLocal = getLocal<Student>(LS_KEYS.STUDENTS, []);
-          if (currentLocal && currentLocal.length > 0) {
-            commitInChunks(db, 'students', currentLocal).catch(() => {});
-            callback(currentLocal);
-          } else {
-            setLocal(LS_KEYS.STUDENTS, []);
-            callback([]);
-          }
+          setLocal(LS_KEYS.STUDENTS, []);
+          callback([]);
           updateSyncStatus('synced');
         }
       },
@@ -778,7 +768,7 @@ export const instituteService = {
   },
 
   async saveStudentsBulk(students: Student[]): Promise<void> {
-    const local = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS);
+    const local = getLocal<Student>(LS_KEYS.STUDENTS, []);
     const map = new Map(local.map((s) => [s.id, s]));
     for (const s of students) map.set(s.id, s);
     const merged = Array.from(map.values());
@@ -787,7 +777,7 @@ export const instituteService = {
     updateSyncStatus('syncing', `Uploading ${students.length} students to cloud...`);
 
     try {
-      await commitInChunks(db, 'students', merged);
+      await commitInChunks(db, 'students', students);
       updateSyncStatus('synced', `${students.length} students synced in cloud`);
     } catch (e: any) {
       console.warn('Error saving bulk students:', e);
@@ -856,11 +846,8 @@ export const instituteService = {
           callback(list);
           updateSyncStatus('synced', 'Attendance synced in real-time');
         } else {
-          const currentLocal = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, []);
-          if (currentLocal && currentLocal.length > 0) {
-            commitInChunks(db, 'attendance', currentLocal).catch(() => {});
-            callback(currentLocal);
-          }
+          setLocal(LS_KEYS.ATTENDANCE, []);
+          callback([]);
           updateSyncStatus('synced');
         }
       },
