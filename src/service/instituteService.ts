@@ -187,6 +187,15 @@ export function mapFirebaseUser(user: FirebaseUser | null): AppUser | null {
   };
 }
 
+export const DEFAULT_ADMIN_USER: AppUser = {
+  uid: 'admin_master_ici',
+  email: 'admin@ici.edu.kh',
+  displayName: 'Admin (អ្នកគ្រប់គ្រង)',
+  photoURL: null,
+  role: 'Admin',
+  isAnonymous: false,
+};
+
 // Custom event dispatcher for local auth state changes
 function dispatchAuthChange(user: AppUser | null) {
   if (typeof window !== 'undefined') {
@@ -195,6 +204,16 @@ function dispatchAuthChange(user: AppUser | null) {
 }
 
 export const authService = {
+  getAdminUser(): AppUser {
+    return DEFAULT_ADMIN_USER;
+  },
+
+  signInAsAdmin(): AppUser {
+    localStorage.setItem(LS_KEYS.APP_USER, JSON.stringify(DEFAULT_ADMIN_USER));
+    dispatchAuthChange(DEFAULT_ADMIN_USER);
+    return DEFAULT_ADMIN_USER;
+  },
+
   async signInWithGoogle(): Promise<AppUser> {
     try {
       const provider = new GoogleAuthProvider();
@@ -323,10 +342,16 @@ export const authService = {
         const parsed = JSON.parse(rawLocal);
         if (parsed && parsed.uid) {
           callback(parsed);
+        } else {
+          callback(DEFAULT_ADMIN_USER);
         }
       } catch (e) {
         console.warn('Error parsing local user:', e);
+        callback(DEFAULT_ADMIN_USER);
       }
+    } else {
+      // Default to single Admin user directly
+      callback(DEFAULT_ADMIN_USER);
     }
 
     // 2. Listen to custom event for instantaneous local updates
@@ -348,10 +373,10 @@ export const authService = {
           try {
             callback(JSON.parse(local));
           } catch {
-            callback(null);
+            callback(DEFAULT_ADMIN_USER);
           }
         } else {
-          callback(null);
+          callback(DEFAULT_ADMIN_USER);
         }
       }
     });
