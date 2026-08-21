@@ -19,7 +19,11 @@ import {
   BookOpen,
   GraduationCap,
   Eye,
-  Lock
+  Lock,
+  Camera,
+  Image as ImageIcon,
+  AlertTriangle,
+  UserCheck
 } from 'lucide-react';
 import { Student, Classroom, Major, ShiftType, AcademicYearType, StudentStatus } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -80,6 +84,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [formStatus, setFormStatus] = useState<StudentStatus>('active');
   const [formGuardianPhone, setFormGuardianPhone] = useState('');
   const [formAddress, setFormAddress] = useState('');
+  const [formNotes, setFormNotes] = useState('');
+  const [formPhotoUrl, setFormPhotoUrl] = useState<string | undefined>(undefined);
 
   // Sync external prop if passed
   React.useEffect(() => {
@@ -105,6 +111,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormStatus('active');
     setFormGuardianPhone('');
     setFormAddress('');
+    setFormNotes('');
+    setFormPhotoUrl(undefined);
     setIsModalOpen(true);
   };
 
@@ -122,10 +130,36 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormClassId(stu.classId);
     setFormShift(stu.shift);
     setFormYear(stu.year);
-    setFormStatus(stu.status);
+    setFormStatus(stu.status || 'active');
     setFormGuardianPhone(stu.guardianPhone || '');
     setFormAddress(stu.address || '');
+    setFormNotes(stu.notes || '');
+    setFormPhotoUrl(stu.photoUrl || undefined);
     setIsModalOpen(true);
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('សូមជ្រើសរើសឯកសាររូបភាព (JPG, PNG, WebP)!', 'error');
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      showToast('ទំហំរូបភាពត្រូវតិចជាង 3MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setFormPhotoUrl(result);
+      showToast('បានផ្ទុកឡើងរូបថតជោគជ័យ!', 'success');
+    };
+    reader.readAsDataURL(file);
   };
 
   const closeModal = () => {
@@ -185,7 +219,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
     const studentData: Student = {
       id: editingStudent ? editingStudent.id : `stu_${Date.now()}`,
-      studentCode: formStudentCode || `CPI-${Date.now()}`,
+      studentCode: formStudentCode.trim() || (editingStudent ? editingStudent.studentCode : `CPI-${Date.now()}`),
       nameKhmer: formNameKhmer.trim(),
       nameLatin: formNameLatin.trim(),
       nameChinese: formNameChinese.trim() || undefined,
@@ -194,14 +228,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       phone: formPhone.trim(),
       email: formEmail.trim() || undefined,
       majorId: formMajorId,
-      majorName: selectedMaj?.nameKhmer || 'គរុកោសល្យភាសាចិន',
+      majorName: selectedMaj?.nameKhmer || (editingStudent ? editingStudent.majorName : 'គរុកោសល្យភាសាចិន'),
       classId: formClassId,
-      className: selectedCls?.name || 'ថ្នាក់ទូទៅ',
+      className: selectedCls?.name || (editingStudent ? editingStudent.className : 'ថ្នាក់ទូទៅ'),
       shift: formShift,
       year: formYear,
       status: formStatus,
       guardianPhone: formGuardianPhone.trim() || undefined,
       address: formAddress.trim() || undefined,
+      notes: formNotes.trim() || undefined,
+      photoUrl: formPhotoUrl || undefined,
       createdAt: editingStudent ? editingStudent.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -252,8 +288,19 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       const defaultMajor = majors[0];
       const defaultClass = classes[0];
 
-      const fullStudents: Student[] = parsed.map((p, index) => {
-        // Resolve Major from Excel row or fallback
+      let insertedCount = 0;
+      let updatedCount = 0;
+
+      // Build map of existing students to prevent duplicates
+      const studentMap = new Map<string, Student>();
+      students.forEach((s) => {
+        studentMap.set(s.id, s);
+      });
+
+      const processedBatch: Student[] = [];
+
+      parsed.forEach((p, index) => {
+        // Resolve Major
         let matchedMajor = defaultMajor;
         if (p.majorName) {
           const rawMajor = (p.majorName || '').toLowerCase().trim();
@@ -268,7 +315,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
           if (found) matchedMajor = found;
         }
 
-        // Resolve Classroom from Excel row or fallback
+        // Resolve Class
         let matchedClass = defaultClass;
         if (p.className) {
           const rawClass = (p.className || '').toLowerCase().trim();
@@ -282,32 +329,89 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
           if (found) matchedClass = found;
         }
 
-        return {
-          id: `stu_imp_${Date.now()}_${index}`,
-          studentCode: p.studentCode || `ICI-2025-${String(students.length + index + 1).padStart(3, '0')}`,
-          nameKhmer: p.nameKhmer || 'និស្សិត',
-          nameLatin: p.nameLatin || '',
-          nameChinese: p.nameChinese || undefined,
-          gender: p.gender || 'female',
-          dob: p.dob || '2004-01-01',
-          phone: p.phone || '',
-          email: p.email || undefined,
-          majorId: matchedMajor?.id || 'maj_pedagogy',
-          majorName: matchedMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
-          classId: matchedClass?.id || (classes[0]?.id || ''),
-          className: matchedClass?.name || 'ថ្នាក់ឆ្នាំទី១',
-          shift: p.shift || 'morning',
-          year: p.year || 'Year 1',
-          status: p.status || 'active',
-          guardianPhone: p.guardianPhone || undefined,
-          address: p.address || undefined,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        // Check if student already exists by Student Code or (Name + Phone)
+        const targetCode = (p.studentCode || '').trim().toLowerCase();
+        const targetNameKhmer = (p.nameKhmer || '').trim().toLowerCase();
+        const targetPhone = (p.phone || '').trim().replace(/\D/g, '');
+
+        let existingMatch: Student | undefined;
+
+        if (targetCode) {
+          existingMatch = Array.from(studentMap.values()).find(
+            (s) => s.studentCode.trim().toLowerCase() === targetCode
+          );
+        }
+
+        if (!existingMatch && targetNameKhmer && targetPhone) {
+          existingMatch = Array.from(studentMap.values()).find(
+            (s) =>
+              s.nameKhmer.trim().toLowerCase() === targetNameKhmer &&
+              (s.phone || '').replace(/\D/g, '') === targetPhone
+          );
+        }
+
+        if (existingMatch) {
+          // Update existing student record
+          updatedCount++;
+          const updated: Student = {
+            ...existingMatch,
+            studentCode: p.studentCode || existingMatch.studentCode,
+            nameKhmer: p.nameKhmer || existingMatch.nameKhmer,
+            nameLatin: p.nameLatin || existingMatch.nameLatin,
+            nameChinese: p.nameChinese || existingMatch.nameChinese,
+            gender: p.gender || existingMatch.gender,
+            dob: p.dob || existingMatch.dob,
+            phone: p.phone || existingMatch.phone,
+            email: p.email || existingMatch.email,
+            majorId: matchedMajor?.id || existingMatch.majorId,
+            majorName: matchedMajor?.nameKhmer || existingMatch.majorName,
+            classId: matchedClass?.id || existingMatch.classId,
+            className: matchedClass?.name || existingMatch.className,
+            shift: p.shift || existingMatch.shift,
+            year: p.year || existingMatch.year,
+            status: p.status || existingMatch.status,
+            guardianPhone: p.guardianPhone || existingMatch.guardianPhone,
+            address: p.address || existingMatch.address,
+            updatedAt: new Date().toISOString()
+          };
+          studentMap.set(updated.id, updated);
+          processedBatch.push(updated);
+        } else {
+          // Insert new student record
+          insertedCount++;
+          const newId = `stu_imp_${Date.now()}_${index}`;
+          const newStudent: Student = {
+            id: newId,
+            studentCode: p.studentCode || `CPI-2025-${String(students.length + insertedCount).padStart(3, '0')}`,
+            nameKhmer: p.nameKhmer || 'និស្សិត',
+            nameLatin: p.nameLatin || '',
+            nameChinese: p.nameChinese || undefined,
+            gender: p.gender || 'female',
+            dob: p.dob || '2004-01-01',
+            phone: p.phone || '',
+            email: p.email || undefined,
+            majorId: matchedMajor?.id || 'maj_pedagogy',
+            majorName: matchedMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
+            classId: matchedClass?.id || (classes[0]?.id || ''),
+            className: matchedClass?.name || 'ថ្នាក់ឆ្នាំទី១',
+            shift: p.shift || 'morning',
+            year: p.year || 'Year 1',
+            status: p.status || 'active',
+            guardianPhone: p.guardianPhone || undefined,
+            address: p.address || undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          studentMap.set(newId, newStudent);
+          processedBatch.push(newStudent);
+        }
       });
 
-      await instituteService.saveStudentsBulk(fullStudents);
-      showToast(`បានបញ្ចូលនិស្សិតចំនួន ${fullStudents.length} នាក់ពី Excel ដោយជោគជ័យ!`, 'success');
+      await instituteService.saveStudentsBulk(processedBatch);
+      showToast(
+        `បានបញ្ចូលនិស្សិតថ្មី ${insertedCount} នាក់ និងធ្វើបច្ចុប្បន្នភាព ${updatedCount} នាក់ពី Excel ដោយជោគជ័យ!`,
+        'success'
+      );
     } catch (err) {
       console.error(err);
       showToast('ទម្រង់ឯកសារ Excel មិនត្រឹមត្រូវ', 'error');
@@ -609,15 +713,24 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     {/* Student ID & Avatar */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                            stu.gender === 'female'
-                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                              : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                          }`}
-                        >
-                          {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
-                        </div>
+                        {stu.photoUrl ? (
+                          <img
+                            src={stu.photoUrl}
+                            alt={stu.nameKhmer}
+                            className="w-9 h-9 rounded-full object-cover border border-emerald-500/40 shadow-2xs shrink-0"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div
+                            className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                              stu.gender === 'female'
+                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
+                                : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
+                            }`}
+                          >
+                            {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
+                          </div>
+                        )}
                         <div>
                           <div className="font-bold text-zinc-900 dark:text-zinc-100">{stu.studentCode}</div>
                         </div>
@@ -761,6 +874,131 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveStudent} className="space-y-4 text-xs">
+              {/* Photo Upload & Preview Bar */}
+              <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 shadow-xs">
+                    {formPhotoUrl ? (
+                      <img
+                        src={formPhotoUrl}
+                        alt="Student"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-zinc-400">
+                        <ImageIcon className="w-6 h-6 text-zinc-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>រូបថតនិស្សិត (Profile Picture)</span>
+                    </h4>
+                    <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400 font-medium">
+                      គាំទ្ររូបភាព JPG, PNG, WebP (អតិបរមា 3MB)
+                    </p>
+                  </div>
+                </div>
+
+                {!isReadOnly && (
+                  <div className="flex items-center gap-2">
+                    <label className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors">
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{formPhotoUrl ? 'ប្តូររូបថត' : 'ជ្រើសរើសរូបថត'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {formPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormPhotoUrl(undefined)}
+                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800/60 cursor-pointer"
+                      >
+                        លុបរូប
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Buttons Selector */}
+              <div>
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                  ស្ថានភាពសិក្សា (Student Status) *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('active')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'active'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                    <span>កំពុងរៀន (Active)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('suspended')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'suspended'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                    <span>ព្យួរការសិក្សា (Suspended)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('dropped')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'dropped'
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
+                    <span>បោះបង់ (Dropped)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isReadOnly}
+                    onClick={() => setFormStatus('graduated')}
+                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
+                    } ${
+                      formStatus === 'graduated'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+                    <span>បញ្ចប់ (Graduated)</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
@@ -939,6 +1177,17 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   onChange={(e) => setFormAddress(e.target.value)}
                   placeholder="រាជធានីភ្នំពេញ"
                   className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">កំណត់សម្គាល់បន្ថែម (Notes)</label>
+                <textarea
+                  rows={2}
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                  placeholder="កំណត់សម្គាល់ព័ត៌មានបន្ថែមអំពីនិស្សិត..."
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium resize-none"
                 />
               </div>
 
