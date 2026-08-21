@@ -8,10 +8,8 @@ import { TeacherAttendanceView } from './components/TeacherAttendanceView';
 import { ClassesView } from './components/ClassesView';
 import { MajorsView } from './components/MajorsView';
 import { ReportsView } from './components/ReportsView';
-import { LoginModal } from './components/LoginModal';
-import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
-import { instituteService, authService } from './service/instituteService';
+import { instituteService, authService, DEFAULT_ADMIN_USER } from './service/instituteService';
 import {
   Student,
   Teacher,
@@ -27,9 +25,8 @@ import { AnimatePresence, motion } from 'motion/react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [user, setUser] = useState<AppUser | null>(null);
+  const [user, setUser] = useState<AppUser | null>(DEFAULT_ADMIN_USER);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // Dark mode state
@@ -51,9 +48,6 @@ export default function App() {
       } catch (e) {}
     } else {
       document.documentElement.classList.remove('dark');
-      try {
-        localStorage.setItem('cpi_theme_mode', 'light');
-      } catch (e) {}
     }
   }, [isDarkMode]);
 
@@ -89,7 +83,7 @@ export default function App() {
   // 1. Initial auth state listener & seed check
   useEffect(() => {
     const unsubAuth = authService.onAuthStateChanged((currentUser) => {
-      setUser(currentUser);
+      setUser(currentUser || DEFAULT_ADMIN_USER);
       setIsAuthLoading(false);
     });
 
@@ -117,15 +111,18 @@ export default function App() {
     };
   }, []);
 
-  const handleOpenLogin = () => {
-    setIsLoginModalOpen(true);
+  // Direct login as single Admin user
+  const handleAdminLogin = () => {
+    const adminUser = authService.signInAsAdmin();
+    setUser(adminUser);
+    showToast('បានចូលគណនីជា Admin (អ្នកគ្រប់គ្រង) ដោយជោគជ័យ', 'success');
   };
 
   const handleLogout = async () => {
     try {
       await authService.signOut();
       setUser(null);
-      showToast('បានចាកចេញពីគណនីដោយជោគជ័យ', 'info');
+      showToast('បានចាកចេញពីគណនីរួចរាល់', 'info');
     } catch (e) {
       console.error(e);
     }
@@ -138,62 +135,13 @@ export default function App() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-md animate-pulse">
             <GraduationCap className="w-6 h-6" />
           </div>
-          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">កំពុងតភ្ជាប់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់...</p>
+          <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">កំពុងតភ្ជាប់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់...</p>
         </div>
       </div>
     );
   }
 
-  // FIRST PAGE IS LOGIN FORM IF NOT AUTHENTICATED
-  if (!user) {
-    return (
-      <>
-        <LoginPage
-          onSuccess={(loggedUser) => {
-            setUser(loggedUser);
-          }}
-          onContinueAsGuest={() => {
-            setUser({
-              uid: 'guest-' + Date.now(),
-              displayName: 'ភ្ញៀវ (Guest)',
-              email: 'guest@ici.edu.kh',
-              photoURL: null,
-              role: 'Guest',
-              isAnonymous: true,
-            });
-            showToast('បានចូលមើលជាភ្ញៀវ (Guest Explorer Mode)', 'info');
-          }}
-          showToast={showToast}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
-        />
-
-        {/* Toast Alert */}
-        <AnimatePresence>
-          {toastMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold flex items-center gap-2 backdrop-blur-md ${
-                toastMessage.type === 'error'
-                  ? 'bg-rose-900/90 text-white border-rose-700'
-                  : toastMessage.type === 'info'
-                  ? 'bg-zinc-900/90 text-white border-zinc-700'
-                  : 'bg-emerald-900/90 text-white border-emerald-700'
-              }`}
-            >
-              {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-300" />}
-              {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-300" />}
-              <span>{toastMessage.text}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </>
-    );
-  }
-
-  const isReadOnly = user?.isAnonymous || false;
+  const isReadOnly = !user;
 
   return (
     <div className="min-h-screen bg-[#f7faf8] dark:bg-[#0c1410] text-zinc-900 dark:text-zinc-100 flex flex-col selection:bg-emerald-600 selection:text-white font-sans antialiased transition-colors">
@@ -202,13 +150,26 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         user={user}
-        onLogin={handleOpenLogin}
+        onLogin={handleAdminLogin}
         onLogout={handleLogout}
         totalStudents={students.length}
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
         onOpenBackup={() => setIsBackupModalOpen(true)}
       />
+
+      {/* Logged-out Banner Alert */}
+      {!user && (
+        <div className="bg-amber-100 dark:bg-amber-950/70 border-b border-amber-300 dark:border-amber-800/80 px-4 py-2 text-center text-xs text-amber-950 dark:text-amber-200 font-bold flex items-center justify-center gap-2">
+          <span>អ្នកបានចាកចេញពីគណនី (របៀបមើលតែមួយគត់)។</span>
+          <button
+            onClick={handleAdminLogin}
+            className="underline text-emerald-800 dark:text-emerald-300 hover:text-emerald-950 cursor-pointer font-black"
+          >
+            ចុចទីនេះដើម្បីចូលគណនី Admin វិញ
+          </button>
+        </div>
+      )}
 
       {/* Main App Content Router */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">
@@ -223,7 +184,7 @@ export default function App() {
             isReadOnly={isReadOnly}
             onOpenAddStudent={() => {
               if (isReadOnly) {
-                showToast('គណនីភ្ញៀវមិនអាចបន្ថែមទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+                showToast('សូមចូលគណនី Admin ដើម្បីបន្ថែមទិន្នន័យ!', 'info');
                 return;
               }
               setActiveTab('students');
@@ -231,7 +192,7 @@ export default function App() {
             }}
             onOpenAddClass={() => {
               if (isReadOnly) {
-                showToast('គណនីភ្ញៀវមិនអាចបន្ថែមទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+                showToast('សូមចូលគណនី Admin ដើម្បីបន្ថែមទិន្នន័យ!', 'info');
                 return;
               }
               setActiveTab('classes');
@@ -326,17 +287,6 @@ export default function App() {
           </p>
         </div>
       </footer>
-
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSuccess={(loggedUser) => {
-          setUser(loggedUser);
-          showToast(`សូមស្វាគមន៍, ${loggedUser.displayName || 'លោកគ្រូ/អ្នកគ្រូ'}!`, 'success');
-        }}
-        showToast={showToast}
-      />
 
       {/* Backup & Cloud Sync Modal */}
       <BackupModal
