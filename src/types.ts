@@ -3,7 +3,7 @@ export type AcademicYearType = 'Year 1' | 'Year 2' | 'Year 3' | 'Year 4';
 export type StudentStatus = 'active' | 'suspended' | 'dropped' | 'graduated';
 export type AttendanceStatus = 'present' | 'permission' | 'absent' | 'late';
 export type TeacherAttendanceStatus = 'present' | 'permission' | 'absent' | 'substituted';
-export type TeacherStatus = 'active' | 'on_leave' | 'resigned';
+export type TeacherStatus = 'active' | 'on_leave' | 'resigned' | 'retired';
 
 export interface Major {
   id: string;
@@ -64,8 +64,14 @@ export interface Teacher {
   email?: string;
   subjects: string;
   shift?: ShiftType | string;
+  degree?: string;
   status: TeacherStatus;
+  photoUrl?: string;
+  cvName?: string;
+  cvUrl?: string;
+  notes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AttendanceRecord {
