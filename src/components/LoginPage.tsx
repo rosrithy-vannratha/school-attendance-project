@@ -233,7 +233,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               {/* System Features note */}
               <div className="pt-3 border-t border-zinc-200 text-center">
                 <p className="text-[11px] text-black font-bold">
-                  ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងកត់ត្រាវត្តមានឌីជីថល រៀបចំដោយ លោក រស់រិទ្ធី វ៉ាន់រដ្ឋា ក្រុមការងារវិទ្យាស្ថាន
+                  ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងកត់ត្រាវត្តមានឌីជីថល 
+                </p>
+                <p className="text-[11px] text-black font-bold">
+                  រៀបចំដោយ លោក រស់រិទ្ធី វ៉ាន់រដ្ឋា ក្រុមការងារវិទ្យាស្ថាន
                 </p>
               </div>
             </div>
