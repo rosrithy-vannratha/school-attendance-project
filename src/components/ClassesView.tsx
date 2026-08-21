@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Plus,
@@ -11,7 +11,11 @@ import {
   Calendar,
   X,
   BookOpen,
-  UserCheck
+  UserCheck,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Filter
 } from 'lucide-react';
 import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -40,6 +44,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpen);
   const [editingClass, setEditingClass] = useState<Classroom | null>(null);
+  const [filterMode, setFilterMode] = useState<'all' | 'under10' | 'adequate'>('all');
 
   // Form fields
   const [formClassCode, setFormClassCode] = useState('');
@@ -50,6 +55,36 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const [formRoom, setFormRoom] = useState('បន្ទប់ A101');
   const [formAcademicYear, setFormAcademicYear] = useState('2025-2026');
   const [formTeacherId, setFormTeacherId] = useState(teachers[0]?.id || '');
+
+  // Calculate under capacity classes (<10 students)
+  const classStudentCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    students.forEach((s) => {
+      if (s.classId) {
+        map.set(s.classId, (map.get(s.classId) || 0) + 1);
+      }
+    });
+    return map;
+  }, [students]);
+
+  const underCapacityClasses = useMemo(() => {
+    return classes
+      .map((c) => ({
+        cls: c,
+        count: classStudentCounts.get(c.id) || 0
+      }))
+      .filter((item) => item.count < 10);
+  }, [classes, classStudentCounts]);
+
+  const filteredClasses = useMemo(() => {
+    if (filterMode === 'under10') {
+      return classes.filter((c) => (classStudentCounts.get(c.id) || 0) < 10);
+    }
+    if (filterMode === 'adequate') {
+      return classes.filter((c) => (classStudentCounts.get(c.id) || 0) >= 10);
+    }
+    return classes;
+  }, [classes, filterMode, classStudentCounts]);
 
   React.useEffect(() => {
     if (isAddModalOpen && !isReadOnly) {
@@ -157,101 +192,239 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             </h2>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 font-medium">
-            គ្រប់គ្រងថ្នាក់រៀនតាមវេនសិក្សា ជំនាញ បន្ទប់រៀន និងសាស្ត្រាចារ្យប្រចាំថ្នាក់
+            គ្រប់គ្រងថ្នាក់រៀនតាមវេនសិក្សា ជំនាញ បន្ទប់រៀន និងតាមដានចំនួនសិស្សក្នុងថ្នាក់
           </p>
         </div>
 
-        {!isReadOnly && (
+        <div className="flex flex-wrap items-center gap-2">
+          {!isReadOnly && (
+            <button
+              onClick={openAddModal}
+              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ បង្កើតថ្នាក់រៀនថ្មី</span>
+            </button>
+          )}
+          {isReadOnly && (
+            <span className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 font-bold text-xs">
+              របៀបមើលព័ត៌មាន (Read-Only)
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Classroom Under-Capacity Alert Notification */}
+      {underCapacityClasses.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700/60 rounded-3xl p-5 shadow-xs transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-amber-950 dark:text-amber-200 flex items-center gap-2">
+                  <span>សារជូនដំណឹង: មានថ្នាក់រៀនចំនួន {underCapacityClasses.length} មិនទាន់គ្រប់ ១០ នាក់!</span>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-800/70 text-amber-900 dark:text-amber-100 text-[11px] font-mono font-bold">
+                    {underCapacityClasses.length} ថ្នាក់
+                  </span>
+                </h3>
+                <p className="text-xs text-amber-900 dark:text-amber-200 mt-1 font-medium leading-relaxed">
+                  តាមគោលការណ៍វិទ្យាស្ថាន ថ្នាក់រៀននីមួយៗគប្បីមានសិស្សយ៉ាងហោចណាស់ ១០នាក់ ដើម្បីដំណើរការពេញលេញ។ សូមពិនិត្យថ្នាក់ដូចខាងក្រោម៖
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {underCapacityClasses.map((item) => (
+                    <span
+                      key={item.cls.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white dark:bg-[#182620] border border-amber-300 dark:border-amber-700/80 text-xs font-bold text-zinc-900 dark:text-zinc-100 shadow-2xs"
+                    >
+                      <span>{item.cls.name}</span>
+                      <span className="text-amber-700 dark:text-amber-400 font-mono">
+                        ({item.count}/10 នាក់ • ខ្វះ {10 - item.count})
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setFilterMode(filterMode === 'under10' ? 'all' : 'under10')}
+              className="px-3 py-1.5 rounded-xl bg-amber-200 hover:bg-amber-300 dark:bg-amber-900/80 dark:hover:bg-amber-800 text-amber-950 dark:text-amber-100 font-bold text-xs inline-flex items-center gap-1.5 transition-colors shrink-0 self-start cursor-pointer"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>{filterMode === 'under10' ? 'បង្ហាញទាំងអស់' : 'មើលតែថ្នាក់ខ្វះសិស្ស'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#131f1a] p-4 rounded-2xl border border-emerald-900/10 dark:border-emerald-800/30">
+        <div className="flex items-center gap-2">
           <button
-            onClick={openAddModal}
-            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
+            onClick={() => setFilterMode('all')}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              filterMode === 'all'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            <span>+ បង្កើតថ្នាក់រៀនថ្មី</span>
+            ថ្នាក់ទាំងអស់ ({classes.length})
           </button>
-        )}
+          <button
+            onClick={() => setFilterMode('under10')}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+              filterMode === 'under10'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>មិនទាន់គ្រប់ ១០នាក់ ({underCapacityClasses.length})</span>
+          </button>
+          <button
+            onClick={() => setFilterMode('adequate')}
+            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+              filterMode === 'adequate'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>គ្រប់ ១០នាក់ឡើង ({classes.length - underCapacityClasses.length})</span>
+          </button>
+        </div>
+
+        <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+          បង្ហាញ: {filteredClasses.length} ថ្នាក់
+        </span>
       </div>
 
       {/* Class Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {classes.map((cls) => {
-          const studentCount = students.filter((s) => s.classId === cls.id).length;
-          return (
-            <div
-              key={cls.id}
-              className="bg-white dark:bg-[#131f1a] rounded-3xl p-5 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-600/40 transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold">
-                      <Layers className="w-4 h-4" />
+        {filteredClasses.length === 0 ? (
+          <div className="col-span-full bg-white dark:bg-[#131f1a] rounded-3xl p-12 text-center border border-emerald-900/10 dark:border-emerald-800/30">
+            <Layers className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
+            <p className="font-bold text-zinc-700 dark:text-zinc-300 text-sm">ពុំមានទិន្នន័យថ្នាក់រៀនតាមតម្រងនេះទេ</p>
+          </div>
+        ) : (
+          filteredClasses.map((cls) => {
+            const studentCount = classStudentCounts.get(cls.id) || 0;
+            const isUnder10 = studentCount < 10;
+
+            return (
+              <div
+                key={cls.id}
+                className={`bg-white dark:bg-[#131f1a] rounded-3xl p-5 border transition-all flex flex-col justify-between ${
+                  isUnder10
+                    ? 'border-amber-300/80 dark:border-amber-700/60 shadow-xs hover:border-amber-500'
+                    : 'border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-600/40'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${
+                          isUnder10
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                        }`}
+                      >
+                        <Layers className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{cls.name}</h3>
+                        <span className="font-mono text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold">
+                          {cls.classCode} • {cls.academicYear}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{cls.name}</h3>
-                      <span className="font-mono text-[11px] text-zinc-600 dark:text-zinc-400 font-semibold">
-                        {cls.classCode} • {cls.academicYear}
-                      </span>
+
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                      {cls.shift === 'morning' && <Sun className="w-3 h-3 text-amber-500" />}
+                      {cls.shift === 'afternoon' && <Sunset className="w-3 h-3 text-orange-500" />}
+                      {cls.shift === 'evening' && <Moon className="w-3 h-3 text-indigo-500" />}
+                      {cls.shift === 'weekend' && <Calendar className="w-3 h-3 text-teal-500" />}
+                      <span>{getShiftLabel(cls.shift)}</span>
+                    </span>
+                  </div>
+
+                  {/* Under 10 Alert Banner inside Card */}
+                  {isUnder10 && (
+                    <div className="mb-3 p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800/70 flex items-center gap-2 text-xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <div className="font-bold text-amber-900 dark:text-amber-200 text-[11.5px]">
+                        មិនទាន់គ្រប់ ១០នាក់ (ខ្វះ {10 - studentCount} នាក់ទៀត)
+                      </div>
                     </div>
-                  </div>
-
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                    {cls.shift === 'morning' && <Sun className="w-3 h-3 text-amber-500" />}
-                    {cls.shift === 'afternoon' && <Sunset className="w-3 h-3 text-orange-500" />}
-                    {cls.shift === 'evening' && <Moon className="w-3 h-3 text-indigo-500" />}
-                    {cls.shift === 'weekend' && <Calendar className="w-3 h-3 text-teal-500" />}
-                    <span>{getShiftLabel(cls.shift)}</span>
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs py-3 border-y border-zinc-100 dark:border-zinc-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600 dark:text-zinc-400 font-medium">ជំនាញ:</span>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.majorName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600 dark:text-zinc-400 font-medium">កម្រិតឆ្នាំ:</span>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.year}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600 dark:text-zinc-400 font-medium">បន្ទប់រៀន:</span>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.room}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-600 dark:text-zinc-400 font-medium">សាស្ត្រាចារ្យ:</span>
-                    <span className="font-bold text-emerald-800 dark:text-emerald-300">{cls.teacherName || 'មិនទាន់ចាត់តាំង'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer info & Actions */}
-              <div className="mt-4 pt-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-zinc-700 dark:text-zinc-300 font-bold">
-                  <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>{studentCount} នាក់</span>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openEditModal(cls)}
-                    title={isReadOnly ? 'ពិនិត្យព័ត៌មានថ្នាក់' : 'កែប្រែថ្នាក់'}
-                    className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => handleDelete(cls.id, cls.name)}
-                      className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   )}
+
+                  <div className="space-y-2 text-xs py-3 border-y border-zinc-100 dark:border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium">ជំនាញ:</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.majorName}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium">កម្រិតឆ្នាំ:</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.year}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium">បន្ទប់រៀន:</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100">{cls.room}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-600 dark:text-zinc-400 font-medium">សាស្ត្រាចារ្យ:</span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300">{cls.teacherName || 'មិនទាន់ចាត់តាំង'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer info & Actions */}
+                <div className="mt-4 pt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <Users
+                      className={`w-4 h-4 ${
+                        isUnder10 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    />
+                    <span className={isUnder10 ? 'text-amber-800 dark:text-amber-300' : 'text-zinc-800 dark:text-zinc-200'}>
+                      {studentCount} នាក់
+                    </span>
+                    {isUnder10 ? (
+                      <span className="text-[10.5px] px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-semibold">
+                        ខ្វះ {10 - studentCount}
+                      </span>
+                    ) : (
+                      <span className="text-[10.5px] px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold">
+                        គ្រប់ចំនួន
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(cls)}
+                      title={isReadOnly ? 'ពិនិត្យព័ត៌មានថ្នាក់' : 'កែប្រែថ្នាក់'}
+                      className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => handleDelete(cls.id, cls.name)}
+                        className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Modal */}
@@ -322,34 +495,35 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ</label>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ (Year)</label>
                   <select
                     disabled={isReadOnly}
                     value={formYear}
                     onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
-                    <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
-                    <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
-                    <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+                    <option value="Foundation">ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation)</option>
+                    <option value="Year 1">ឆ្នាំទី ១ (Year 1)</option>
+                    <option value="Year 2">ឆ្នាំទី ២ (Year 2)</option>
+                    <option value="Year 3">ឆ្នាំទី ៣ (Year 3)</option>
+                    <option value="Year 4">ឆ្នាំទី ៤ (Year 4)</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា</label>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា (Shift)</label>
                   <select
                     disabled={isReadOnly}
                     value={formShift}
                     onChange={(e) => setFormShift(e.target.value as ShiftType)}
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <option value="morning">វេនព្រឹក</option>
-                    <option value="afternoon">វេនរសៀល</option>
-                    <option value="evening">វេនយប់</option>
-                    <option value="weekend">ចុងសប្តាហ៍</option>
+                    <option value="morning">វេនព្រឹក (Morning)</option>
+                    <option value="afternoon">វេនរសៀល (Afternoon)</option>
+                    <option value="evening">វេនយប់ (Evening)</option>
+                    <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
                   </select>
                 </div>
 
@@ -366,37 +540,51 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">សាស្ត្រាចារ្យទទួលបន្ទុក</label>
-                <select
-                  disabled={isReadOnly}
-                  value={formTeacherId}
-                  onChange={(e) => setFormTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                >
-                  <option value="">-- មិនទាន់ចាត់តាំង --</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nameKhmer} ({t.nameLatin})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឆ្នាំសិក្សា (Academic Year)</label>
+                  <input
+                    type="text"
+                    disabled={isReadOnly}
+                    value={formAcademicYear}
+                    onChange={(e) => setFormAcademicYear(e.target.value)}
+                    placeholder="2025-2026"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">សាស្ត្រាចារ្យប្រចាំថ្នាក់</label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formTeacherId}
+                    onChange={(e) => setFormTeacherId(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- មិនទាន់ចាត់តាំង --</option>
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameKhmer} ({t.teacherCode})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
+                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold transition-colors cursor-pointer"
                 >
-                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
+                  {isReadOnly ? 'បិទ' : 'បោះបង់'}
                 </button>
                 {!isReadOnly && (
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-all shadow-xs cursor-pointer"
                   >
-                    រក្សាទុក
+                    {editingClass ? 'រក្សាទុកការកែប្រែ' : 'បង្កើតថ្នាក់'}
                   </button>
                 )}
               </div>
