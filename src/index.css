@@ -10,6 +10,16 @@
     --primary-hover: #047857;
     --primary-light: #ecfdf5;
     --primary-border: #a7f3d0;
+    
+    --text-main: #0f172a;
+    --text-heading: #09090b;
+    --text-body: #1e293b;
+    --text-muted: #475569;
+    --text-subtle: #64748b;
+    
+    --bg-page: #f7faf8;
+    --bg-surface: #ffffff;
+    --border-color: rgba(6, 78, 59, 0.12);
   }
 
   html {
@@ -29,35 +39,115 @@
     line-height: 1.6;
   }
 
-  .dark body,
-  html.dark body {
-    background-color: #0a130f;
-    color: #f8fafc;
+  .dark {
+    --text-main: #f8fafc;
+    --text-heading: #ffffff;
+    --text-body: #f1f5f9;
+    --text-muted: #cbd5e1;
+    --text-subtle: #94a3b8;
+    
+    --bg-page: #0b1410;
+    --bg-surface: #121e18;
+    --border-color: rgba(52, 211, 153, 0.18);
   }
 
-  /* Enhance text sharpness for Khmer glyphs */
+  .dark body,
+  html.dark body {
+    background-color: #0b1410;
+    color: #f1f5f9;
+  }
+
+  /* Explicit black font color for header and footer */
+  header, footer {
+    color: #000000 !important;
+  }
+  header h1, header h2, header h3, header p, header span, header a, header button,
+  footer h1, footer h2, footer h3, footer p, footer span, footer a {
+    color: inherit;
+  }
+
+  /* Enhance text sharpness and color weight for Khmer and Latin glyphs */
   h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.015em;
-    color: #0f172a;
+    color: #09090b;
+    font-weight: 700;
   }
 
   .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-    color: #f8fafc;
+    color: #ffffff;
+    font-weight: 700;
   }
 
   p, span, label, input, select, textarea {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* High contrast table styles */
+  /* High contrast table styling */
   th {
-    color: #334155;
+    color: #1e293b;
     font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   .dark th {
-    color: #cbd5e1;
+    color: #e2e8f0;
+    font-weight: 700;
   }
+
+  td {
+    color: #1e293b;
+  }
+
+  .dark td {
+    color: #f1f5f9;
+  }
+
+  /* Input fields and selects high contrast in both themes */
+  input, select, textarea {
+    color: #0f172a;
+  }
+
+  .dark input, .dark select, .dark textarea {
+    color: #f8fafc;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #64748b;
+  }
+
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: #94a3b8;
+  }
+}
+
+/* Enhanced Light & Dark Color Font Contrast Helpers */
+.text-contrast-title {
+  color: #09090b;
+}
+.dark .text-contrast-title {
+  color: #ffffff;
+}
+
+.text-contrast-body {
+  color: #1e293b;
+}
+.dark .text-contrast-body {
+  color: #f1f5f9;
+}
+
+.text-contrast-muted {
+  color: #475569;
+}
+.dark .text-contrast-muted {
+  color: #cbd5e1;
+}
+
+.text-contrast-subtle {
+  color: #64748b;
+}
+.dark .text-contrast-subtle {
+  color: #94a3b8;
 }
 
 /* Custom smooth scrollbar */
@@ -73,13 +163,13 @@
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #334155;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #475569;
 }
 
 @keyframes pulse-subtle {
@@ -90,3 +180,4 @@
 .animate-pulse-subtle {
   animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
