@@ -552,6 +552,109 @@ export function exportAttendanceToExcel(records: AttendanceRecord[], className: 
   XLSX.writeFile(workbook, `Attendance_${className.replace(/\s+/g, '_')}_${date}.xlsx`);
 }
 
+export function exportDailyAttendanceSummaryToExcel(
+  records: AttendanceRecord[],
+  students: Student[],
+  classes: Classroom[],
+  date: string,
+  filterClassName = 'All_Classes'
+): void {
+  const formattedData = students.map((s, index) => {
+    const studentClass = classes.find((c) => c.id === s.classId);
+    const className = s.className || studentClass?.name || 'ថ្នាក់ទូទៅ';
+    const rec = records.find((r) => r.studentId === s.id && r.date === date);
+
+    return {
+      'ល.រ (No)': index + 1,
+      'កាលបរិច្ឆេទ (Date)': date,
+      'អត្តលេខ (ID)': s.studentCode,
+      'ឈ្មោះខ្មែរ (Name Khmer)': s.nameKhmer,
+      'អក្សរឡាតាំង (Name Latin)': s.nameLatin,
+      'ភេទ (Gender)': s.gender === 'female' ? 'ស្រី' : 'ប្រុស',
+      'ថ្នាក់រៀន (Class)': className,
+      'វេន (Shift)': getShiftLabel(s.shift),
+      'ស្ថានភាពវត្តមាន (Status)': rec ? getAttendanceLabel(rec.status) : 'មិនទាន់កត់ត្រា',
+      'កំណត់ចំណាំ (Notes)': rec?.note || '-',
+      'លេខទូរស័ព្ទអាណាព្យាបាល': s.guardianPhone || s.phone || '-',
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, `Daily_${date}`);
+  XLSX.writeFile(workbook, `Daily_Attendance_Report_${filterClassName.replace(/\s+/g, '_')}_${date}.xlsx`);
+}
+
+export function exportStudentMonthlyAttendanceToExcel(
+  students: Student[],
+  attendance: AttendanceRecord[],
+  yearMonth: string, // YYYY-MM
+  className = 'All_Classes'
+): void {
+  const [yearStr, monthStr] = yearMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // Filter records for this month
+  const monthlyRecords = attendance.filter((a) => a.date.startsWith(yearMonth));
+
+  const formattedData = students.map((s, index) => {
+    const row: Record<string, any> = {
+      'ល.រ (No)': index + 1,
+      'អត្តលេខ (ID)': s.studentCode,
+      'ឈ្មោះខ្មែរ (Name Khmer)': s.nameKhmer,
+      'អក្សរឡាតាំង (Name Latin)': s.nameLatin,
+      'ភេទ (Gender)': s.gender === 'female' ? 'ស្រី' : 'ប្រុស',
+      'ថ្នាក់ (Class)': s.className || 'ថ្នាក់ទូទៅ',
+      'វេន (Shift)': getShiftLabel(s.shift),
+    };
+
+    let present = 0;
+    let permission = 0;
+    let absent = 0;
+    let late = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${yearMonth}-${String(day).padStart(2, '0')}`;
+      const rec = monthlyRecords.find((r) => r.studentId === s.id && r.date === dateKey);
+      if (rec) {
+        if (rec.status === 'present') {
+          row[`ថ្ងៃទី ${day}`] = 'E';
+          present++;
+        } else if (rec.status === 'permission') {
+          row[`ថ្ងៃទី ${day}`] = 'P';
+          permission++;
+        } else if (rec.status === 'absent') {
+          row[`ថ្ងៃទី ${day}`] = 'A';
+          absent++;
+        } else if (rec.status === 'late') {
+          row[`ថ្ងៃទី ${day}`] = 'L';
+          late++;
+        }
+      } else {
+        row[`ថ្ងៃទី ${day}`] = '-';
+      }
+    }
+
+    const totalMarked = present + permission + absent + late;
+    const rate = totalMarked > 0 ? Math.round(((present + permission) / totalMarked) * 100) : 100;
+
+    row['វត្តមាន (E)'] = present;
+    row['សុំច្បាប់ (P)'] = permission;
+    row['អវត្តមាន (A)'] = absent;
+    row['មកយឺត (L)'] = late;
+    row['អត្រាវត្តមាន (%)'] = `${rate}%`;
+
+    return row;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, `Student_Att_${yearMonth}`);
+  XLSX.writeFile(workbook, `Student_Monthly_Attendance_${className.replace(/\s+/g, '_')}_${yearMonth}.xlsx`);
+}
+
 export function exportTeachersToExcel(teachers: Teacher[], filename = 'teacher_faculty_list'): void {
   const formattedData = teachers.map((t, index) => ({
     'ល.រ (No)': index + 1,
@@ -818,8 +921,8 @@ export function getStatusLabel(status: string): string {
 
 export function getAttendanceLabel(status: string): string {
   switch (status) {
-    case 'present': return 'វត្តមាន (P)';
-    case 'permission': return 'សុំច្បាប់ (E)';
+    case 'present': return 'វត្តមាន (E)';
+    case 'permission': return 'សុំច្បាប់ (P)';
     case 'absent': return 'អវត្តមាន (A)';
     case 'late': return 'មកយឺត (L)';
     default: return status;
