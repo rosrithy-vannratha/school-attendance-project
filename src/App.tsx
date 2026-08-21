@@ -315,13 +315,13 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900/10 dark:border-emerald-800/30 py-6 bg-white dark:bg-[#101c16] text-center text-xs text-zinc-500 dark:text-zinc-400 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t border-zinc-200 dark:border-zinc-300 py-6 bg-white dark:bg-zinc-100 text-center text-xs text-black transition-colors">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-black">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-emerald-900 dark:text-emerald-300">វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់</span>
-            <span className="text-zinc-400 dark:text-zinc-500">&bull; International Chinese Education and Teachers Institute</span>
+            <span className="font-extrabold text-black text-xs sm:text-sm">វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់</span>
+            <span className="text-black text-xs font-semibold">&bull; International Chinese Education and Teachers Institute</span>
           </div>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          <p className="text-[11px] text-black font-semibold">
             ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦
           </p>
         </div>
