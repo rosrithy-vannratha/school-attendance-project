@@ -297,6 +297,7 @@ export default function App() {
             majors={majors}
             attendance={attendance}
             showToast={showToast}
+            isReadOnly={isReadOnly}
           />
         )}
       </main>
