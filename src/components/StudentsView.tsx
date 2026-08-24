@@ -770,10 +770,20 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 <tr>
                   <th className="py-3.5 px-4">អត្តលេខ & រូបថត</th>
                   <th className="py-3.5 px-4">ឈ្មោះនិស្សិត (ខ្មែរ / Chinese / Latin)</th>
-                  <th className="py-3.5 px-4">ភេទ & ថ្ងៃកំណើត</th>
+                  <th className="py-3.5 px-4">
+                    <span className="flex items-center gap-1">
+                      <span>ភេទ & ថ្ងៃកំណើត</span>
+                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
+                    </span>
+                  </th>
                   <th className="py-3.5 px-4">ជំនាញ & ថ្នាក់សិក្សា</th>
                   <th className="py-3.5 px-4">វេន & ឆ្នាំសិក្សា</th>
-                  <th className="py-3.5 px-4">ទូរសព្ទ & អាណាព្យាបាល</th>
+                  <th className="py-3.5 px-4">
+                    <span className="flex items-center gap-1">
+                      <span>ទូរសព្ទ & អាណាព្យាបាល</span>
+                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
+                    </span>
+                  </th>
                   <th className="py-3.5 px-4">ស្ថានភាព</th>
                   <th className="py-3.5 px-4 text-right">សកម្មភាព</th>
                 </tr>
@@ -851,7 +861,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                         </div>
                         <div className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
                           <Calendar className="w-3 h-3 text-zinc-400 shrink-0" />
-                          <span>{stu.dob || '-'}</span>
+                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                            {stu.dob || '-'}
+                          </span>
                         </div>
                       </td>
 
@@ -886,11 +898,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
                           <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>{stu.phone || '-'}</span>
+                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                            {stu.phone || '-'}
+                          </span>
                         </div>
                         {stu.guardianPhone && (
                           <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            អាណាព្យាបាល: {stu.guardianPhone}
+                            <span>អាណាព្យាបាល: </span>
+                            <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                              {stu.guardianPhone}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -1042,16 +1059,26 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300 font-medium">{stu.phone || '-'}</span>
+                      <span className={isReadOnly ? 'text-zinc-700 dark:text-zinc-300 font-medium filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : 'text-zinc-700 dark:text-zinc-300 font-medium'}>
+                        {stu.phone || '-'}
+                      </span>
                       {stu.guardianPhone && (
-                        <span className="text-zinc-400 text-[11px]">(អាណាព្យាបាល: {stu.guardianPhone})</span>
+                        <span className="text-zinc-400 text-[11px]">
+                          (អាណាព្យាបាល:{' '}
+                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono inline-block' : ''}>
+                            {stu.guardianPhone}
+                          </span>
+                          )
+                        </span>
                       )}
                     </div>
 
                     {stu.address && (
                       <div className="flex items-center gap-2">
                         <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="text-zinc-600 dark:text-zinc-400 truncate font-medium">{stu.address}</span>
+                        <span className={`text-zinc-600 dark:text-zinc-400 truncate font-medium ${isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70' : ''}`}>
+                          {stu.address}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1115,6 +1142,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveStudent} className="space-y-4 text-xs">
+              {/* Guest Read-Only Privacy Notice */}
+              {isReadOnly && (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in duration-200">
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="font-semibold leading-relaxed">
+                    <b>របៀបភ្ញៀវ (Guest Mode):</b> ព័ត៌មានឯកជនភាពផ្ទាល់ខ្លួន (លេខទូរសព្ទ, លេខអាណាព្យាបាល, ថ្ងៃកំណើត, អាសយដ្ឋាន, កំណត់សម្គាល់) ត្រូវបាន Blur ការពារសុវត្ថិភាព។
+                  </p>
+                </div>
+              )}
+
               {/* Photo Upload & Preview Bar */}
               <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1309,13 +1346,17 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    ថ្ងៃខែឆ្នាំកំណើត (DOB)
+                    <span>ថ្ងៃខែឆ្នាំកំណើត (DOB)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                   </label>
                   <input
                     type="date"
+                    disabled={isReadOnly}
                     value={formDob}
                     onChange={(e) => setFormDob(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
 
@@ -1386,49 +1427,71 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">លេខទូរសព្ទ (Phone)</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <span>លេខទូរសព្ទ (Phone)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                  </label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="012 345 678"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    លេខអាណាព្យាបាល (Guardian Phone)
+                    <span>លេខអាណាព្យាបាល (Guardian Phone)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formGuardianPhone}
                     onChange={(e) => setFormGuardianPhone(e.target.value)}
                     placeholder="098 765 432"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">អាសយដ្ឋាន (Address)</label>
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  <span>អាសយដ្ឋាន (Address)</span>
+                  {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                </label>
                 <input
                   type="text"
+                  disabled={isReadOnly}
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
                   placeholder="រាជធានីភ្នំពេញ"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">កំណត់សម្គាល់បន្ថែម (Notes)</label>
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  <span>កំណត់សម្គាល់បន្ថែម (Notes)</span>
+                  {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                </label>
                 <textarea
                   rows={2}
+                  disabled={isReadOnly}
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="កំណត់សម្គាល់ព័ត៌មានបន្ថែមអំពីនិស្សិត..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium resize-none"
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium resize-none ${
+                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                  }`}
                 />
               </div>
 
