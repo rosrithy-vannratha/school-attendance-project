@@ -27,6 +27,7 @@ interface ReportsViewProps {
   majors: Major[];
   attendance: AttendanceRecord[];
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
+  isReadOnly?: boolean;
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
@@ -35,7 +36,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   classes,
   majors,
   attendance,
-  showToast
+  showToast,
+  isReadOnly = false
 }) => {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiReport, setAiReport] = useState<string | null>(null);
@@ -329,7 +331,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <th className="py-2.5 px-3">ថ្នាក់ & វេន</th>
                 <th className="py-2.5 px-3 text-center">អវត្តមាន (Absent)</th>
                 <th className="py-2.5 px-3 text-center">សុំច្បាប់ (Permission)</th>
-                <th className="py-2.5 px-3">លេខទូរស័ព្ទអាណាព្យាបាល</th>
+                <th className="py-2.5 px-3">
+                  <span className="flex items-center gap-1">
+                    <span>លេខទូរស័ព្ទអាណាព្យាបាល</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
@@ -365,7 +372,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                       </span>
                     </td>
                     <td className="py-2.5 px-3 font-bold text-zinc-700 dark:text-zinc-300">
-                      {stu.guardianPhone || stu.phone || '-'}
+                      <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono inline-block' : ''}>
+                        {stu.guardianPhone || stu.phone || '-'}
+                      </span>
                     </td>
                   </tr>
                 ))
