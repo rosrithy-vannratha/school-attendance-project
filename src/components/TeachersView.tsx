@@ -51,6 +51,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -59,6 +60,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
   const [formTeacherCode, setFormTeacherCode] = useState('');
   const [formNameKhmer, setFormNameKhmer] = useState('');
   const [formNameLatin, setFormNameLatin] = useState('');
+  const [formNameChinese, setFormNameChinese] = useState('');
   const [formGender, setFormGender] = useState<'male' | 'female'>('male');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
@@ -77,6 +79,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setFormTeacherCode(`ICI-TCH-${String(teachers.length + 1).padStart(3, '0')}`);
     setFormNameKhmer('');
     setFormNameLatin('');
+    setFormNameChinese('');
     setFormGender('male');
     setFormPhone('');
     setFormEmail('');
@@ -96,6 +99,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setFormTeacherCode(t.teacherCode);
     setFormNameKhmer(t.nameKhmer);
     setFormNameLatin(t.nameLatin);
+    setFormNameChinese(t.nameChinese || '');
     setFormGender(t.gender);
     setFormPhone(t.phone);
     setFormEmail(t.email || '');
@@ -161,15 +165,21 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       return;
     }
     if (!formNameKhmer.trim()) {
-      showToast('សូមបញ្ចូលឈ្មោះសាស្ត្រាចារ្យ!', 'error');
+      showToast('សូមបញ្ចូលឈ្មោះខ្មែររបស់សាស្ត្រាចារ្យ!', 'error');
       return;
     }
 
+    setIsSaving(true);
+
+    const generatedCode = `ICI-TCH-${Date.now().toString().slice(-4)}`;
+    const finalCode = formTeacherCode.trim() || (editingTeacher ? editingTeacher.teacherCode : generatedCode);
+
     const data: Teacher = {
       id: editingTeacher ? editingTeacher.id : `tch_${Date.now()}`,
-      teacherCode: formTeacherCode.trim() || (editingTeacher ? editingTeacher.teacherCode : `ICI-TCH-${Date.now().toString().slice(-4)}`),
+      teacherCode: finalCode,
       nameKhmer: formNameKhmer.trim(),
       nameLatin: formNameLatin.trim(),
+      nameChinese: formNameChinese.trim() || undefined,
       gender: formGender,
       phone: formPhone.trim(),
       email: formEmail.trim() || undefined,
@@ -187,10 +197,19 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
 
     try {
       await instituteService.saveTeacher(data);
-      showToast(editingTeacher ? 'បានកែប្រែព័ត៌មានសាស្ត្រាចារ្យជោគជ័យ!' : 'បានបន្ថែមសាស្ត្រាចារ្យថ្មីជោគជ័យ!', 'success');
+      showToast(
+        editingTeacher
+          ? `បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានសាស្ត្រាចារ្យ "${data.nameKhmer}" ជោគជ័យ!`
+          : `បានបន្ថែមសាស្ត្រាចារ្យ "${data.nameKhmer}" ជោគជ័យ!`,
+        'success'
+      );
       setIsModalOpen(false);
-    } catch (e) {
-      showToast('មិនអាចរក្សាទុកទិន្នន័យបានទេ', 'error');
+      setEditingTeacher(null);
+    } catch (e: any) {
+      console.error('Error saving teacher:', e);
+      showToast('មិនអាចរក្សាទុកទិន្នន័យបានទេ សូមព្យាយាមម្តងទៀត', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -245,7 +264,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       let insertedCount = 0;
       let updatedCount = 0;
 
-      // Build map of existing teachers to prevent duplicates
+      // Build map of existing teachers to prevent duplicates and preserve enriched fields
       const teacherMap = new Map<string, Teacher>();
       teachers.forEach((t) => {
         teacherMap.set(t.id, t);
@@ -275,13 +294,14 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
         }
 
         if (existingMatch) {
-          // Update existing teacher record
+          // Update existing teacher record while preserving custom fields (photo, CV, notes, degree)
           updatedCount++;
           const updated: Teacher = {
             ...existingMatch,
             teacherCode: p.teacherCode || existingMatch.teacherCode,
             nameKhmer: p.nameKhmer || existingMatch.nameKhmer,
             nameLatin: p.nameLatin || existingMatch.nameLatin,
+            nameChinese: p.nameChinese !== undefined && p.nameChinese !== '' ? p.nameChinese : existingMatch.nameChinese,
             gender: p.gender || existingMatch.gender,
             phone: p.phone || existingMatch.phone,
             email: p.email || existingMatch.email,
@@ -290,6 +310,9 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             status: p.status || existingMatch.status,
             degree: p.degree || existingMatch.degree,
             notes: p.notes || existingMatch.notes,
+            photoUrl: existingMatch.photoUrl,
+            cvName: existingMatch.cvName,
+            cvUrl: existingMatch.cvUrl,
             updatedAt: new Date().toISOString()
           };
           teacherMap.set(updated.id, updated);
@@ -303,6 +326,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             teacherCode: p.teacherCode || `ICI-TCH-${String(teachers.length + insertedCount).padStart(3, '0')}`,
             nameKhmer: p.nameKhmer || 'សាស្ត្រាចារ្យ',
             nameLatin: p.nameLatin || '',
+            nameChinese: p.nameChinese || undefined,
             gender: p.gender || 'male',
             phone: p.phone || '',
             email: p.email || undefined,
@@ -355,11 +379,12 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
         const matchCode = (t.teacherCode || '').toLowerCase().includes(q);
         const matchKhmer = (t.nameKhmer || '').toLowerCase().includes(q);
         const matchLatin = (t.nameLatin || '').toLowerCase().includes(q);
+        const matchChinese = (t.nameChinese || '').toLowerCase().includes(q);
         const matchSubjects = (t.subjects || '').toLowerCase().includes(q);
         const matchPhone = (t.phone || '').toLowerCase().includes(q);
         const matchEmail = (t.email || '').toLowerCase().includes(q);
 
-        if (!matchCode && !matchKhmer && !matchLatin && !matchSubjects && !matchPhone && !matchEmail) {
+        if (!matchCode && !matchKhmer && !matchLatin && !matchChinese && !matchSubjects && !matchPhone && !matchEmail) {
           return false;
         }
       }
@@ -564,7 +589,14 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       </div>
                     )}
                     <div>
-                      <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{t.nameKhmer}</h3>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{t.nameKhmer}</h3>
+                        {t.nameChinese && (
+                          <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
+                            {t.nameChinese}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin || '-'}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
@@ -691,7 +723,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSave} noValidate className="space-y-3.5 text-xs">
               {/* Photo Upload & Preview */}
               <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -814,23 +846,22 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អត្តលេខគ្រូ *</label>
+                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អត្តលេខគ្រូ (Teacher Code)</label>
                 <input
                   type="text"
-                  required
                   disabled={isReadOnly}
                   value={formTeacherCode}
                   onChange={(e) => setFormTeacherCode(e.target.value)}
+                  placeholder="ICI-TCH-001"
                   className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះខ្មែរ *</label>
                   <input
                     type="text"
-                    required
                     disabled={isReadOnly}
                     value={formNameKhmer}
                     onChange={(e) => setFormNameKhmer(e.target.value)}
@@ -846,6 +877,17 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                     value={formNameLatin}
                     onChange={(e) => setFormNameLatin(e.target.value)}
                     placeholder="Long Sokha"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះចិន (Chinese)</label>
+                  <input
+                    type="text"
+                    disabled={isReadOnly}
+                    value={formNameChinese}
+                    onChange={(e) => setFormNameChinese(e.target.value)}
+                    placeholder="龙索卡"
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -865,10 +907,9 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">លេខទូរស័ព្ទ *</label>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">លេខទូរស័ព្ទ</label>
                   <input
                     type="text"
-                    required
                     disabled={isReadOnly}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
@@ -909,7 +950,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               <div>
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អ៊ីមែល (Email)</label>
                 <input
-                  type="email"
+                  type="text"
                   disabled={isReadOnly}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
@@ -1003,7 +1044,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingTeacher(null);
+                  }}
                   className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
                 >
                   {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
@@ -1011,9 +1055,17 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 {!isReadOnly && (
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                    disabled={isSaving}
+                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    រក្សាទុក
+                    {isSaving ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>កំពុងរក្សាទុក...</span>
+                      </>
+                    ) : (
+                      <span>{editingTeacher ? 'ធ្វើបច្ចុប្បន្នភាព (Update)' : 'រក្សាទុក (Save)'}</span>
+                    )}
                   </button>
                 )}
               </div>
