@@ -18,6 +18,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Student, Teacher, Classroom, Major, AttendanceRecord, ActiveTab, ShiftType } from '../types';
+import icetiLogo from '../assets/images/icetilogo.jpg';
 
 interface DashboardViewProps {
   students: Student[];
@@ -128,17 +129,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="absolute right-0 top-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>ប្រព័ន្ធគ្រប់គ្រងអប់រំ និងវត្តមានឆ្នាំសិក្សា ២០២៥-២០២៦</span>
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-lg border border-white/20 shrink-0 hidden sm:flex items-center justify-center overflow-hidden">
+              <img src={icetiLogo} alt="ICETI Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-              សួស្តី! សូមស្វាគមន៍មកកាន់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
-            </h2>
-            <p className="text-emerald-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              គ្រប់គ្រងទិន្នន័យនិស្សិត វេនសិក្សា (ព្រឹក/រសៀល/យប់/ចុងសប្តាហ៍) កត់ត្រាវត្តមានប្រចាំថ្ងៃ និងតាមដានរបាយការណ៍សិក្សាដោយស្វ័យប្រវត្តិ។
-            </p>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>ប្រព័ន្ធគ្រប់គ្រងអប់រំ និងវត្តមានឆ្នាំសិក្សា ២០២៥-២០២៦</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                សួស្តី! សូមស្វាគមន៍មកកាន់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
+              </h2>
+              <p className="text-emerald-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                គ្រប់គ្រងទិន្នន័យនិស្សិត វេនសិក្សា (ព្រឹក/រសៀល/យប់/ចុងសប្តាហ៍) កត់ត្រាវត្តមានប្រចាំថ្ងៃ និងតាមដានរបាយការណ៍សិក្សាដោយស្វ័យប្រវត្តិ។
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
