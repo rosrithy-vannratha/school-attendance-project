@@ -622,6 +622,7 @@ export const instituteService = {
               teacherCode: data.teacherCode || 'TCH-000',
               nameKhmer: data.nameKhmer || data.nameLatin || 'សាស្ត្រាចារ្យ',
               nameLatin: data.nameLatin || '',
+              nameChinese: data.nameChinese || undefined,
               gender: data.gender || 'male',
               phone: data.phone || '',
               email: data.email || '',
@@ -679,7 +680,7 @@ export const instituteService = {
   },
 
   async saveTeachersBulk(teachers: Teacher[]): Promise<void> {
-    const local = getLocal<Teacher>(LS_KEYS.TEACHERS, []);
+    const local = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS);
     const map = new Map(local.map((t) => [t.id, t]));
     for (const t of teachers) map.set(t.id, t);
     const merged = Array.from(map.values());
