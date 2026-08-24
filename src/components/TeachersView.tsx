@@ -114,7 +114,49 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImageFile = (file: File, maxWidth = 350, maxHeight = 350, quality = 0.75): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+              return;
+            }
+          } catch {
+            // fallback
+          }
+          resolve(e.target?.result as string);
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
     const file = e.target.files?.[0];
     if (!file) return;
@@ -124,18 +166,21 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('ទំហំរូបភាពត្រូវតិចជាង 3MB', 'error');
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('ទំហំរូបភាពត្រូវតិចជាង 8MB', 'error');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setFormPhotoUrl(result);
-      showToast('បានផ្ទុកឡើងរូបថតសាស្ត្រាចារ្យជោគជ័យ!', 'success');
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedDataUrl = await compressImageFile(file);
+      if (compressedDataUrl) {
+        setFormPhotoUrl(compressedDataUrl);
+        showToast('បានផ្ទុកឡើងរូបថតសាស្ត្រាចារ្យជោគជ័យ!', 'success');
+      }
+    } catch (err) {
+      console.warn('Error processing photo:', err);
+      showToast('មិនអាចផ្ទុកឡើងរូបថតបានទេ', 'error');
+    }
   };
 
   const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,8 +188,8 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      showToast('ទំហំឯកសារ CV ត្រូវតិចជាង 8MB', 'error');
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('ទំហំឯកសារ CV ត្រូវតិចជាង 2MB សម្រាប់ការរក្សាទុកលើ Cloud', 'error');
       return;
     }
 
