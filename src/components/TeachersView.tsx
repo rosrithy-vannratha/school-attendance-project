@@ -24,7 +24,8 @@ import {
   AlertTriangle,
   LayoutGrid,
   Table as TableIcon,
-  Eye
+  Eye,
+  Lock
 } from 'lucide-react';
 import { Teacher, TeacherStatus, ShiftType } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -644,8 +645,18 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   <th className="py-3.5 px-4">កម្រិតវប្បធម៌</th>
                   <th className="py-3.5 px-4">មុខវិជ្ជាបង្រៀន</th>
                   <th className="py-3.5 px-4">វេនបង្រៀន</th>
-                  <th className="py-3.5 px-4">ទំនាក់ទំនង & អ៊ីមែល</th>
-                  <th className="py-3.5 px-4">ឯកសារ CV</th>
+                  <th className="py-3.5 px-4">
+                    <span className="flex items-center gap-1">
+                      <span>ទំនាក់ទំនង & អ៊ីមែល</span>
+                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
+                    </span>
+                  </th>
+                  <th className="py-3.5 px-4">
+                    <span className="flex items-center gap-1">
+                      <span>ឯកសារ CV</span>
+                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
+                    </span>
+                  </th>
                   <th className="py-3.5 px-4">ស្ថានភាព</th>
                   <th className="py-3.5 px-4 text-right">សកម្មភាព</th>
                 </tr>
@@ -751,15 +762,19 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
                           <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>{t.phone || '-'}</span>
+                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                            {t.phone || '-'}
+                          </span>
                         </div>
                         {t.email && (
                           <div
                             className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5 truncate max-w-[160px]"
-                            title={t.email}
+                            title={isReadOnly ? undefined : t.email}
                           >
                             <Mail className="w-3 h-3 text-zinc-400 shrink-0" />
-                            <span className="truncate">{t.email}</span>
+                            <span className={`truncate ${isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-70' : ''}`}>
+                              {t.email}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -767,15 +782,22 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       {/* CV */}
                       <td className="py-3 px-4">
                         {t.cvUrl ? (
-                          <a
-                            href={t.cvUrl}
-                            download={t.cvName || 'CV_Teacher'}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200/60 dark:border-emerald-800/40 transition-colors"
-                            title={t.cvName}
-                          >
-                            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="max-w-[70px] truncate">{t.cvName || 'ទាញយក'}</span>
-                          </a>
+                          isReadOnly ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 text-[11px] font-bold border border-zinc-200/60 dark:border-zinc-700/40">
+                              <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span className="filter blur-[3px] select-none pointer-events-none opacity-60 max-w-[50px] truncate">CV_Doc</span>
+                            </span>
+                          ) : (
+                            <a
+                              href={t.cvUrl}
+                              download={t.cvName || 'CV_Teacher'}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200/60 dark:border-emerald-800/40 transition-colors"
+                              title={t.cvName}
+                            >
+                              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="max-w-[70px] truncate">{t.cvName || 'ទាញយក'}</span>
+                            </a>
+                          )
                         ) : (
                           <span className="text-zinc-400 text-[11px]">-</span>
                         )}
@@ -920,13 +942,17 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
 
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className="text-zinc-700 dark:text-zinc-300 font-medium">{t.phone || '-'}</span>
+                      <span className={`text-zinc-700 dark:text-zinc-300 font-medium ${isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}`}>
+                        {t.phone || '-'}
+                      </span>
                     </div>
 
                     {t.email && (
                       <div className="flex items-center gap-2">
                         <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className="text-zinc-600 dark:text-zinc-400 truncate font-medium">{t.email}</span>
+                        <span className={`text-zinc-600 dark:text-zinc-400 truncate font-medium ${isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-70' : ''}`}>
+                          {t.email}
+                        </span>
                       </div>
                     )}
 
@@ -935,9 +961,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       <div className="flex items-center justify-between pt-1 text-[11px] bg-emerald-50/60 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-xl border border-emerald-200/50 dark:border-emerald-800/40">
                         <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium truncate">
                           <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className="truncate">{t.cvName}</span>
+                          <span className={`truncate ${isReadOnly ? 'filter blur-[3px] select-none pointer-events-none opacity-70 max-w-[80px]' : ''}`}>
+                            {isReadOnly ? 'CV_Teacher_File.pdf' : t.cvName}
+                          </span>
                         </div>
-                        {t.cvUrl && (
+                        {t.cvUrl && !isReadOnly && (
                           <a
                             href={t.cvUrl}
                             download={t.cvName}
@@ -945,6 +973,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                           >
                             ទាញយក CV
                           </a>
+                        )}
+                        {isReadOnly && (
+                          <span className="text-amber-700 dark:text-amber-400 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> ការពារ
+                          </span>
                         )}
                       </div>
                     )}
@@ -999,6 +1032,16 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             </div>
 
             <form onSubmit={handleSave} noValidate className="space-y-3.5 text-xs">
+              {/* Guest Read-Only Privacy Notice */}
+              {isReadOnly && (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in duration-200">
+                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="font-semibold leading-relaxed">
+                    <b>របៀបភ្ញៀវ (Guest Mode):</b> ព័ត៌មានឯកជនភាពផ្ទាល់ខ្លួន (លេខទូរស័ព្ទ, អ៊ីមែល, CV, កំណត់សម្គាល់) ត្រូវបាន Blur ការពារសុវត្ថិភាព។
+                  </p>
+                </div>
+              )}
+
               {/* Photo Upload & Preview */}
               <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1182,14 +1225,19 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">លេខទូរស័ព្ទ</label>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                    <span>លេខទូរស័ព្ទ</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                  </label>
                   <input
                     type="text"
                     disabled={isReadOnly}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="012 889 901"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                    }`}
                   />
                 </div>
               </div>
@@ -1223,14 +1271,19 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អ៊ីមែល (Email)</label>
+                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                  <span>អ៊ីមែល (Email)</span>
+                  {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                </label>
                 <input
                   type="text"
                   disabled={isReadOnly}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   placeholder="teacher@ici.edu.kh"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed ${
+                    isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                  }`}
                 />
               </div>
 
@@ -1252,6 +1305,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   <span className="font-bold text-zinc-800 dark:text-zinc-200 text-xs flex items-center gap-1.5">
                     <Paperclip className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>ឯកសារប្រវត្តិរូបសង្ខេប (CV / Resume)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                   </span>
                   {!isReadOnly && (
                     <label className="px-2.5 py-1 rounded-xl bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 text-zinc-800 dark:text-zinc-200 font-bold text-[10.5px] inline-flex items-center gap-1 cursor-pointer">
@@ -1271,10 +1325,12 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/40">
                     <div className="flex items-center gap-1.5 text-emerald-900 dark:text-emerald-300 font-medium truncate text-[11px]">
                       <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="truncate">{formCvName}</span>
+                      <span className={`truncate ${isReadOnly ? 'filter blur-[3px] select-none pointer-events-none opacity-60 max-w-[120px]' : ''}`}>
+                        {isReadOnly ? 'CV_Teacher_File.pdf' : formCvName}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {formCvUrl && (
+                      {formCvUrl && !isReadOnly && (
                         <a
                           href={formCvUrl}
                           download={formCvName}
@@ -1282,6 +1338,11 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                         >
                           ទាញយក
                         </a>
+                      )}
+                      {isReadOnly && (
+                        <span className="text-amber-700 dark:text-amber-400 font-bold text-[10px] flex items-center gap-0.5">
+                          <Lock className="w-2.5 h-2.5" /> ការពារ
+                        </span>
                       )}
                       {!isReadOnly && (
                         <button
@@ -1305,14 +1366,19 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កំណត់សម្គាល់បន្ថែម (Notes)</label>
+                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                  <span>កំណត់សម្គាល់បន្ថែម (Notes)</span>
+                  {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                </label>
                 <textarea
                   rows={2}
                   disabled={isReadOnly}
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="កំណត់សម្គាល់បន្ថែមអំពីសាស្ត្រាចារ្យ..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed ${
+                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                  }`}
                 />
               </div>
 
