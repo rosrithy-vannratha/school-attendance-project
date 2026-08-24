@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ActiveTab, AppUser } from '../types';
 import { subscribeSyncInfo, SyncInfo, instituteService } from '../service/instituteService';
+import icetiLogo from '../assets/images/icetilogo.jpg';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -85,8 +86,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-emerald-100/90 dark:bg-zinc-200 text-black px-4 py-2 border-b border-emerald-200/80 dark:border-zinc-300">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-800 text-white flex items-center justify-center font-bold shadow-xs">
-              <GraduationCap className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-xs border border-emerald-300 dark:border-zinc-400 shrink-0 overflow-hidden">
+              <img
+                src={icetiLogo}
+                alt="ICETI Logo"
+                className="w-full h-full object-contain rounded-md"
+              />
             </div>
             <div>
               <h1 className="font-extrabold text-sm tracking-wide text-black flex items-center gap-2">
