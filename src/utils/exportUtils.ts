@@ -387,6 +387,23 @@ export function parseTeacherExcel(file: File): Promise<Partial<Teacher>[]> {
             ]) || ''
           ).trim();
 
+          // Chinese Name aliases
+          const nameChinese = String(
+            getRowValue(row, [
+              'ឈ្មោះចិន (Chinese)',
+              'ឈ្មោះចិន',
+              'ឈ្មោះជាភាសាចិន',
+              'ឈ្មោះជាចិន',
+              'Name Chinese',
+              'Chinese Name',
+              'Chinese',
+              '中文名',
+              '姓名',
+              '中文姓名',
+              '教师姓名(中文)'
+            ]) || ''
+          ).trim();
+
           // Teacher Code aliases
           const teacherCode = String(
             getRowValue(row, [
@@ -451,6 +468,7 @@ export function parseTeacherExcel(file: File): Promise<Partial<Teacher>[]> {
             teacherCode,
             nameKhmer: nameKhmer || nameLatin || `សាស្ត្រាចារ្យទី ${index + 1}`,
             nameLatin: nameLatin || nameKhmer,
+            nameChinese: nameChinese || undefined,
             gender,
             phone,
             email: email || undefined,
@@ -661,11 +679,13 @@ export function exportTeachersToExcel(teachers: Teacher[], filename = 'teacher_f
     'អត្តលេខ (ID)': t.teacherCode,
     'គោត្តនាម-នាម (Khmer)': t.nameKhmer,
     'អក្សរឡាតាំង (Latin)': t.nameLatin,
+    'ឈ្មោះចិន (Chinese)': t.nameChinese || '-',
     'ភេទ (Gender)': t.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)',
     'លេខទូរសព្ទ (Phone)': t.phone || '-',
     'អ៊ីមែល (Email)': t.email || '-',
     'មុខវិជ្ជាបង្រៀន (Subjects)': t.subjects,
     'វេនបង្រៀន (Shift)': getShiftLabel(String(t.shift || 'morning')),
+    'កម្រិតសញ្ញាបត្រ (Degree)': t.degree || '-',
     'ស្ថានភាព (Status)': getTeacherStatusLabel(t.status),
   }));
 
@@ -681,22 +701,26 @@ export function downloadTeacherTemplate(): void {
       'Teacher Code': 'ICI-TCH-001',
       'Name Khmer': 'សាស្ត្រាចារ្យ ឡុង សុខា',
       'Name Latin': 'Long Sokha',
+      'Name Chinese': '龙索卡',
       'Gender': 'male',
       'Phone': '012345678',
       'Email': 'longsokha@ici.edu.kh',
       'Subjects': 'គរុកោសល្យទូទៅ, វេយ្យាករណ៍ភាសាចិន',
       'Shift': 'morning',
+      'Degree': 'បរិញ្ញាបត្រជាន់ខ្ពស់',
       'Status': 'active'
     },
     {
       'Teacher Code': 'ICI-TCH-002',
       'Name Khmer': 'សាស្ត្រាចារ្យ ចេង វ៉ាន់នី',
       'Name Latin': 'Cheng Vanny',
+      'Name Chinese': '程婉妮',
       'Gender': 'female',
       'Phone': '098112233',
       'Email': 'chengvanny@ici.edu.kh',
       'Subjects': 'វិធីសាស្ត្របង្រៀនភាសាចិន (Pedagogy Methodology)',
       'Shift': 'evening',
+      'Degree': 'បណ្ឌិត (PhD)',
       'Status': 'active'
     }
   ];
@@ -736,6 +760,7 @@ export function exportTeacherMonthlyAttendanceToExcel(
       'អត្តលេខ (ID)': t.teacherCode,
       'ឈ្មោះខ្មែរ (Name Khmer)': t.nameKhmer,
       'អក្សរឡាតាំង (Name Latin)': t.nameLatin,
+      'ឈ្មោះចិន (Name Chinese)': t.nameChinese || '-',
       'ភេទ (Gender)': t.gender === 'female' ? 'ស្រី' : 'ប្រុស',
       'មុខវិជ្ជា (Subject)': t.subjects || 'ភាសាចិន',
       'វេន (Shift)': getShiftLabel(String(t.shift || 'morning')),
