@@ -38,6 +38,7 @@
         "teacherCode": { "type": "string" },
         "nameKhmer": { "type": "string" },
         "nameLatin": { "type": "string" },
+        "nameChinese": { "type": "string" },
         "gender": { "type": "string", "enum": ["male", "female"] },
         "phone": { "type": "string" },
         "email": { "type": "string" },
