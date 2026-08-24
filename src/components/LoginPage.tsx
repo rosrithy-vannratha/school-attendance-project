@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { authService } from '../service/instituteService';
 import { AppUser } from '../types';
+import icetiLogo from '../assets/images/icetilogo.jpg';
 
 interface LoginPageProps {
   onSuccess: (user: AppUser) => void;
@@ -75,8 +76,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       {/* Top Header Bar */}
       <header className="px-4 sm:px-8 py-3.5 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-300 bg-white dark:bg-zinc-100 backdrop-blur-md sticky top-0 z-20 text-black">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-800 text-white flex items-center justify-center font-black shadow-md border border-emerald-700/50">
-            <GraduationCap className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center p-0.5 font-black shadow-md border border-emerald-300 dark:border-zinc-400 overflow-hidden shrink-0">
+            <img src={icetiLogo} alt="ICETI Logo" className="w-full h-full object-contain rounded-xl" />
           </div>
           <div>
             <h1 className="font-extrabold text-sm sm:text-base leading-tight text-black">
@@ -107,8 +108,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           <div className="bg-white dark:bg-zinc-50 rounded-3xl border border-zinc-200 dark:border-zinc-300 shadow-xl overflow-hidden text-black">
             {/* Card Header */}
             <div className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-6 text-center text-white relative">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 text-emerald-300 border border-white/20 flex items-center justify-center mx-auto mb-3 shadow-inner">
-                <GraduationCap className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 rounded-2xl bg-white p-1 border border-white/30 flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden">
+                <img src={icetiLogo} alt="ICETI Logo" className="w-full h-full object-contain rounded-xl" />
               </div>
               <h2 className="text-xl font-black text-white tracking-wide">
                 ចូលប្រើប្រព័ន្ធវិទ្យាស្ថាន
