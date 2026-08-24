@@ -131,9 +131,9 @@ export default function App() {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-[#f8faf8] dark:bg-[#0c1410] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0b1329] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-md animate-pulse">
+          <div className="w-12 h-12 rounded-2xl bg-blue-700 flex items-center justify-center text-white shadow-md animate-pulse">
             <GraduationCap className="w-6 h-6" />
           </div>
           <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">កំពុងតភ្ជាប់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់...</p>
@@ -167,10 +167,10 @@ export default function App() {
                   ? 'bg-rose-900/90 text-white border-rose-700'
                   : toastMessage.type === 'info'
                   ? 'bg-zinc-900/90 text-white border-zinc-700'
-                  : 'bg-emerald-900/90 text-white border-emerald-700'
+                  : 'bg-blue-900/90 text-white border-blue-700'
               }`}
             >
-              {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-300" />}
+              {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-sky-300" />}
               {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-300" />}
               <span>{toastMessage.text}</span>
             </motion.div>
@@ -183,7 +183,7 @@ export default function App() {
   const isReadOnly = user?.role === 'Guest' || user?.isAnonymous || false;
 
   return (
-    <div className="min-h-screen bg-[#f7faf8] dark:bg-[#0c1410] text-zinc-900 dark:text-zinc-100 flex flex-col selection:bg-emerald-600 selection:text-white font-sans antialiased transition-colors">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0b1329] text-zinc-900 dark:text-zinc-100 flex flex-col selection:bg-blue-600 selection:text-white font-sans antialiased transition-colors">
       {/* Navigation Bar */}
       <Navbar
         activeTab={activeTab}
