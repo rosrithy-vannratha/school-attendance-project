@@ -59,6 +59,7 @@ export interface Teacher {
   teacherCode: string;
   nameKhmer: string;
   nameLatin: string;
+  nameChinese?: string;
   gender: 'male' | 'female';
   phone: string;
   email?: string;
