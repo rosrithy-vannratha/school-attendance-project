@@ -243,6 +243,7 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
     return (
       (t.nameKhmer || '').toLowerCase().includes(q) ||
       (t.nameLatin || '').toLowerCase().includes(q) ||
+      (t.nameChinese || '').toLowerCase().includes(q) ||
       (t.teacherCode || '').toLowerCase().includes(q)
     );
   });
@@ -253,6 +254,7 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
     return (
       (item.teacher.nameKhmer || '').toLowerCase().includes(q) ||
       (item.teacher.nameLatin || '').toLowerCase().includes(q) ||
+      (item.teacher.nameChinese || '').toLowerCase().includes(q) ||
       (item.teacher.teacherCode || '').toLowerCase().includes(q)
     );
   });
@@ -421,7 +423,14 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
                             {t.teacherCode}
                           </td>
                           <td className="py-3 px-4">
-                            <div className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</span>
+                              {t.nameChinese && (
+                                <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                                  {t.nameChinese}
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin}</div>
                           </td>
                           <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200">
@@ -638,7 +647,14 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
                           {item.teacher.teacherCode}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-bold text-zinc-900 dark:text-zinc-100">{item.teacher.nameKhmer}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{item.teacher.nameKhmer}</span>
+                            {item.teacher.nameChinese && (
+                              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                                {item.teacher.nameChinese}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{item.teacher.nameLatin}</div>
                         </td>
                         <td className="py-3 px-4 font-medium text-zinc-800 dark:text-zinc-200">
