@@ -13,7 +13,11 @@ import {
   Table as TableIcon,
   Eye,
   Clock,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { Major, Classroom, Student } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -38,6 +42,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMajor, setEditingMajor] = useState<Major | null>(null);
 
+  // Pagination State
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   const [formCode, setFormCode] = useState('');
   const [formNameKhmer, setFormNameKhmer] = useState('');
   const [formNameLatin, setFormNameLatin] = useState('');
@@ -56,6 +64,23 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
       return matchKhmer || matchLatin || matchCode || matchDesc;
     });
   }, [majors, search]);
+
+  // Reset page when search or pageSize changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, pageSize]);
+
+  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredMajors.length / pageSize));
+  const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedMajors = useMemo(() => {
+    if (pageSize === -1) return filteredMajors;
+    const start = (validPage - 1) * pageSize;
+    return filteredMajors.slice(start, start + pageSize);
+  }, [filteredMajors, validPage, pageSize]);
+
+  const startIndex = filteredMajors.length === 0 ? 0 : pageSize === -1 ? 1 : (validPage - 1) * pageSize + 1;
+  const endIndex = pageSize === -1 ? filteredMajors.length : Math.min(validPage * pageSize, filteredMajors.length);
 
   const openAddModal = () => {
     if (isReadOnly) return;
@@ -251,7 +276,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredMajors.map((maj) => {
+                  paginatedMajors.map((maj) => {
                     const classCount = classes.filter((c) => c.majorId === maj.id).length;
                     const studentCount = students.filter((s) => s.majorId === maj.id).length;
 
@@ -351,7 +376,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
               <p className="font-bold text-zinc-700 dark:text-zinc-300 text-sm">ពុំមានទិន្នន័យជំនាញតាមការស្វែងរកទេ</p>
             </div>
           ) : (
-            filteredMajors.map((maj) => {
+            paginatedMajors.map((maj) => {
               const classCount = classes.filter((c) => c.majorId === maj.id).length;
               const studentCount = students.filter((s) => s.majorId === maj.id).length;
 
@@ -415,6 +440,81 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+
+      {/* Majors Pagination Controls */}
+      {filteredMajors.length > 0 && (
+        <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+          <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+            <span>
+              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startIndex} - {endIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredMajors.length}</strong> ជំនាញ
+            </span>
+
+            <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+              <span className="text-[11px]">ក្នុងមួយទំព័រ:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={-1}>ទាំងអស់ (All)</option>
+              </select>
+            </div>
+          </div>
+
+          {pageSize !== -1 && totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={validPage === 1}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                title="ទំព័រដំបូងបង្អស់ (First Page)"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={validPage === 1}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                title="ទំព័រមុន (Previous Page)"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="px-3 py-1 font-bold text-zinc-800 dark:text-zinc-200">
+                ទំព័រ {validPage} / {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={validPage === totalPages}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                title="ទំព័របន្ទាប់ (Next Page)"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={validPage === totalPages}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                title="ទំព័រចុងក្រោយ (Last Page)"
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       )}
