@@ -26,22 +26,35 @@ import {
   UserCheck,
   LayoutGrid,
   Table as TableIcon,
-  MapPin
+  MapPin,
+  TrendingUp,
+  Award,
+  CheckSquare,
+  Square,
+  ZoomIn,
+  Sparkles,
+  Layers,
+  Check
 } from 'lucide-react';
-import { Student, Classroom, Major, ShiftType, AcademicYearType, StudentStatus } from '../types';
+import { Student, Classroom, Major, ShiftType, AcademicYearType, StudentStatus, ShiftItem, ClassType } from '../types';
 import { instituteService } from '../service/instituteService';
+import { INITIAL_SHIFTS, CLASS_TYPE_OPTIONS } from '../data/initialData';
 import {
   exportStudentsToExcel,
   downloadStudentTemplate,
   parseStudentExcel,
   getShiftLabel,
+  getClassTypeLabel,
   getStatusLabel
 } from '../utils/exportUtils';
+import { ProfileImageViewerModal, ProfileViewTarget } from './ProfileImageViewerModal';
+import { PromoteStudentsModal } from './PromoteStudentsModal';
 
 interface StudentsViewProps {
   students: Student[];
   classes: Classroom[];
   majors: Major[];
+  shifts?: ShiftItem[];
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
@@ -52,12 +65,14 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   students,
   classes,
   majors,
+  shifts = INITIAL_SHIFTS,
   isAddModalOpen = false,
   onCloseAddModal,
   showToast,
   isReadOnly = false
 }) => {
   const [search, setSearch] = useState('');
+  const [selectedClassType, setSelectedClassType] = useState<string>('all');
   const [selectedShift, setSelectedShift] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -65,7 +80,18 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
-  // Modal states
+  // Multi-Selection State
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+
+  // Promotion Modal State
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [studentsToPromote, setStudentsToPromote] = useState<Student[]>([]);
+
+  // Profile Image Viewer Modal State
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [imageViewerTarget, setImageViewerTarget] = useState<ProfileViewTarget | null>(null);
+
+  // Student Add / Edit Modal states
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpen);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -81,6 +107,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [formDob, setFormDob] = useState('2004-01-01');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formClassType, setFormClassType] = useState<ClassType>('bachelor');
   const [formMajorId, setFormMajorId] = useState(majors[0]?.id || 'maj_pedagogy');
   const [formClassId, setFormClassId] = useState(classes[0]?.id || '');
   const [formShift, setFormShift] = useState<ShiftType>('morning');
@@ -108,6 +135,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormDob('2004-01-01');
     setFormPhone('');
     setFormEmail('');
+    setFormClassType('bachelor');
     setFormMajorId(majors[0]?.id || 'maj_pedagogy');
     setFormClassId(classes[0]?.id || '');
     setFormShift('morning');
@@ -130,6 +158,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormDob(stu.dob || '2004-01-01');
     setFormPhone(stu.phone || '');
     setFormEmail(stu.email || '');
+    setFormClassType(stu.classType || 'bachelor');
     setFormMajorId(stu.majorId);
     setFormClassId(stu.classId);
     setFormShift(stu.shift);
@@ -140,6 +169,64 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormNotes(stu.notes || '');
     setFormPhotoUrl(stu.photoUrl || undefined);
     setIsModalOpen(true);
+  };
+
+  // Image viewer opener
+  const handleOpenPhotoViewer = (stu: Student) => {
+    setImageViewerTarget({
+      nameKhmer: stu.nameKhmer,
+      nameLatin: stu.nameLatin,
+      nameChinese: stu.nameChinese,
+      code: stu.studentCode,
+      photoUrl: stu.photoUrl,
+      gender: stu.gender,
+      majorName: stu.majorName,
+      className: stu.className,
+      classType: stu.classType,
+      shift: stu.shift,
+      year: stu.year,
+      roleOrStatus: stu.status
+    });
+    setIsImageViewerOpen(true);
+  };
+
+  // Selection handlers
+  const handleToggleSelectStudent = (id: string) => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = (filteredList: Student[]) => {
+    const next = new Set<string>();
+    filteredList.forEach((s) => next.add(s.id));
+    setSelectedStudentIds(next);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds(new Set());
+  };
+
+  // Promotion triggers
+  const handleOpenPromoteForSelected = () => {
+    const selectedList = students.filter((s) => selectedStudentIds.has(s.id));
+    if (selectedList.length === 0) {
+      showToast('សូមជ្រើសរើសនិស្សិតយ៉ាងហោចណាស់ម្នាក់ដើម្បីតម្លើងកម្រិត!', 'error');
+      return;
+    }
+    setStudentsToPromote(selectedList);
+    setIsPromoteModalOpen(true);
+  };
+
+  const handleOpenPromoteForSingle = (stu: Student) => {
+    setStudentsToPromote([stu]);
+    setIsPromoteModalOpen(true);
   };
 
   const compressImageFile = (file: File, maxWidth = 350, maxHeight = 350, quality = 0.75): Promise<string> => {
@@ -219,6 +306,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
   const handleResetFilters = () => {
     setSearch('');
+    setSelectedClassType('all');
     setSelectedShift('all');
     setSelectedClass('all');
     setSelectedYear('all');
@@ -228,6 +316,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
   const activeFiltersCount = [
     search.trim() !== '',
+    selectedClassType !== 'all',
     selectedShift !== 'all',
     selectedClass !== 'all',
     selectedYear !== 'all',
@@ -240,12 +329,14 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
       return;
     }
+
     setIsDeletingAll(true);
     try {
       await instituteService.deleteAllStudents();
-      showToast('បានលុបទិន្នន័យនិស្សិតទាំងអស់ដោយជោគជ័យ!', 'success');
+      showToast('បានលុបទិន្នន័យនិស្សិតទាំងអស់ដោយជោគជ័យ', 'success');
       setIsDeleteAllModalOpen(false);
-    } catch (e) {
+      setSelectedStudentIds(new Set());
+    } catch (err) {
       showToast('មិនអាចលុបទិន្នន័យបានទេ', 'error');
     } finally {
       setIsDeletingAll(false);
@@ -255,20 +346,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) {
-      showToast('គណនីភ្ញៀវមិនអាចបង្កើត ឬកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
-      return;
-    }
-    if (!formNameKhmer.trim()) {
-      showToast('សូមបញ្ចូលឈ្មោះខ្មែររបស់និស្សិត!', 'error');
+      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
       return;
     }
 
-    const selectedMaj = majors.find((m) => m.id === formMajorId);
-    const selectedCls = classes.find((c) => c.id === formClassId);
+    const selectedMajorObj = majors.find((m) => m.id === formMajorId);
+    const selectedClassObj = classes.find((c) => c.id === formClassId);
 
     const studentData: Student = {
       id: editingStudent ? editingStudent.id : `stu_${Date.now()}`,
-      studentCode: formStudentCode.trim() || (editingStudent ? editingStudent.studentCode : `CPI-${Date.now()}`),
+      studentCode: formStudentCode.trim() || `ICI-${Date.now().toString().slice(-4)}`,
       nameKhmer: formNameKhmer.trim(),
       nameLatin: formNameLatin.trim(),
       nameChinese: formNameChinese.trim() || undefined,
@@ -276,30 +363,28 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       dob: formDob,
       phone: formPhone.trim(),
       email: formEmail.trim() || undefined,
+      classType: formClassType,
       majorId: formMajorId,
-      majorName: selectedMaj?.nameKhmer || (editingStudent ? editingStudent.majorName : 'គរុកោសល្យភាសាចិន'),
+      majorName: selectedMajorObj ? selectedMajorObj.nameKhmer : 'គរុកោសល្យភាសាចិន',
       classId: formClassId,
-      className: selectedCls?.name || (editingStudent ? editingStudent.className : 'ថ្នាក់ទូទៅ'),
+      className: selectedClassObj ? selectedClassObj.name : 'ថ្នាក់គរុកោសល្យ',
       shift: formShift,
       year: formYear,
       status: formStatus,
       guardianPhone: formGuardianPhone.trim() || undefined,
       address: formAddress.trim() || undefined,
       notes: formNotes.trim() || undefined,
-      photoUrl: formPhotoUrl || undefined,
+      photoUrl: formPhotoUrl,
       createdAt: editingStudent ? editingStudent.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     try {
       await instituteService.saveStudent(studentData);
-      showToast(
-        editingStudent ? 'បានកែប្រែព័ត៌មាននិស្សិតជោគជ័យ!' : 'បានបញ្ចូលនិស្សិតថ្មីជោគជ័យ!',
-        'success'
-      );
+      showToast(editingStudent ? 'បានកែប្រែព័ត៌មាននិស្សិតជោគជ័យ!' : 'បានចុះឈ្មោះនិស្សិតថ្មីជោគជ័យ!', 'success');
       closeModal();
-    } catch (err: any) {
-      showToast('មានបញ្ហាក្នុងការរក្សាទុកទិន្នន័យ', 'error');
+    } catch (err) {
+      showToast('មិនអាចរក្សាទុកទិន្នន័យបានទេ', 'error');
     }
   };
 
@@ -308,208 +393,88 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
       return;
     }
+
     if (window.confirm(`តើអ្នកពិតជាចង់លុបនិស្សិត "${name}" មែនទេ?`)) {
       try {
         await instituteService.deleteStudent(id);
-        showToast('បានលុបនិស្សិតជោគជ័យ!', 'info');
-      } catch (e) {
-        showToast('មិនអាចលុបបានទេ', 'error');
+        showToast('បានលុបនិស្សិតរួចរាល់', 'success');
+        setSelectedStudentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      } catch (err) {
+        showToast('មិនអាចលុបនិស្សិតបានទេ', 'error');
       }
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) {
-      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ', 'info');
       return;
     }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsImporting(true);
     try {
-      const parsed = await parseStudentExcel(file);
-      if (parsed.length === 0) {
-        showToast('មិនមានទិន្នន័យនិស្សិតក្នុងឯកសារ Excel ទេ!', 'error');
+      const importedStudents = await parseStudentExcel(file, majors, classes);
+      if (importedStudents.length === 0) {
+        showToast('ពុំមានទិន្នន័យត្រឹមត្រូវក្នុងឯកសារ Excel ទេ', 'error');
+        setIsImporting(false);
         return;
       }
 
-      const defaultMajor = majors[0];
-      const defaultClass = classes[0];
-
-      let insertedCount = 0;
-      let updatedCount = 0;
-
-      // Build map of existing students to prevent duplicates
-      const studentMap = new Map<string, Student>();
-      students.forEach((s) => {
-        studentMap.set(s.id, s);
-      });
-
-      const processedBatch: Student[] = [];
-
-      parsed.forEach((p, index) => {
-        // Resolve Major
-        let matchedMajor = defaultMajor;
-        if (p.majorName) {
-          const rawMajor = (p.majorName || '').toLowerCase().trim();
-          const found = majors.find(
-            (m) =>
-              m.id.toLowerCase() === rawMajor ||
-              m.nameKhmer.toLowerCase().includes(rawMajor) ||
-              rawMajor.includes(m.nameKhmer.toLowerCase()) ||
-              (m.nameLatin && m.nameLatin.toLowerCase().includes(rawMajor)) ||
-              (m.code && m.code.toLowerCase() === rawMajor)
-          );
-          if (found) matchedMajor = found;
-        }
-
-        // Resolve Class
-        let matchedClass = defaultClass;
-        if (p.className) {
-          const rawClass = (p.className || '').toLowerCase().trim();
-          const found = classes.find(
-            (c) =>
-              c.id.toLowerCase() === rawClass ||
-              c.name.toLowerCase().includes(rawClass) ||
-              rawClass.includes(c.name.toLowerCase()) ||
-              (c.classCode && c.classCode.toLowerCase() === rawClass)
-          );
-          if (found) matchedClass = found;
-        }
-
-        // Check if student already exists by Student Code or (Name + Phone)
-        const targetCode = (p.studentCode || '').trim().toLowerCase();
-        const targetNameKhmer = (p.nameKhmer || '').trim().toLowerCase();
-        const targetPhone = (p.phone || '').trim().replace(/\D/g, '');
-
-        let existingMatch: Student | undefined;
-
-        if (targetCode) {
-          existingMatch = Array.from(studentMap.values()).find(
-            (s) => s.studentCode.trim().toLowerCase() === targetCode
-          );
-        }
-
-        if (!existingMatch && targetNameKhmer && targetPhone) {
-          existingMatch = Array.from(studentMap.values()).find(
-            (s) =>
-              s.nameKhmer.trim().toLowerCase() === targetNameKhmer &&
-              (s.phone || '').replace(/\D/g, '') === targetPhone
-          );
-        }
-
-        if (existingMatch) {
-          // Update existing student record
-          updatedCount++;
-          const updated: Student = {
-            ...existingMatch,
-            studentCode: p.studentCode || existingMatch.studentCode,
-            nameKhmer: p.nameKhmer || existingMatch.nameKhmer,
-            nameLatin: p.nameLatin || existingMatch.nameLatin,
-            nameChinese: p.nameChinese || existingMatch.nameChinese,
-            gender: p.gender || existingMatch.gender,
-            dob: p.dob || existingMatch.dob,
-            phone: p.phone || existingMatch.phone,
-            email: p.email || existingMatch.email,
-            majorId: matchedMajor?.id || existingMatch.majorId,
-            majorName: matchedMajor?.nameKhmer || existingMatch.majorName,
-            classId: matchedClass?.id || existingMatch.classId,
-            className: matchedClass?.name || existingMatch.className,
-            shift: p.shift || existingMatch.shift,
-            year: p.year || existingMatch.year,
-            status: p.status || existingMatch.status,
-            guardianPhone: p.guardianPhone || existingMatch.guardianPhone,
-            address: p.address || existingMatch.address,
-            updatedAt: new Date().toISOString()
-          };
-          studentMap.set(updated.id, updated);
-          processedBatch.push(updated);
-        } else {
-          // Insert new student record
-          insertedCount++;
-          const newId = `stu_imp_${Date.now()}_${index}`;
-          const newStudent: Student = {
-            id: newId,
-            studentCode: p.studentCode || `CPI-2025-${String(students.length + insertedCount).padStart(3, '0')}`,
-            nameKhmer: p.nameKhmer || 'និស្សិត',
-            nameLatin: p.nameLatin || '',
-            nameChinese: p.nameChinese || undefined,
-            gender: p.gender || 'female',
-            dob: p.dob || '2004-01-01',
-            phone: p.phone || '',
-            email: p.email || undefined,
-            majorId: matchedMajor?.id || 'maj_pedagogy',
-            majorName: matchedMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
-            classId: matchedClass?.id || (classes[0]?.id || ''),
-            className: matchedClass?.name || 'ថ្នាក់ឆ្នាំទី១',
-            shift: p.shift || 'morning',
-            year: p.year || 'Year 1',
-            status: p.status || 'active',
-            guardianPhone: p.guardianPhone || undefined,
-            address: p.address || undefined,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          studentMap.set(newId, newStudent);
-          processedBatch.push(newStudent);
-        }
-      });
-
-      await instituteService.saveStudentsBulk(processedBatch);
-      showToast(
-        `បានបញ្ចូលនិស្សិតថ្មី ${insertedCount} នាក់ និងធ្វើបច្ចុប្បន្នភាព ${updatedCount} នាក់ពី Excel ដោយជោគជ័យ!`,
-        'success'
-      );
-    } catch (err) {
+      await instituteService.saveStudentsBulk(importedStudents);
+      showToast(`បានបញ្ចូលនិស្សិតចំនួន ${importedStudents.length} នាក់ដោយជោគជ័យ!`, 'success');
+    } catch (err: any) {
       console.error(err);
-      showToast('ទម្រង់ឯកសារ Excel មិនត្រឹមត្រូវ', 'error');
+      showToast(err.message || 'មានបញ្ហាក្នុងការ Import Excel', 'error');
     } finally {
       setIsImporting(false);
       e.target.value = '';
     }
   };
 
-  // Filtered Students
+  // Filtered Students Calculation
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      // 1. Shift filter
+      // 1. Class Type filter
+      if (selectedClassType !== 'all') {
+        const stuType = s.classType || 'bachelor';
+        if (stuType !== selectedClassType) return false;
+      }
+
+      // 2. Shift filter
       if (selectedShift !== 'all') {
-        const studentShift = (s.shift || '').toLowerCase();
-        if (studentShift !== selectedShift.toLowerCase()) return false;
+        if (s.shift !== selectedShift) return false;
       }
 
-      // 2. Class filter (match by ID or class name)
+      // 3. Class filter
       if (selectedClass !== 'all') {
-        const targetClass = classes.find((c) => c.id === selectedClass);
-        const matchesId = s.classId === selectedClass;
-        const matchesName = targetClass && s.className === targetClass.name;
-        const matchesDirectName = s.className === selectedClass;
-        if (!matchesId && !matchesName && !matchesDirectName) return false;
+        if (s.classId !== selectedClass) return false;
       }
 
-      // 3. Major filter (match by ID or major name)
+      // 4. Major filter
       if (selectedMajor !== 'all') {
-        const targetMajor = majors.find((m) => m.id === selectedMajor);
-        const matchesId = s.majorId === selectedMajor;
-        const matchesName = targetMajor && (s.majorName === targetMajor.nameKhmer || s.majorName === targetMajor.nameLatin);
-        const matchesDirectName = s.majorName === selectedMajor;
-        if (!matchesId && !matchesName && !matchesDirectName) return false;
+        if (s.majorId !== selectedMajor) return false;
       }
 
-      // 4. Academic Year filter
+      // 5. Academic Year filter
       if (selectedYear !== 'all') {
         const studentYear = (s.year || '').toLowerCase();
         const targetYear = selectedYear.toLowerCase();
         if (!studentYear.includes(targetYear) && studentYear !== targetYear) return false;
       }
 
-      // 5. Status filter
+      // 6. Status filter
       if (selectedStatus !== 'all') {
         if (s.status !== selectedStatus) return false;
       }
 
-      // 6. Search query
+      // 7. Search query
       if (search.trim()) {
         const q = search.toLowerCase().trim();
         const matchCode = (s.studentCode || '').toLowerCase().includes(q);
@@ -528,16 +493,19 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
       return true;
     });
-  }, [students, classes, majors, selectedShift, selectedClass, selectedMajor, selectedYear, selectedStatus, search]);
+  }, [students, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedStatus, search]);
+
+  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every((s) => selectedStudentIds.has(s.id));
+  const someFilteredSelected = filteredStudents.some((s) => selectedStudentIds.has(s.id));
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Bar */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-200/60 dark:border-sky-500/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-sm">
-              <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 flex items-center justify-center font-bold text-sm border border-blue-200 dark:border-blue-800/60">
+              <Users className="w-4 h-4 text-blue-700 dark:text-sky-400" />
             </span>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
               បញ្ជីរាយនាមនិស្សិត (Students Directory)
@@ -557,7 +525,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-sky-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពតារាង (Table View)"
@@ -570,7 +538,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               onClick={() => setViewMode('grid')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-sky-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពកាត (Grid / Card View)"
@@ -589,7 +557,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-              <span>លុបទិន្នន័យទាំងអស់ (Delete All)</span>
+              <span>លុបទិន្នន័យទាំងអស់</span>
             </button>
           )}
 
@@ -609,9 +577,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
           <button
             onClick={() => exportStudentsToExcel(filteredStudents)}
-            className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
             <span>Export Excel ({filteredStudents.length})</span>
           </button>
 
@@ -626,7 +594,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
           {!isReadOnly ? (
             <button
               onClick={openAddModal}
-              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>+ បន្ថែមនិស្សិតថ្មី</span>
@@ -640,9 +608,58 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         </div>
       </div>
 
+      {/* Prominent Selection & Promotion Action Bar (Appears when 1+ students selected) */}
+      {selectedStudentIds.size > 0 && (
+        <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white p-4 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn border border-blue-500/40">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-sky-200 font-bold text-xs">
+              <CheckSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-xs text-white flex items-center gap-2">
+                <span>បានជ្រើសរើស: <strong className="text-sky-300 underline font-mono text-sm">{selectedStudentIds.size} នាក់</strong></span>
+                <span className="text-[11px] text-sky-200 font-normal">({selectedStudentIds.size} Students Selected)</span>
+              </p>
+              <p className="text-[11px] text-sky-200/80">
+                អ្នកអាចតម្លើងកម្រិតឆ្នាំសិក្សា ផ្ទេរថ្នាក់ ឬប្តូរវេនសិក្សាជាក្រុម
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={handleOpenPromoteForSelected}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-transform active:scale-95 cursor-pointer"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>តម្លើងកម្រិត / ផ្លាស់ប្តូរថ្នាក់ (Promote Selected)</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleSelectAllFiltered(filteredStudents)}
+              className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              ជ្រើសរើសទាំងអស់ ({filteredStudents.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sky-200 font-medium text-xs transition-colors cursor-pointer"
+            >
+              ដកជម្រើស (Clear)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters & Search Control */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-blue-200/60 dark:border-sky-500/20 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 text-xs">
           {/* Search */}
           <div className="relative sm:col-span-2 md:col-span-3 lg:col-span-2">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -651,7 +668,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ស្វែងរកតាមឈ្មោះ, អត្តលេខ, ទូរសព្ទ..."
-              className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-hidden transition-all"
+              className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-hidden transition-all"
             />
             {search && (
               <button
@@ -663,16 +680,32 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             )}
           </div>
 
+          {/* Class Type Filter */}
+          <div>
+            <select
+              value={selectedClassType}
+              onChange={(e) => setSelectedClassType(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">កម្រិតទាំងអស់ (All Degrees)</option>
+              {CLASS_TYPE_OPTIONS.map((ct) => (
+                <option key={ct.id} value={ct.id} className="dark:bg-[#111c38]">
+                  {ct.nameKhmer}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Major Filter */}
           <div>
             <select
               value={selectedMajor}
               onChange={(e) => setSelectedMajor(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">ជំនាញទាំងអស់ (All Majors)</option>
               {majors.map((m) => (
-                <option key={m.id} value={m.id} className="dark:bg-[#131f1a]">
+                <option key={m.id} value={m.id} className="dark:bg-[#111c38]">
                   {m.nameKhmer}
                 </option>
               ))}
@@ -684,29 +717,30 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">ថ្នាក់ទាំងអស់ (All Classes)</option>
               {classes.map((c) => (
-                <option key={c.id} value={c.id} className="dark:bg-[#131f1a]">
+                <option key={c.id} value={c.id} className="dark:bg-[#111c38]">
                   {c.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Shift Filter */}
+          {/* Dynamic Shift Filter */}
           <div>
             <select
               value={selectedShift}
               onChange={(e) => setSelectedShift(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">វេនទាំងអស់ (All Shifts)</option>
-              <option value="morning">វេនព្រឹក (Morning)</option>
-              <option value="afternoon">វេនរសៀល (Afternoon)</option>
-              <option value="evening">វេនយប់ (Evening)</option>
-              <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
+              {shifts.map((s) => (
+                <option key={s.id} value={s.code} className="dark:bg-[#111c38]">
+                  {s.nameKhmer}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -715,7 +749,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">ឆ្នាំទាំងអស់ (All Years)</option>
               <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
@@ -724,13 +758,16 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
             </select>
           </div>
+        </div>
 
-          {/* Status Filter */}
-          <div>
+        {/* Status Filter row and active filter count */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-zinc-600 dark:text-zinc-400">ស្ថានភាព:</span>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="px-3 py-1 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">ស្ថានភាពទាំងអស់ (All Status)</option>
               <option value="active">កំពុងរៀន (Active)</option>
@@ -739,59 +776,74 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               <option value="graduated">បញ្ចប់ការសិក្សា (Graduated)</option>
             </select>
           </div>
-        </div>
 
-        {/* Active Filters Bar & Reset */}
-        {activeFiltersCount > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
-              <Filter className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>
-                តម្រងសកម្ម: <strong className="font-semibold">{activeFiltersCount}</strong> លក្ខខណ្ឌ (រកឃើញ {filteredStudents.length} នាក់)
-              </span>
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-blue-800 dark:text-sky-300 text-xs">
+                <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                <span>
+                  តម្រងសកម្ម: <strong className="font-semibold">{activeFiltersCount}</strong> លក្ខខណ្ឌ (រកឃើញ {filteredStudents.length} នាក់)
+                </span>
+              </div>
+              <button
+                onClick={handleResetFilters}
+                className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <X className="w-3 h-3" />
+                <span>សម្អាតតម្រង (Reset)</span>
+              </button>
             </div>
-            <button
-              onClick={handleResetFilters}
-              className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <X className="w-3 h-3" />
-              <span>សម្អាតតម្រងទាំងអស់ (Reset)</span>
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Main Content View: Table or Cards Grid */}
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#111c38] rounded-3xl border border-blue-200/60 dark:border-sky-500/20 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
+              <thead className="bg-zinc-50 dark:bg-[#182645] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">អត្តលេខ & រូបថត</th>
+                  {/* Select All Checkbox Column */}
+                  <th className="py-3.5 px-3 w-10 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (allFilteredSelected) {
+                          handleClearSelection();
+                        } else {
+                          handleSelectAllFiltered(filteredStudents);
+                        }
+                      }}
+                      className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
+                      title={allFilteredSelected ? 'ដកជម្រើសទាំងអស់' : 'ជ្រើសរើសទាំងអស់'}
+                    >
+                      {allFilteredSelected ? (
+                        <CheckSquare className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                      ) : (
+                        <Square className="w-4 h-4 text-zinc-400" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="py-3.5 px-3">អត្តលេខ & រូបថត</th>
                   <th className="py-3.5 px-4">ឈ្មោះនិស្សិត (ខ្មែរ / Chinese / Latin)</th>
-                  <th className="py-3.5 px-4">
+                  <th className="py-3.5 px-3">កម្រិត & ជំនាញ</th>
+                  <th className="py-3.5 px-3">ថ្នាក់ & វេនសិក្សា</th>
+                  <th className="py-3.5 px-3">ឆ្នាំសិក្សា</th>
+                  <th className="py-3.5 px-3">
                     <span className="flex items-center gap-1">
-                      <span>ភេទ & ថ្ងៃកំណើត</span>
+                      <span>ទូរសព្ទ</span>
                       {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
                     </span>
                   </th>
-                  <th className="py-3.5 px-4">ជំនាញ & ថ្នាក់សិក្សា</th>
-                  <th className="py-3.5 px-4">វេន & ឆ្នាំសិក្សា</th>
-                  <th className="py-3.5 px-4">
-                    <span className="flex items-center gap-1">
-                      <span>ទូរសព្ទ & អាណាព្យាបាល</span>
-                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
-                    </span>
-                  </th>
-                  <th className="py-3.5 px-4">ស្ថានភាព</th>
+                  <th className="py-3.5 px-3">ស្ថានភាព</th>
                   <th className="py-3.5 px-4 text-right">សកម្មភាព</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    <td colSpan={9} className="py-12 text-center text-zinc-400">
                       <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
                       <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យនិស្សិតទេ</p>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -800,158 +852,184 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map((stu) => (
-                    <tr
-                      key={stu.id}
-                      className="hover:bg-emerald-50/40 dark:hover:bg-[#182620]/60 transition-colors"
-                    >
-                      {/* Student ID & Photo */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          {stu.photoUrl ? (
-                            <img
-                              src={stu.photoUrl}
-                              alt={stu.nameKhmer}
-                              className="w-10 h-10 rounded-xl object-cover border border-emerald-500/40 shadow-xs shrink-0"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                                stu.gender === 'female'
-                                  ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                                  : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                              }`}
-                            >
-                              {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">
-                              {stu.studentCode}
-                            </div>
-                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
-                              {stu.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+                  filteredStudents.map((stu) => {
+                    const isSelected = selectedStudentIds.has(stu.id);
 
-                      {/* Name */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
-                            {stu.nameKhmer}
-                          </span>
-                          {stu.nameChinese && (
-                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
-                              {stu.nameChinese}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-                          {stu.nameLatin || '-'}
-                        </div>
-                      </td>
-
-                      {/* Gender & DOB */}
-                      <td className="py-3 px-4">
-                        <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                          {stu.gender === 'female' ? 'ស្រី (Female)' : 'ប្រុស (Male)'}
-                        </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 mt-0.5">
-                          <Calendar className="w-3 h-3 text-zinc-400 shrink-0" />
-                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
-                            {stu.dob || '-'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Major & Class */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <GraduationCap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                            {stu.majorName || 'គរុកោសល្យភាសាចិន'}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium pl-5">
-                          ថ្នាក់: {stu.className || '-'}
-                        </div>
-                      </td>
-
-                      {/* Shift & Year */}
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-[11px] border border-zinc-200/60 dark:border-zinc-700/60">
-                          {stu.shift === 'morning' && <Sun className="w-3 h-3 text-amber-500" />}
-                          {stu.shift === 'afternoon' && <Sunset className="w-3 h-3 text-orange-500" />}
-                          {stu.shift === 'evening' && <Moon className="w-3 h-3 text-indigo-500" />}
-                          {stu.shift === 'weekend' && <Calendar className="w-3 h-3 text-teal-500" />}
-                          <span>{getShiftLabel(stu.shift)}</span>
-                        </span>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
-                          {stu.year}
-                        </div>
-                      </td>
-
-                      {/* Contact & Guardian */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
-                          <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
-                            {stu.phone || '-'}
-                          </span>
-                        </div>
-                        {stu.guardianPhone && (
-                          <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            <span>អាណាព្យាបាល: </span>
-                            <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
-                              {stu.guardianPhone}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
-                            stu.status === 'active'
-                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
-                              : stu.status === 'suspended'
-                              ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
-                              : stu.status === 'graduated'
-                              ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
-                          }`}
-                        >
-                          {getStatusLabel(stu.status)}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                    return (
+                      <tr
+                        key={stu.id}
+                        className={`transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/50'
+                            : 'hover:bg-blue-50/30 dark:hover:bg-[#182645]/50'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <td className="py-3 px-3 text-center">
                           <button
-                            onClick={() => openEditModal(stu)}
-                            className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
-                            title={isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}
+                            type="button"
+                            onClick={() => handleToggleSelectStudent(stu.id)}
+                            className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
                           >
-                            {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                            ) : (
+                              <Square className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
+                            )}
                           </button>
-                          {!isReadOnly && (
+                        </td>
+
+                        {/* Student ID & Clickable Photo */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2.5">
+                            {/* Profile Picture (Click to View) */}
                             <button
-                              onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
-                              className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
-                              title="លុប"
+                              type="button"
+                              onClick={() => handleOpenPhotoViewer(stu)}
+                              className="relative group w-10 h-10 rounded-xl overflow-hidden border border-blue-400/40 dark:border-sky-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                              title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              {stu.photoUrl ? (
+                                <img
+                                  src={stu.photoUrl}
+                                  alt={stu.nameKhmer}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div
+                                  className={`w-full h-full flex items-center justify-center font-bold text-xs ${
+                                    stu.gender === 'female'
+                                      ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                      : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200'
+                                  }`}
+                                >
+                                  {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                <ZoomIn className="w-3.5 h-3.5" />
+                              </div>
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+
+                            <div>
+                              <div className="font-mono font-bold text-blue-700 dark:text-sky-400 text-xs">
+                                {stu.studentCode}
+                              </div>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                {stu.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)'}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Name */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
+                              {stu.nameKhmer}
+                            </span>
+                            {stu.nameChinese && (
+                              <span className="text-[11px] font-bold text-blue-800 dark:text-sky-300 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded-md border border-blue-200/60 dark:border-blue-800/40">
+                                {stu.nameChinese}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                            {stu.nameLatin || '-'}
+                          </div>
+                        </td>
+
+                        {/* Class Type & Major */}
+                        <td className="py-3 px-3">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 font-bold text-[10px] border border-blue-200 dark:border-blue-800/50 mb-1">
+                            {getClassTypeLabel(stu.classType)}
+                          </span>
+                          <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                            {stu.majorName || 'គរុកោសល្យភាសាចិន'}
+                          </div>
+                        </td>
+
+                        {/* Class & Shift */}
+                        <td className="py-3 px-3">
+                          <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                            {stu.className || '-'}
+                          </div>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-[10px] mt-0.5">
+                            {getShiftLabel(stu.shift)}
+                          </span>
+                        </td>
+
+                        {/* Year */}
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                            {stu.year}
+                          </span>
+                        </td>
+
+                        {/* Contact */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
+                            <Phone className="w-3 h-3 text-blue-600 dark:text-sky-400 shrink-0" />
+                            <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                              {stu.phone || '-'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              stu.status === 'active'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
+                                : stu.status === 'suspended'
+                                ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
+                                : stu.status === 'graduated'
+                                ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                            }`}
+                          >
+                            {getStatusLabel(stu.status)}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {/* Promote single student */}
+                            {!isReadOnly && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPromoteForSingle(stu)}
+                                className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 cursor-pointer transition-colors border border-amber-200 dark:border-amber-800/40"
+                                title="តម្លើងកម្រិត / ផ្លាស់ប្តូរថ្នាក់ (Promote Student)"
+                              >
+                                <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => openEditModal(stu)}
+                              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
+                              title={isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}
+                            >
+                              {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+                            </button>
+                            {!isReadOnly && (
+                              <button
+                                onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
+                                className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
+                                title="លុប"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -961,7 +1039,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         /* Students Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredStudents.length === 0 ? (
-            <div className="col-span-full bg-white dark:bg-[#131f1a] rounded-3xl p-12 text-center text-zinc-400 border border-emerald-900/10 dark:border-emerald-800/30">
+            <div className="col-span-full bg-white dark:bg-[#111c38] rounded-3xl p-12 text-center text-zinc-400 border border-blue-200/60 dark:border-sky-500/20">
               <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
               <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យនិស្សិតទេ</p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
@@ -969,353 +1047,292 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               </p>
             </div>
           ) : (
-            filteredStudents.map((stu) => (
-              <div
-                key={stu.id}
-                className="bg-white dark:bg-[#131f1a] rounded-3xl p-5 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-600/40 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      {stu.photoUrl ? (
-                        <img
-                          src={stu.photoUrl}
-                          alt={stu.nameKhmer}
-                          className="w-12 h-12 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-xs shrink-0"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                            stu.gender === 'female'
-                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                              : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                          }`}
+            filteredStudents.map((stu) => {
+              const isSelected = selectedStudentIds.has(stu.id);
+
+              return (
+                <div
+                  key={stu.id}
+                  className={`rounded-3xl p-5 border shadow-xs transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 shadow-md ring-1 ring-blue-500/30'
+                      : 'bg-white dark:bg-[#111c38] border-blue-200/60 dark:border-sky-500/20 hover:border-blue-400 dark:hover:border-sky-500'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        {/* Clickable Profile Picture */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPhotoViewer(stu)}
+                          className="relative group w-12 h-12 rounded-2xl overflow-hidden border-2 border-blue-400/50 dark:border-sky-500/50 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                          title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Photo)"
                         >
-                          {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{stu.nameKhmer}</h3>
-                          {stu.nameChinese && (
-                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
-                              {stu.nameChinese}
-                            </span>
+                          {stu.photoUrl ? (
+                            <img
+                              src={stu.photoUrl}
+                              alt={stu.nameKhmer}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div
+                              className={`w-full h-full flex items-center justify-center font-bold text-sm ${
+                                stu.gender === 'female'
+                                  ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200'
+                              }`}
+                            >
+                              {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
+                            </div>
                           )}
-                        </div>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{stu.nameLatin || '-'}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
-                            {stu.studentCode}
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium">
-                            {stu.gender === 'female' ? 'ស្រី' : 'ប្រុស'}
-                          </span>
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn className="w-4 h-4" />
+                          </div>
+                        </button>
+
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{stu.nameKhmer}</h3>
+                            {stu.nameChinese && (
+                              <span className="text-[11px] font-bold text-blue-800 dark:text-sky-300 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded-md">
+                                {stu.nameChinese}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{stu.nameLatin || '-'}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-sky-400">{stu.studentCode}</span>
+                            <span className="text-[10px] text-zinc-400">• {stu.gender === 'female' ? 'ស្រី' : 'ប្រុស'}</span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Card Checkbox */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectStudent(stu.id)}
+                        className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
+                        title={isSelected ? 'ដកជម្រើស' : 'ជ្រើសរើស'}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600 dark:text-sky-400" />
+                        ) : (
+                          <Square className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+                        )}
+                      </button>
                     </div>
 
+                    <div className="space-y-2 py-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                      {/* Class Type & Major */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 font-bold">
+                          {getClassTypeLabel(stu.classType)}
+                        </span>
+                        <span className="text-zinc-700 dark:text-zinc-300 font-semibold truncate">
+                          {stu.majorName}
+                        </span>
+                      </div>
+
+                      {/* Class & Shift */}
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                          <span>ថ្នាក់: {stu.className}</span>
+                        </div>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200">{stu.year}</span>
+                      </div>
+
+                      {/* Shift Badge & Phone */}
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[11px] font-medium">
+                          {getShiftLabel(stu.shift)}
+                        </span>
+                        <span className="font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
+                          {stu.phone || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold ${
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         stu.status === 'active'
                           ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
                           : stu.status === 'suspended'
                           ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
                           : stu.status === 'graduated'
                           ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
                       }`}
                     >
                       {getStatusLabel(stu.status)}
                     </span>
-                  </div>
 
-                  {/* Academic & Contact Info */}
-                  <div className="space-y-2 text-xs py-3 border-y border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-start gap-2">
-                      <GraduationCap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">ជំនាញ: </span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{stu.majorName}</span>
-                      </div>
-                    </div>
+                    <div className="flex items-center gap-1">
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPromoteForSingle(stu)}
+                          className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-[11px] font-bold inline-flex items-center gap-1 border border-amber-200 dark:border-amber-800/40 cursor-pointer"
+                          title="តម្លើងកម្រិត"
+                        >
+                          <TrendingUp className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>តម្លើង</span>
+                        </button>
+                      )}
 
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <div>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">ថ្នាក់ / ឆ្នាំ: </span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{stu.className} • {stu.year}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <div>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">វេនសិក្សា: </span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{getShiftLabel(stu.shift)}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className={isReadOnly ? 'text-zinc-700 dark:text-zinc-300 font-medium filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : 'text-zinc-700 dark:text-zinc-300 font-medium'}>
-                        {stu.phone || '-'}
-                      </span>
-                      {stu.guardianPhone && (
-                        <span className="text-zinc-400 text-[11px]">
-                          (អាណាព្យាបាល:{' '}
-                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono inline-block' : ''}>
-                            {stu.guardianPhone}
-                          </span>
-                          )
-                        </span>
+                      <button
+                        onClick={() => openEditModal(stu)}
+                        className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors"
+                        title={isReadOnly ? 'មើល' : 'កែប្រែ'}
+                      >
+                        {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+                      </button>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
+                          className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
+                          title="លុប"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       )}
                     </div>
-
-                    {stu.address && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className={`text-zinc-600 dark:text-zinc-400 truncate font-medium ${isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70' : ''}`}>
-                          {stu.address}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="mt-4 pt-3 flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => openEditModal(stu)}
-                    className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>{isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}</span>
-                  </button>
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
-                      className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
       {/* Add / Edit Student Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-emerald-900/10 dark:border-emerald-800/30 space-y-5 animate-in fade-in zoom-in duration-150 my-8">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 max-w-2xl w-full border border-blue-200/60 dark:border-sky-500/20 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-blue-800 dark:text-sky-300 font-bold">
+                  {isReadOnly ? <Eye className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
-                      {isReadOnly ? 'ព័ត៌មានលម្អិតនិស្សិត (Student Profile)' : editingStudent ? 'កែប្រែព័ត៌មាននិស្សិត' : 'ចុះឈ្មោះនិស្សិតថ្មី (New Student)'}
-                    </h3>
-                    {isReadOnly && (
-                      <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
-                        Read-Only
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់ (International Chinese Education and Teachers Institute)
-                  </p>
-                </div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  {isReadOnly
+                    ? 'ព័ត៌មានលម្អិតអំពីនិស្សិត (Student Profile)'
+                    : editingStudent
+                    ? 'កែប្រែព័ត៌មាននិស្សិត'
+                    : 'ចុះឈ្មោះនិស្សិតថ្មី'}
+                </h3>
               </div>
               <button
                 onClick={closeModal}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveStudent} className="space-y-4 text-xs">
-              {/* Guest Read-Only Privacy Notice */}
-              {isReadOnly && (
-                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in duration-200">
-                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <p className="font-semibold leading-relaxed">
-                    <b>របៀបភ្ញៀវ (Guest Mode):</b> ព័ត៌មានឯកជនភាពផ្ទាល់ខ្លួន (លេខទូរសព្ទ, លេខអាណាព្យាបាល, ថ្ងៃកំណើត, អាសយដ្ឋាន, កំណត់សម្គាល់) ត្រូវបាន Blur ការពារសុវត្ថិភាព។
+            <form onSubmit={handleSaveStudent} className="space-y-4 pt-4 text-xs">
+              {/* Photo Upload & Preview Section */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-zinc-50 dark:bg-[#182645] rounded-2xl border border-zinc-200/80 dark:border-zinc-700/80">
+                <div className="relative group shrink-0">
+                  {formPhotoUrl ? (
+                    <img
+                      src={formPhotoUrl}
+                      alt="Student"
+                      className="w-20 h-20 rounded-2xl object-cover border-2 border-blue-500 shadow-sm"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex flex-col items-center justify-center text-zinc-400">
+                      <Camera className="w-6 h-6 mb-1" />
+                      <span className="text-[9px] font-bold">រូបថត</span>
+                    </div>
+                  )}
+
+                  {!isReadOnly && formPhotoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormPhotoUrl(undefined)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 cursor-pointer"
+                      title="លុបរូបថតចេញ"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 flex-1 text-center sm:text-left">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">រូបថតសិស្ស (Student Photo)</span>
+                    <span className="text-[10px] text-zinc-400">(ស្រេចចិត្ត - Optional)</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    ផ្ទុកឡើងរូបថតផ្ទាល់ខ្លួនទំហំ 4x6 ឬរូបសន្លឹក (ទំហំអតិបរមា 8MB, JPG/PNG)
                   </p>
-                </div>
-              )}
 
-              {/* Photo Upload & Preview Bar */}
-              <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 shadow-xs">
-                    {formPhotoUrl ? (
-                      <img
-                        src={formPhotoUrl}
-                        alt="Student"
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-zinc-400">
-                        <ImageIcon className="w-6 h-6 text-zinc-400" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>រូបថតនិស្សិត (Profile Picture)</span>
-                    </h4>
-                    <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400 font-medium">
-                      គាំទ្ររូបភាព JPG, PNG, WebP (អតិបរមា 3MB)
-                    </p>
-                  </div>
-                </div>
-
-                {!isReadOnly && (
-                  <div className="flex items-center gap-2">
-                    <label className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{formPhotoUrl ? 'ប្តូររូបថត' : 'ជ្រើសរើសរូបថត'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {formPhotoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFormPhotoUrl(undefined)}
-                        className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800/60 cursor-pointer"
-                      >
-                        លុបរូប
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Status Buttons Selector */}
-              <div>
-                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  ស្ថានភាពសិក្សា (Student Status) *
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('active')}
-                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'active'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                    <span>កំពុងរៀន (Active)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('suspended')}
-                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'suspended'
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                    <span>ព្យួរការសិក្សា (Suspended)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('dropped')}
-                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'dropped'
-                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
-                    <span>បោះបង់ (Dropped)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('graduated')}
-                    className={`py-2 px-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'graduated'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
-                    <span>បញ្ចប់ (Graduated)</span>
-                  </button>
+                  {!isReadOnly && (
+                    <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
+                      <label className="px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>ជ្រើសរើសរូបថត (Upload)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    អត្តលេខនិស្សិត (Student ID) *
+                    អត្តលេខនិស្សិត (Student ID) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
+                    disabled={isReadOnly}
                     value={formStudentCode}
                     onChange={(e) => setFormStudentCode(e.target.value)}
-                    placeholder="CPI-2025-001"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    placeholder="ICI-2025-001"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    ឈ្មោះខ្មែរ (Name Khmer) *
+                    ឈ្មោះជាភាសាខ្មែរ (Khmer Name) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
+                    disabled={isReadOnly}
                     value={formNameKhmer}
                     onChange={(e) => setFormNameKhmer(e.target.value)}
-                    placeholder="ឧ. ជា សុខនីកា"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    placeholder="ឧ. ឡុង សុខា"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
 
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
-                    អក្សរឡាតាំង (Name Latin)
+                    ឈ្មោះជាឡាតាំង (Latin Name)
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formNameLatin}
                     onChange={(e) => setFormNameLatin(e.target.value)}
-                    placeholder="e.g. Chea Soknika"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    placeholder="e.g. Long Sokha"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
 
@@ -1325,19 +1342,23 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </label>
                   <input
                     type="text"
+                    disabled={isReadOnly}
                     value={formNameChinese}
                     onChange={(e) => setFormNameChinese(e.target.value)}
-                    placeholder="ឧ. 谢淑妮"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium"
+                    placeholder="例如: 龙淑华"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">ភេទ (Gender)</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ភេទ (Gender)
+                  </label>
                   <select
+                    disabled={isReadOnly}
                     value={formGender}
-                    onChange={(e) => setFormGender(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer font-medium"
+                    onChange={(e) => setFormGender(e.target.value as 'male' | 'female')}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
                     <option value="female">ស្រី (Female)</option>
                     <option value="male">ប្រុស (Male)</option>
@@ -1354,10 +1375,29 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     disabled={isReadOnly}
                     value={formDob}
                     onChange={(e) => setFormDob(e.target.value)}
-                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
                       isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                     }`}
                   />
+                </div>
+
+                {/* Class Type */}
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    កម្រិតបណ្តុះបណ្តាល (Class Type) <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formClassType}
+                    onChange={(e) => setFormClassType(e.target.value as ClassType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    {CLASS_TYPE_OPTIONS.map((ct) => (
+                      <option key={ct.id} value={ct.id}>
+                        {ct.nameKhmer}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1366,11 +1406,12 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </label>
                   <select
                     value={formMajorId}
+                    disabled={isReadOnly}
                     onChange={(e) => setFormMajorId(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer font-medium"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
                     {majors.map((m) => (
-                      <option key={m.id} value={m.id} className="dark:bg-[#131f1a]">
+                      <option key={m.id} value={m.id}>
                         {m.nameKhmer} ({m.nameLatin})
                       </option>
                     ))}
@@ -1383,30 +1424,34 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </label>
                   <select
                     value={formClassId}
+                    disabled={isReadOnly}
                     onChange={(e) => setFormClassId(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer font-medium"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
                     {classes.map((c) => (
-                      <option key={c.id} value={c.id} className="dark:bg-[#131f1a]">
+                      <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
+                {/* Dynamic Shift selection */}
                 <div>
                   <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                     វេនសិក្សា (Shift)
                   </label>
                   <select
                     value={formShift}
+                    disabled={isReadOnly}
                     onChange={(e) => setFormShift(e.target.value as ShiftType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer font-medium"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
-                    <option value="morning">វេនព្រឹក (Morning 07:30-11:00)</option>
-                    <option value="afternoon">វេនរសៀល (Afternoon 13:30-17:00)</option>
-                    <option value="evening">វេនយប់ (Evening 17:30-20:30)</option>
-                    <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
+                    {shifts.map((s) => (
+                      <option key={s.id} value={s.code}>
+                        {s.nameKhmer} ({s.timeRange})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -1416,8 +1461,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   </label>
                   <select
                     value={formYear}
+                    disabled={isReadOnly}
                     onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer font-medium"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
                     <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
                     <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
@@ -1437,7 +1483,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="012 345 678"
-                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
                       isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                     }`}
                   />
@@ -1454,10 +1500,27 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     value={formGuardianPhone}
                     onChange={(e) => setFormGuardianPhone(e.target.value)}
                     placeholder="098 765 432"
-                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
                       isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                     }`}
                   />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ស្ថានភាពនិស្សិត (Status)
+                  </label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as StudentStatus)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    <option value="active">កំពុងរៀន (Active)</option>
+                    <option value="suspended">ព្យួរការសិក្សា (Suspended)</option>
+                    <option value="dropped">បោះបង់ (Dropped)</option>
+                    <option value="graduated">បញ្ចប់ការសិក្សា (Graduated)</option>
+                  </select>
                 </div>
               </div>
 
@@ -1472,7 +1535,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
                   placeholder="រាជធានីភ្នំពេញ"
-                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium ${
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
                     isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                   }`}
                 />
@@ -1489,7 +1552,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="កំណត់សម្គាល់ព័ត៌មានបន្ថែមអំពីនិស្សិត..."
-                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-medium resize-none ${
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium resize-none ${
                     isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                   }`}
                 />
@@ -1506,7 +1569,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 {!isReadOnly && (
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-xs cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold shadow-xs cursor-pointer"
                   >
                     {editingStudent ? 'រក្សាទុកការកែប្រែ' : 'ចុះឈ្មោះនិស្សិត'}
                   </button>
@@ -1520,7 +1583,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       {/* Delete All Confirmation Modal */}
       {isDeleteAllModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 max-w-md w-full border border-rose-100 dark:border-rose-900/30 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 max-w-md w-full border border-rose-200 dark:border-rose-900/40 shadow-2xl space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -1530,16 +1593,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 តើអ្នកពិតជាចង់លុបទិន្នន័យនិស្សិតទាំងអស់មែនទេ?
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                សកម្មភាពនេះនឹងលុបទិន្នន័យនិស្សិតទាំងអស់ចំនួន <strong className="text-rose-600 dark:text-rose-400 font-bold">{students.length} នាក់</strong> ចេញពីប្រព័ន្ធជាអចិន្ត្រៃយ៍ ហើយមិនអាចត្រឡប់ក្រោយបានឡើយ។
-              </p>
-            </div>
-
-            <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-3 text-xs text-rose-800 dark:text-rose-300 space-y-1">
-              <p className="font-bold flex items-center gap-1.5">
-                <span>⚠️ ការព្រមាន (Warning):</span>
-              </p>
-              <p className="text-[11px] leading-relaxed">
-                ទិន្នន័យទាំងអស់នៅក្នុងមូលដ្ឋានទិន្នន័យ (Cloud Firestore) នឹងត្រូវលុបចោលទាំងស្រុង។ សូមប្រាកដថាអ្នកបាន Export Excel រួចរាល់មុននឹងធ្វើការលុប។
+                សកម្មភាពនេះនឹងលុបទិន្នន័យនិស្សិតទាំងអស់ចំនួន <strong className="text-rose-600 dark:text-rose-400 font-bold">{students.length} នាក់</strong> ចេញពីប្រព័ន្ធជាអចិន្ត្រៃយ៍។
               </p>
             </div>
 
@@ -1558,19 +1612,39 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                 disabled={isDeletingAll}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
               >
-                {isDeletingAll ? (
-                  <span>កំពុងលុប...</span>
-                ) : (
-                  <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>លុបទាំងអស់ (Confirm Delete)</span>
-                  </>
-                )}
+                {isDeletingAll ? 'កំពុងលុប...' : 'លុបទាំងអស់ (Confirm)'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Lightbox Profile Photo Viewer */}
+      <ProfileImageViewerModal
+        isOpen={isImageViewerOpen}
+        onClose={() => {
+          setIsImageViewerOpen(false);
+          setImageViewerTarget(null);
+        }}
+        target={imageViewerTarget}
+      />
+
+      {/* Batch / Single Promote Modal */}
+      <PromoteStudentsModal
+        isOpen={isPromoteModalOpen}
+        onClose={() => {
+          setIsPromoteModalOpen(false);
+          setStudentsToPromote([]);
+        }}
+        selectedStudents={studentsToPromote}
+        classes={classes}
+        shifts={shifts}
+        showToast={showToast}
+        onSuccess={() => {
+          setSelectedStudentIds(new Set());
+        }}
+        isReadOnly={isReadOnly}
+      />
     </div>
   );
 };
