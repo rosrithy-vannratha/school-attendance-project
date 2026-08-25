@@ -11,6 +11,7 @@ import { ReportsView } from './components/ReportsView';
 import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
 import { instituteService, authService } from './service/instituteService';
+import { INITIAL_SHIFTS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -19,7 +20,8 @@ import {
   AttendanceRecord,
   TeacherAttendance,
   AppUser,
-  ActiveTab
+  ActiveTab,
+  ShiftItem
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -61,6 +63,7 @@ export default function App() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Classroom[]>([]);
   const [majors, setMajors] = useState<Major[]>([]);
+  const [shifts, setShifts] = useState<ShiftItem[]>(INITIAL_SHIFTS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [teacherAttendance, setTeacherAttendance] = useState<TeacherAttendance[]>([]);
 
@@ -99,6 +102,11 @@ export default function App() {
     const unsubTeachers = instituteService.subscribeTeachers((data) => setTeachers(data));
     const unsubClasses = instituteService.subscribeClasses((data) => setClasses(data));
     const unsubMajors = instituteService.subscribeMajors((data) => setMajors(data));
+    const unsubShifts = instituteService.subscribeShifts((data) => {
+      if (data && data.length > 0) {
+        setShifts(data);
+      }
+    });
     const unsubAttendance = instituteService.subscribeAttendance((data) => setAttendance(data));
     const unsubTeacherAtt = instituteService.subscribeTeacherAttendance((data) => setTeacherAttendance(data));
 
@@ -107,6 +115,7 @@ export default function App() {
       unsubTeachers();
       unsubClasses();
       unsubMajors();
+      unsubShifts();
       unsubAttendance();
       unsubTeacherAtt();
     };
@@ -206,6 +215,7 @@ export default function App() {
             classes={classes}
             majors={majors}
             attendance={attendance}
+            shifts={shifts}
             setActiveTab={setActiveTab}
             isReadOnly={isReadOnly}
             onOpenAddStudent={() => {
@@ -232,6 +242,7 @@ export default function App() {
             students={students}
             classes={classes}
             majors={majors}
+            shifts={shifts}
             isAddModalOpen={isAddStudentOpen}
             onCloseAddModal={() => setIsAddStudentOpen(false)}
             showToast={showToast}
@@ -272,6 +283,7 @@ export default function App() {
             majors={majors}
             teachers={teachers}
             students={students}
+            shifts={shifts}
             isAddModalOpen={isAddClassOpen}
             onCloseAddModal={() => setIsAddClassOpen(false)}
             showToast={showToast}
@@ -303,14 +315,14 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-300 py-6 bg-white dark:bg-zinc-100 text-center text-xs text-black transition-colors">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-black">
+      <footer className="border-t border-zinc-200 dark:border-zinc-800/80 py-6 bg-white dark:bg-[#0f172a] text-center text-xs transition-colors">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-zinc-600 dark:text-zinc-400">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-black text-xs sm:text-sm">វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់</span>
-            <span className="text-black text-xs font-semibold">&bull; International Chinese Education and Teachers Institute</span>
+            <span className="font-extrabold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់</span>
+            <span className="text-zinc-400">&bull; International Chinese Education and Teachers Institute</span>
           </div>
-          <p className="text-[11px] text-black font-semibold">
-            ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; រក្សាសិទ្ធិគ្រប់យ៉ាង ២០២៥-២០២៦
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            ប្រព័ន្ធគ្រប់គ្រងនិស្សិត ថ្នាក់រៀន វេនសិក្សា និងវត្តមានឌីជីថល &bull; ២០២៥-២០២៦
           </p>
         </div>
       </footer>
@@ -339,10 +351,10 @@ export default function App() {
                 ? 'bg-rose-900/90 text-white border-rose-700'
                 : toastMessage.type === 'info'
                 ? 'bg-zinc-900/90 text-white border-zinc-700'
-                : 'bg-emerald-900/90 text-white border-emerald-700'
+                : 'bg-blue-900/90 text-white border-blue-700'
             }`}
           >
-            {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-300" />}
+            {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-sky-300" />}
             {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-300" />}
             <span>{toastMessage.text}</span>
           </motion.div>
