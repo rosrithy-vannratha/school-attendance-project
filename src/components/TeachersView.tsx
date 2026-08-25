@@ -25,10 +25,12 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Eye,
-  Lock
+  Lock,
+  ZoomIn
 } from 'lucide-react';
 import { Teacher, TeacherStatus, ShiftType } from '../types';
 import { instituteService } from '../service/instituteService';
+import { ProfileImageViewerModal, ProfileViewTarget } from './ProfileImageViewerModal';
 import {
   exportTeachersToExcel,
   downloadTeacherTemplate,
@@ -60,6 +62,10 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  // Profile Image Viewer Modal State
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [imageViewerTarget, setImageViewerTarget] = useState<ProfileViewTarget | null>(null);
 
   // Form states
   const [formTeacherCode, setFormTeacherCode] = useState('');
@@ -117,6 +123,26 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     setFormCvName(t.cvName || undefined);
     setFormCvUrl(t.cvUrl || undefined);
     setIsModalOpen(true);
+  };
+
+  // Image viewer opener
+  const handleOpenPhotoViewer = (t: Teacher) => {
+    setImageViewerTarget({
+      nameKhmer: t.nameKhmer,
+      nameLatin: t.nameLatin,
+      nameChinese: t.nameChinese,
+      code: t.teacherCode,
+      photoUrl: t.photoUrl,
+      gender: t.gender,
+      degree: t.degree,
+      subjects: t.subjects,
+      shift: t.shift,
+      phone: t.phone,
+      email: t.email,
+      roleOrStatus: t.status,
+      isTeacher: true
+    });
+    setIsImageViewerOpen(true);
   };
 
   const compressImageFile = (file: File, maxWidth = 350, maxHeight = 350, quality = 0.75): Promise<string> => {
@@ -678,27 +704,37 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                       key={t.id}
                       className="hover:bg-emerald-50/40 dark:hover:bg-[#182620]/60 transition-colors"
                     >
-                      {/* Teacher ID & Photo */}
+                      {/* Teacher ID & Photo (Click to View Full Photo) */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
-                          {t.photoUrl ? (
-                            <img
-                              src={t.photoUrl}
-                              alt={t.nameKhmer}
-                              className="w-10 h-10 rounded-xl object-cover border border-emerald-500/40 shadow-xs shrink-0"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                                t.gender === 'female'
-                                  ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                                  : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                              }`}
-                            >
-                              {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPhotoViewer(t)}
+                            className="relative group w-10 h-10 rounded-xl overflow-hidden border border-emerald-500/40 dark:border-emerald-600/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                            title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                          >
+                            {t.photoUrl ? (
+                              <img
+                                src={t.photoUrl}
+                                alt={t.nameKhmer}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <div
+                                className={`w-full h-full flex items-center justify-center font-bold text-xs ${
+                                  t.gender === 'female'
+                                    ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                    : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
+                                }`}
+                              >
+                                {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                              <ZoomIn className="w-3.5 h-3.5" />
                             </div>
-                          )}
+                          </button>
                           <div>
                             <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">
                               {t.teacherCode}
@@ -866,24 +902,35 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
-                      {t.photoUrl ? (
-                        <img
-                          src={t.photoUrl}
-                          alt={t.nameKhmer}
-                          className="w-12 h-12 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-xs shrink-0"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                            t.gender === 'female'
-                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                              : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                          }`}
-                        >
-                          {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                      {/* Clickable Teacher Avatar */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPhotoViewer(t)}
+                        className="relative group w-12 h-12 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                        title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                      >
+                        {t.photoUrl ? (
+                          <img
+                            src={t.photoUrl}
+                            alt={t.nameKhmer}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div
+                            className={`w-full h-full flex items-center justify-center font-bold text-sm ${
+                              t.gender === 'female'
+                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
+                            }`}
+                          >
+                            {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                          <ZoomIn className="w-4 h-4" />
                         </div>
-                      )}
+                      </button>
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{t.nameKhmer}</h3>
@@ -1469,6 +1516,16 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Profile Image Viewer Modal */}
+      <ProfileImageViewerModal
+        isOpen={isImageViewerOpen}
+        onClose={() => {
+          setIsImageViewerOpen(false);
+          setImageViewerTarget(null);
+        }}
+        target={imageViewerTarget}
+      />
     </div>
   );
 };
