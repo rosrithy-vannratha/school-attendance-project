@@ -14,10 +14,12 @@ import {
   Download,
   Upload,
   BarChart3,
-  Layers
+  Layers,
+  ZoomIn
 } from 'lucide-react';
 import { Teacher, TeacherAttendance, TeacherAttendanceStatus, ShiftType } from '../types';
 import { instituteService } from '../service/instituteService';
+import { ProfileImageViewerModal, ProfileViewTarget } from './ProfileImageViewerModal';
 import {
   getShiftLabel,
   exportTeacherMonthlyAttendanceToExcel,
@@ -51,6 +53,29 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
+
+  // Profile Image Viewer Modal State
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [imageViewerTarget, setImageViewerTarget] = useState<ProfileViewTarget | null>(null);
+
+  const handleOpenPhotoViewer = (t: Teacher) => {
+    setImageViewerTarget({
+      nameKhmer: t.nameKhmer,
+      nameLatin: t.nameLatin,
+      nameChinese: t.nameChinese,
+      code: t.teacherCode,
+      photoUrl: t.photoUrl,
+      gender: t.gender,
+      degree: t.degree,
+      subjects: t.subjects,
+      shift: t.shift,
+      phone: t.phone,
+      email: t.email,
+      roleOrStatus: t.status,
+      isTeacher: true
+    });
+    setIsImageViewerOpen(true);
+  };
 
   // Draft state: teacherId -> { status, note, subject }
   const [draft, setDraft] = useState<
@@ -423,15 +448,48 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
                             {t.teacherCode}
                           </td>
                           <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</span>
-                              {t.nameChinese && (
-                                <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
-                                  {t.nameChinese}
-                                </span>
-                              )}
+                            <div className="flex items-center gap-2.5">
+                              {/* Clickable Profile Photo */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPhotoViewer(t)}
+                                className="relative group w-9 h-9 rounded-xl overflow-hidden border border-emerald-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                                title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                              >
+                                {t.photoUrl ? (
+                                  <img
+                                    src={t.photoUrl}
+                                    alt={t.nameKhmer}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                ) : (
+                                  <div
+                                    className={`w-full h-full flex items-center justify-center font-bold text-xs ${
+                                      t.gender === 'female'
+                                        ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                        : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
+                                    }`}
+                                  >
+                                    {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
+                                  </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                  <ZoomIn className="w-3.5 h-3.5" />
+                                </div>
+                              </button>
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-zinc-900 dark:text-zinc-100">{t.nameKhmer}</span>
+                                  {t.nameChinese && (
+                                    <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                                      {t.nameChinese}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin}</div>
+                              </div>
                             </div>
-                            <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin}</div>
                           </td>
                           <td className="py-3 px-4 font-bold text-zinc-800 dark:text-zinc-200">
                             {t.subjects || '-'}
@@ -647,15 +705,48 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
                           {item.teacher.teacherCode}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-zinc-900 dark:text-zinc-100">{item.teacher.nameKhmer}</span>
-                            {item.teacher.nameChinese && (
-                              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
-                                {item.teacher.nameChinese}
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2.5">
+                            {/* Clickable Profile Photo */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPhotoViewer(item.teacher)}
+                              className="relative group w-9 h-9 rounded-xl overflow-hidden border border-emerald-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                              title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                            >
+                              {item.teacher.photoUrl ? (
+                                <img
+                                  src={item.teacher.photoUrl}
+                                  alt={item.teacher.nameKhmer}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div
+                                  className={`w-full h-full flex items-center justify-center font-bold text-xs ${
+                                    item.teacher.gender === 'female'
+                                      ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                      : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
+                                  }`}
+                                >
+                                  {(item.teacher.nameKhmer || item.teacher.nameLatin || 'T').charAt(0)}
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                <ZoomIn className="w-3.5 h-3.5" />
+                              </div>
+                            </button>
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100">{item.teacher.nameKhmer}</span>
+                                {item.teacher.nameChinese && (
+                                  <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                                    {item.teacher.nameChinese}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{item.teacher.nameLatin}</div>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">{item.teacher.nameLatin}</div>
                         </td>
                         <td className="py-3 px-4 font-medium text-zinc-800 dark:text-zinc-200">
                           {item.teacher.subjects || '-'}
@@ -684,6 +775,16 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
           </div>
         </>
       )}
+
+      {/* Profile Image Viewer Modal */}
+      <ProfileImageViewerModal
+        isOpen={isImageViewerOpen}
+        onClose={() => {
+          setIsImageViewerOpen(false);
+          setImageViewerTarget(null);
+        }}
+        target={imageViewerTarget}
+      />
     </div>
   );
 };
