@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Users,
   UserCheck,
@@ -49,40 +49,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayAttendance = attendance.filter((a) => a.date === today);
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayAttendance = useMemo(() => attendance.filter((a) => a.date === today), [attendance, today]);
 
   const totalStudents = students.length;
-  const activeStudents = students.filter((s) => s.status === 'active').length;
+  const activeStudents = useMemo(() => students.filter((s) => s.status === 'active').length, [students]);
   const totalTeachers = teachers.length;
   const totalClasses = classes.length;
 
   // Attendance rates
-  const presentCount = todayAttendance.filter((a) => a.status === 'present').length;
-  const permissionCount = todayAttendance.filter((a) => a.status === 'permission').length;
-  const absentCount = todayAttendance.filter((a) => a.status === 'absent').length;
-  const lateCount = todayAttendance.filter((a) => a.status === 'late').length;
-  const attendanceRate = todayAttendance.length > 0 
-    ? Math.round(((presentCount + lateCount) / todayAttendance.length) * 100) 
-    : 95;
+  const presentCount = useMemo(() => todayAttendance.filter((a) => a.status === 'present').length, [todayAttendance]);
+  const permissionCount = useMemo(() => todayAttendance.filter((a) => a.status === 'permission').length, [todayAttendance]);
+  const absentCount = useMemo(() => todayAttendance.filter((a) => a.status === 'absent').length, [todayAttendance]);
+  const lateCount = useMemo(() => todayAttendance.filter((a) => a.status === 'late').length, [todayAttendance]);
+  const attendanceRate = useMemo(() => {
+    return todayAttendance.length > 0 
+      ? Math.round(((presentCount + lateCount) / todayAttendance.length) * 100) 
+      : 95;
+  }, [todayAttendance, presentCount, lateCount]);
 
   // Shift counts
-  const shiftCounts: Record<ShiftType, number> = {
+  const shiftCounts = useMemo<Record<ShiftType, number>>(() => ({
     morning: students.filter((s) => s.shift === 'morning').length,
     afternoon: students.filter((s) => s.shift === 'afternoon').length,
     evening: students.filter((s) => s.shift === 'evening').length,
     weekend: students.filter((s) => s.shift === 'weekend').length,
-  };
+  }), [students]);
 
   // Absence risk (students with >= 2 absences in records)
-  const studentAbsenceCount: Record<string, number> = {};
-  attendance.forEach((a) => {
-    if (a.status === 'absent') {
-      studentAbsenceCount[a.studentId] = (studentAbsenceCount[a.studentId] || 0) + 1;
-    }
-  });
+  const studentAbsenceCount = useMemo(() => {
+    const map: Record<string, number> = {};
+    attendance.forEach((a) => {
+      if (a.status === 'absent') {
+        map[a.studentId] = (map[a.studentId] || 0) + 1;
+      }
+    });
+    return map;
+  }, [attendance]);
 
-  const riskStudents = students.filter((s) => (studentAbsenceCount[s.id] || 0) >= 2);
+  const riskStudents = useMemo(() => {
+    return students.filter((s) => (studentAbsenceCount[s.id] || 0) >= 2);
+  }, [students, studentAbsenceCount]);
 
   const generateAiInsight = async () => {
     setAiInsightLoading(true);
