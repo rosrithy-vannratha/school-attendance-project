@@ -28,14 +28,16 @@ import {
   AttendanceRecord,
   TeacherAttendance,
   AppUser,
-  ShiftType
+  ShiftType,
+  ShiftItem
 } from '../types';
 import {
   INITIAL_MAJORS,
   INITIAL_CLASSES,
   INITIAL_TEACHERS,
   INITIAL_STUDENTS,
-  INITIAL_ATTENDANCE
+  INITIAL_ATTENDANCE,
+  INITIAL_SHIFTS
 } from '../data/initialData';
 
 // Local storage backup keys for seamless offline / instant preview
@@ -44,6 +46,7 @@ const LS_KEYS = {
   TEACHERS: 'cpi_teachers_data_v2',
   CLASSES: 'cpi_classes_data_v2',
   MAJORS: 'cpi_majors_data_v2',
+  SHIFTS: 'cpi_shifts_data_v2',
   ATTENDANCE: 'cpi_attendance_data_v2',
   TEACHER_ATT: 'cpi_teacher_attendance_data_v2',
   APP_USER: 'cpi_app_user_v2',
@@ -520,6 +523,84 @@ export const instituteService = {
     }
   },
 
+  // --- SHIFTS MANAGEMENT ---
+  subscribeShifts(callback: (data: ShiftItem[]) => void): Unsubscribe {
+    const local = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.SHIFTS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'shifts'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              code: data.code || d.id,
+              nameKhmer: data.nameKhmer || 'វេនសិក្សា',
+              nameLatin: data.nameLatin || '',
+              timeRange: data.timeRange || '07:30 - 11:00',
+              days: data.days || 'ច័ន្ទ - សុក្រ',
+              color: data.color || 'blue',
+              isDefault: Boolean(data.isDefault)
+            } as ShiftItem;
+          });
+          setLocal(LS_KEYS.SHIFTS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Shifts synced in real-time');
+        } else {
+          setLocal(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+          callback(INITIAL_SHIFTS);
+        }
+      },
+      (err) => {
+        console.warn('Shifts snapshot error (using local cache):', err);
+        const currentLocal = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveShift(shift: ShiftItem): Promise<void> {
+    const local = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+    const idx = local.findIndex((s) => s.id === shift.id || s.code === shift.code);
+    if (idx >= 0) local[idx] = shift;
+    else local.push(shift);
+    setLocal(LS_KEYS.SHIFTS, local);
+    notifyLocal(LS_KEYS.SHIFTS, local);
+    updateSyncStatus('syncing', 'Saving shift...');
+
+    try {
+      await setDoc(doc(db, 'shifts', shift.id), sanitizeDoc(shift));
+      updateSyncStatus('synced', 'Shift saved');
+    } catch (e: any) {
+      console.warn('Error saving shift to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving shift');
+    }
+  },
+
+  async deleteShift(id: string): Promise<void> {
+    const local = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS).filter((s) => s.id !== id);
+    setLocal(LS_KEYS.SHIFTS, local);
+    notifyLocal(LS_KEYS.SHIFTS, local);
+    updateSyncStatus('syncing', 'Deleting shift...');
+
+    try {
+      await deleteDoc(doc(db, 'shifts', id));
+      updateSyncStatus('synced', 'Shift deleted');
+    } catch (e: any) {
+      console.warn('Error deleting shift from Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting shift');
+    }
+  },
+
   // --- CLASSES ---
   subscribeClasses(callback: (data: Classroom[]) => void): Unsubscribe {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
@@ -824,6 +905,45 @@ export const instituteService = {
       console.warn('Error saving bulk students:', e);
       updateSyncStatus('error', e?.message || 'Error syncing bulk students');
     }
+  },
+
+  async promoteStudentsBulk(
+    studentIds: string[],
+    updates: Partial<Student> | ((stu: Student) => Partial<Student>)
+  ): Promise<{ updatedCount: number; updatedStudents: Student[] }> {
+    const local = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS);
+    const idSet = new Set(studentIds);
+    const updatedList: Student[] = [];
+
+    const newLocal = local.map((stu) => {
+      if (idSet.has(stu.id)) {
+        const patch = typeof updates === 'function' ? updates(stu) : updates;
+        const updatedStu: Student = {
+          ...stu,
+          ...patch,
+          updatedAt: new Date().toISOString()
+        };
+        updatedList.push(updatedStu);
+        return updatedStu;
+      }
+      return stu;
+    });
+
+    setLocal(LS_KEYS.STUDENTS, newLocal);
+    notifyLocal(LS_KEYS.STUDENTS, newLocal);
+    updateSyncStatus('syncing', `Promoting / updating ${updatedList.length} students...`);
+
+    try {
+      if (updatedList.length > 0) {
+        await commitInChunks(db, 'students', updatedList);
+      }
+      updateSyncStatus('synced', `Successfully updated ${updatedList.length} students`);
+    } catch (e: any) {
+      console.warn('Error saving promoted students to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error promoting students');
+    }
+
+    return { updatedCount: updatedList.length, updatedStudents: updatedList };
   },
 
   async deleteStudent(id: string): Promise<void> {
