@@ -19,6 +19,9 @@ import {
   Printer,
   CalendarRange,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   TrendingUp,
   AlertTriangle,
   Award,
@@ -71,6 +74,14 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const [monthlyShift, setMonthlyShift] = useState<string>('all');
   const [monthlySearch, setMonthlySearch] = useState('');
   const [monthlyRiskFilter, setMonthlyRiskFilter] = useState<'all' | 'high_absence' | 'perfect'>('all');
+
+  // Fast Pagination State for Daily Attendance & Reports
+  const [dailyPageSize, setDailyPageSize] = useState<number>(25);
+  const [dailyCurrentPage, setDailyCurrentPage] = useState<number>(1);
+
+  // Fast Pagination State for Monthly Report Matrix
+  const [monthlyPageSize, setMonthlyPageSize] = useState<number>(25);
+  const [monthlyCurrentPage, setMonthlyCurrentPage] = useState<number>(1);
 
   // Local editing state for attendance on this date & class
   // key: studentId -> { status: AttendanceStatus, note?: string }
@@ -430,6 +441,40 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   const overallMonthlyRate = totalMonthRecords > 0 ? Math.round(((totalMonthPresent + totalMonthPermission) / totalMonthRecords) * 100) : 100;
   const highAbsenceStudentsCount = studentMonthlySummary.filter((item) => item.absent >= 3).length;
 
+  // Daily Reset & Pagination Computations
+  React.useEffect(() => {
+    setDailyCurrentPage(1);
+  }, [selectedDate, selectedClassId, selectedShift, search, dailyPageSize]);
+
+  const totalDailyPages = dailyPageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredClassStudents.length / dailyPageSize));
+  const validDailyPage = Math.min(Math.max(1, dailyCurrentPage), totalDailyPages);
+
+  const paginatedDailyStudents = useMemo(() => {
+    if (dailyPageSize === -1) return filteredClassStudents;
+    const start = (validDailyPage - 1) * dailyPageSize;
+    return filteredClassStudents.slice(start, start + dailyPageSize);
+  }, [filteredClassStudents, validDailyPage, dailyPageSize]);
+
+  const startDailyIndex = filteredClassStudents.length === 0 ? 0 : dailyPageSize === -1 ? 1 : (validDailyPage - 1) * dailyPageSize + 1;
+  const endDailyIndex = dailyPageSize === -1 ? filteredClassStudents.length : Math.min(validDailyPage * dailyPageSize, filteredClassStudents.length);
+
+  // Monthly Reset & Pagination Computations
+  React.useEffect(() => {
+    setMonthlyCurrentPage(1);
+  }, [selectedMonth, monthlyClassId, monthlyShift, monthlySearch, monthlyRiskFilter, monthlyPageSize]);
+
+  const totalMonthlyPages = monthlyPageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredMonthlySummary.length / monthlyPageSize));
+  const validMonthlyPage = Math.min(Math.max(1, monthlyCurrentPage), totalMonthlyPages);
+
+  const paginatedMonthlySummary = useMemo(() => {
+    if (monthlyPageSize === -1) return filteredMonthlySummary;
+    const start = (validMonthlyPage - 1) * monthlyPageSize;
+    return filteredMonthlySummary.slice(start, start + monthlyPageSize);
+  }, [filteredMonthlySummary, validMonthlyPage, monthlyPageSize]);
+
+  const startMonthlyIndex = filteredMonthlySummary.length === 0 ? 0 : monthlyPageSize === -1 ? 1 : (validMonthlyPage - 1) * monthlyPageSize + 1;
+  const endMonthlyIndex = monthlyPageSize === -1 ? filteredMonthlySummary.length : Math.min(validMonthlyPage * monthlyPageSize, filteredMonthlySummary.length);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Top Header Card with Segmented Tab Switcher */}
@@ -684,7 +729,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredClassStudents.map((stu, index) => {
+                    paginatedDailyStudents.map((stu, index) => {
+                      const globalIndex = (dailyPageSize === -1 ? 0 : (validDailyPage - 1) * dailyPageSize) + index + 1;
                       const draft = attendanceDraft[stu.id] || { status: 'present', note: '' };
                       const studentClass = classes.find((c) => c.id === stu.classId);
                       const classNameDisplay = stu.className || studentClass?.name || 'ថ្នាក់ទូទៅ';
@@ -693,7 +739,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       return (
                         <tr key={stu.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors">
                           <td className="py-3 px-4 text-center font-bold text-zinc-500">
-                            {index + 1}
+                            {globalIndex}
                           </td>
                           <td className="py-3 px-4 font-mono font-bold text-zinc-900 dark:text-zinc-200">
                             {stu.studentCode}
@@ -790,6 +836,81 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               </table>
             </div>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredClassStudents.length > 0 && (
+            <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                <span>
+                  កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startDailyIndex} - {endDailyIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredClassStudents.length}</strong> នាក់
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[11px]">ក្នុងមួយទំព័រ:</span>
+                  <select
+                    value={dailyPageSize}
+                    onChange={(e) => {
+                      setDailyPageSize(Number(e.target.value));
+                      setDailyCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={-1}>ទាំងអស់ (All)</option>
+                  </select>
+                </div>
+              </div>
+
+              {dailyPageSize !== -1 && totalDailyPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage(1)}
+                    disabled={validDailyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រដំបូងបង្អស់ (First Page)"
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={validDailyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រមុន (Previous Page)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <span className="px-3 py-1 font-bold text-zinc-800 dark:text-zinc-200">
+                    ទំព័រ {validDailyPage} / {totalDailyPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage((p) => Math.min(totalDailyPages, p + 1))}
+                    disabled={validDailyPage === totalDailyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័របន្ទាប់ (Next Page)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage(totalDailyPages)}
+                    disabled={validDailyPage === totalDailyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រចុងក្រោយ (Last Page)"
+                  >
+                    <ChevronsRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -999,13 +1120,14 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredClassStudents.map((stu, index) => {
+                    paginatedDailyStudents.map((stu, index) => {
+                      const globalIndex = (dailyPageSize === -1 ? 0 : (validDailyPage - 1) * dailyPageSize) + index + 1;
                       const draft = attendanceDraft[stu.id] || { status: 'present', note: '' };
                       const studentClass = classes.find((c) => c.id === stu.classId);
 
                       return (
                         <tr key={stu.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60">
-                          <td className="py-2.5 px-4 text-center font-bold text-zinc-500">{index + 1}</td>
+                          <td className="py-2.5 px-4 text-center font-bold text-zinc-500">{globalIndex}</td>
                           <td className="py-2.5 px-4 font-mono font-bold text-zinc-900 dark:text-zinc-200">{stu.studentCode}</td>
                           <td className="py-2.5 px-4">
                             <span className="font-bold text-black dark:text-zinc-100">{stu.nameKhmer}</span>
@@ -1062,6 +1184,81 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               </table>
             </div>
           </div>
+
+          {/* Daily Report Pagination Controls */}
+          {filteredClassStudents.length > 0 && (
+            <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                <span>
+                  កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startDailyIndex} - {endDailyIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredClassStudents.length}</strong> នាក់
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[11px]">ក្នុងមួយទំព័រ:</span>
+                  <select
+                    value={dailyPageSize}
+                    onChange={(e) => {
+                      setDailyPageSize(Number(e.target.value));
+                      setDailyCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={-1}>ទាំងអស់ (All)</option>
+                  </select>
+                </div>
+              </div>
+
+              {dailyPageSize !== -1 && totalDailyPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage(1)}
+                    disabled={validDailyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រដំបូងបង្អស់ (First Page)"
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={validDailyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រមុន (Previous Page)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <span className="px-3 py-1 font-bold text-zinc-800 dark:text-zinc-200">
+                    ទំព័រ {validDailyPage} / {totalDailyPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage((p) => Math.min(totalDailyPages, p + 1))}
+                    disabled={validDailyPage === totalDailyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័របន្ទាប់ (Next Page)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDailyCurrentPage(totalDailyPages)}
+                    disabled={validDailyPage === totalDailyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រចុងក្រោយ (Last Page)"
+                  >
+                    <ChevronsRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1350,7 +1547,8 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredMonthlySummary.map((item, index) => {
+                    paginatedMonthlySummary.map((item, index) => {
+                      const globalIndex = (monthlyPageSize === -1 ? 0 : (validMonthlyPage - 1) * monthlyPageSize) + index + 1;
                       const stu = item.student;
                       const studentClass = classes.find((c) => c.id === stu.classId);
                       const studentDateMap = monthlyAttendanceMap.get(stu.id);
@@ -1358,7 +1556,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       return (
                         <tr key={stu.id} className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors">
                           <td className="py-2 px-3 text-center font-bold text-zinc-500 sticky left-0 bg-white dark:bg-[#131f1a] z-10">
-                            {index + 1}
+                            {globalIndex}
                           </td>
                           <td className="py-2 px-3 font-mono font-bold text-zinc-900 dark:text-zinc-200 sticky left-10 bg-white dark:bg-[#131f1a] z-10">
                             {stu.studentCode}
@@ -1449,6 +1647,81 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               </table>
             </div>
           </div>
+
+          {/* Monthly Matrix Pagination Controls */}
+          {filteredMonthlySummary.length > 0 && (
+            <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                <span>
+                  កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startMonthlyIndex} - {endMonthlyIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredMonthlySummary.length}</strong> នាក់
+                </span>
+
+                <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+                  <span className="text-[11px]">ក្នុងមួយទំព័រ:</span>
+                  <select
+                    value={monthlyPageSize}
+                    onChange={(e) => {
+                      setMonthlyPageSize(Number(e.target.value));
+                      setMonthlyCurrentPage(1);
+                    }}
+                    className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                    <option value={-1}>ទាំងអស់ (All)</option>
+                  </select>
+                </div>
+              </div>
+
+              {monthlyPageSize !== -1 && totalMonthlyPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyCurrentPage(1)}
+                    disabled={validMonthlyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រដំបូងបង្អស់ (First Page)"
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={validMonthlyPage === 1}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រមុន (Previous Page)"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <span className="px-3 py-1 font-bold text-zinc-800 dark:text-zinc-200">
+                    ទំព័រ {validMonthlyPage} / {totalMonthlyPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyCurrentPage((p) => Math.min(totalMonthlyPages, p + 1))}
+                    disabled={validMonthlyPage === totalMonthlyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័របន្ទាប់ (Next Page)"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMonthlyCurrentPage(totalMonthlyPages)}
+                    disabled={validMonthlyPage === totalMonthlyPages}
+                    className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                    title="ទំព័រចុងក្រោយ (Last Page)"
+                  >
+                    <ChevronsRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
