@@ -1,9 +1,22 @@
-export type ShiftType = 'morning' | 'afternoon' | 'evening' | 'weekend';
-export type AcademicYearType = 'Year 1' | 'Year 2' | 'Year 3' | 'Year 4';
+export type ShiftType = 'morning' | 'afternoon' | 'evening' | 'weekend' | string;
+export type AcademicYearType = 'Year 1' | 'Year 2' | 'Year 3' | 'Year 4' | string;
 export type StudentStatus = 'active' | 'suspended' | 'dropped' | 'graduated';
 export type AttendanceStatus = 'present' | 'permission' | 'absent' | 'late';
 export type TeacherAttendanceStatus = 'present' | 'permission' | 'absent' | 'substituted';
 export type TeacherStatus = 'active' | 'on_leave' | 'resigned' | 'retired';
+
+export type ClassType = 'bachelor' | 'master' | 'phd' | 'chinese_general';
+
+export interface ShiftItem {
+  id: string;
+  code: string; // e.g. 'morning', 'afternoon', 'evening', 'weekend', etc.
+  nameKhmer: string; // e.g. 'វេនព្រឹក (Morning)'
+  nameLatin: string; // e.g. 'Morning Shift'
+  timeRange: string; // e.g. '07:30 - 11:00'
+  days?: string; // e.g. 'ច័ន្ទ - សុក្រ'
+  color?: string; // badge color key
+  isDefault?: boolean;
+}
 
 export interface Major {
   id: string;
@@ -12,6 +25,7 @@ export interface Major {
   nameLatin: string;
   description?: string;
   totalYears: number;
+  classType?: ClassType;
 }
 
 export interface Classroom {
@@ -20,6 +34,7 @@ export interface Classroom {
   name: string;
   majorId: string;
   majorName: string;
+  classType?: ClassType;
   year: AcademicYearType;
   shift: ShiftType;
   room: string;
@@ -41,6 +56,7 @@ export interface Student {
   email?: string;
   majorId: string;
   majorName: string;
+  classType?: ClassType;
   classId: string;
   className: string;
   shift: ShiftType;
