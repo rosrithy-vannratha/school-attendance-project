@@ -17,7 +17,8 @@ import {
   Clock,
   BookOpen
 } from 'lucide-react';
-import { Student, Teacher, Classroom, Major, AttendanceRecord, ActiveTab, ShiftType } from '../types';
+import { Student, Teacher, Classroom, Major, AttendanceRecord, ActiveTab, ShiftType, ShiftItem } from '../types';
+import { INITIAL_SHIFTS } from '../data/initialData';
 import icetiLogo from '../assets/images/icetilogo.jpg';
 
 interface DashboardViewProps {
@@ -26,6 +27,7 @@ interface DashboardViewProps {
   classes: Classroom[];
   majors: Major[];
   attendance: AttendanceRecord[];
+  shifts?: ShiftItem[];
   setActiveTab: (tab: ActiveTab) => void;
   onOpenAddStudent: () => void;
   onOpenAddClass: () => void;
@@ -38,6 +40,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   classes,
   majors,
   attendance,
+  shifts = INITIAL_SHIFTS,
   setActiveTab,
   onOpenAddStudent,
   onOpenAddClass,
@@ -275,85 +278,60 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Morning Shift */}
-          <div 
-            onClick={() => setActiveTab('students')}
-            className="bg-amber-50/70 dark:bg-amber-950/30 hover:bg-amber-100/70 dark:hover:bg-amber-950/45 border border-amber-300/80 dark:border-amber-800/60 p-4 rounded-2xl transition-all cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold">
-                <Sun className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-amber-950 dark:text-amber-200 bg-amber-200/70 dark:bg-amber-900/70 px-2 py-0.5 rounded-full">
-                07:30 - 11:00
-              </span>
-            </div>
-            <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm">វេនព្រឹក (Morning)</h4>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-amber-950 dark:text-amber-200">{shiftCounts.morning}</span>
-              <span className="text-xs text-amber-900 dark:text-amber-300 font-bold">និស្សិត</span>
-            </div>
-          </div>
+          {shifts.map((s) => {
+            const count = students.filter((stu) => (stu.shift || 'morning').toLowerCase() === s.code.toLowerCase()).length;
+            const isMorning = s.code === 'morning';
+            const isAfternoon = s.code === 'afternoon';
+            const isEvening = s.code === 'evening';
+            
+            const bgClasses = isMorning
+              ? 'bg-amber-50/70 dark:bg-amber-950/30 hover:bg-amber-100/70 dark:hover:bg-amber-950/45 border-amber-300/80 dark:border-amber-800/60'
+              : isAfternoon
+              ? 'bg-orange-50/70 dark:bg-orange-950/30 hover:bg-orange-100/70 dark:hover:bg-orange-950/45 border-orange-300/80 dark:border-orange-800/60'
+              : isEvening
+              ? 'bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100/70 dark:hover:bg-indigo-950/45 border-indigo-300/80 dark:border-indigo-800/60'
+              : 'bg-teal-50/70 dark:bg-teal-950/30 hover:bg-teal-100/70 dark:hover:bg-teal-950/45 border-teal-300/80 dark:border-teal-800/60';
 
-          {/* Afternoon Shift */}
-          <div 
-            onClick={() => setActiveTab('students')}
-            className="bg-orange-50/70 dark:bg-orange-950/30 hover:bg-orange-100/70 dark:hover:bg-orange-950/45 border border-orange-300/80 dark:border-orange-800/60 p-4 rounded-2xl transition-all cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-500/15 text-orange-800 dark:text-orange-300 flex items-center justify-center font-bold">
-                <Sunset className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-orange-950 dark:text-orange-200 bg-orange-200/70 dark:bg-orange-900/70 px-2 py-0.5 rounded-full">
-                13:30 - 17:00
-              </span>
-            </div>
-            <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm">វេនរសៀល (Afternoon)</h4>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-orange-950 dark:text-orange-200">{shiftCounts.afternoon}</span>
-              <span className="text-xs text-orange-900 dark:text-orange-300 font-bold">និស្សិត</span>
-            </div>
-          </div>
+            const badgeBg = isMorning
+              ? 'bg-amber-200/70 dark:bg-amber-900/70 text-amber-950 dark:text-amber-200'
+              : isAfternoon
+              ? 'bg-orange-200/70 dark:bg-orange-950/70 text-orange-950 dark:text-orange-200'
+              : isEvening
+              ? 'bg-indigo-200/70 dark:bg-indigo-950/70 text-indigo-950 dark:text-indigo-200'
+              : 'bg-teal-200/70 dark:bg-teal-900/70 text-teal-950 dark:text-teal-200';
 
-          {/* Evening Shift */}
-          <div 
-            onClick={() => setActiveTab('students')}
-            className="bg-indigo-50/70 dark:bg-indigo-950/30 hover:bg-indigo-100/70 dark:hover:bg-indigo-950/45 border border-indigo-300/80 dark:border-indigo-800/60 p-4 rounded-2xl transition-all cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 flex items-center justify-center font-bold">
-                <Moon className="w-4 h-4" />
-              </div>
-              <span className="text-[11px] font-bold text-indigo-950 dark:text-indigo-200 bg-indigo-200/70 dark:bg-indigo-900/70 px-2 py-0.5 rounded-full">
-                17:30 - 20:30
-              </span>
-            </div>
-            <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm">វេនយប់ (Evening)</h4>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-indigo-950 dark:text-indigo-200">{shiftCounts.evening}</span>
-              <span className="text-xs text-indigo-900 dark:text-indigo-300 font-bold">និស្សិត</span>
-            </div>
-          </div>
+            const icon = isMorning ? (
+              <Sun className="w-4 h-4" />
+            ) : isAfternoon ? (
+              <Sunset className="w-4 h-4" />
+            ) : isEvening ? (
+              <Moon className="w-4 h-4" />
+            ) : (
+              <Calendar className="w-4 h-4" />
+            );
 
-          {/* Weekend Shift */}
-          <div 
-            onClick={() => setActiveTab('students')}
-            className="bg-teal-50/70 dark:bg-teal-950/30 hover:bg-teal-100/70 dark:hover:bg-teal-950/45 border border-teal-300/80 dark:border-teal-800/60 p-4 rounded-2xl transition-all cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-teal-500/15 text-teal-800 dark:text-teal-300 flex items-center justify-center font-bold">
-                <Calendar className="w-4 h-4" />
+            return (
+              <div
+                key={s.id}
+                onClick={() => setActiveTab('students')}
+                className={`border p-4 rounded-2xl transition-all cursor-pointer group ${bgClasses}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center font-bold">
+                    {icon}
+                  </div>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${badgeBg}`}>
+                    {s.timeRange || s.nameLatin}
+                  </span>
+                </div>
+                <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm">{s.nameKhmer} ({s.nameLatin})</h4>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{count}</span>
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400 font-bold">និស្សិត</span>
+                </div>
               </div>
-              <span className="text-[11px] font-bold text-teal-950 dark:text-teal-200 bg-teal-200/70 dark:bg-teal-900/70 px-2 py-0.5 rounded-full">
-                សៅរ៍ - អាទិត្យ
-              </span>
-            </div>
-            <h4 className="font-bold text-zinc-950 dark:text-zinc-100 text-sm">ចុងសប្តាហ៍ (Weekend)</h4>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-teal-950 dark:text-teal-200">{shiftCounts.weekend}</span>
-              <span className="text-xs text-teal-900 dark:text-teal-300 font-bold">និស្សិត</span>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
