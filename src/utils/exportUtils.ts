@@ -158,7 +158,11 @@ export function parseTeacherStatus(val: any): TeacherStatus {
 }
 
 // Parse Student Excel File
-export function parseStudentExcel(file: File): Promise<Partial<Student>[]> {
+export function parseStudentExcel(
+  file: File,
+  majors: Major[] = [],
+  classes: Classroom[] = []
+): Promise<Student[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -174,7 +178,7 @@ export function parseStudentExcel(file: File): Promise<Partial<Student>[]> {
           return;
         }
 
-        const parsedStudents: Partial<Student>[] = rawJson.map((row, index) => {
+        const parsedStudents: Student[] = rawJson.map((row, index) => {
           // Khmer Name aliases
           const nameKhmer = String(
             getRowValue(row, [
@@ -295,14 +299,38 @@ export function parseStudentExcel(file: File): Promise<Partial<Student>[]> {
           ).trim();
 
           // Major aliases
-          const majorName = String(
+          const majorNameRaw = String(
             getRowValue(row, ['ជំនាញ (Major)', 'ជំនាញ', 'ដេប៉ាតឺម៉ង់', 'Major', 'Major Name', 'Department']) || ''
           ).trim();
 
           // Class aliases
-          const className = String(
+          const classNameRaw = String(
             getRowValue(row, ['ថ្នាក់ (Class)', 'ថ្នាក់', 'ថ្នាក់រៀន', 'Class', 'Class Name', 'Classroom', 'Room']) || ''
           ).trim();
+
+          // Class Type aliases
+          const classTypeRaw = String(
+            getRowValue(row, ['កម្រិតថ្នាក់', 'កម្រិត', 'Class Type', 'Degree', 'Degree Level']) || ''
+          ).trim().toLowerCase();
+
+          let classType: any = 'bachelor';
+          if (classTypeRaw.includes('master') || classTypeRaw.includes('អនុបណ្ឌិត')) classType = 'master';
+          else if (classTypeRaw.includes('phd') || classTypeRaw.includes('ph.d') || classTypeRaw.includes('បណ្ឌិត')) classType = 'phd';
+          else if (classTypeRaw.includes('chinese') || classTypeRaw.includes('ទូទៅ') || classTypeRaw.includes('general')) classType = 'chinese_general';
+
+          // Match major and class
+          const matchedMajor = majors.find(
+            (m) =>
+              m.nameKhmer.toLowerCase().includes(majorNameRaw.toLowerCase()) ||
+              m.nameLatin.toLowerCase().includes(majorNameRaw.toLowerCase()) ||
+              m.code.toLowerCase() === majorNameRaw.toLowerCase()
+          ) || majors[0];
+
+          const matchedClass = classes.find(
+            (c) =>
+              c.name.toLowerCase().includes(classNameRaw.toLowerCase()) ||
+              c.classCode.toLowerCase() === classNameRaw.toLowerCase()
+          );
 
           // Address aliases
           const address = String(
@@ -310,6 +338,7 @@ export function parseStudentExcel(file: File): Promise<Partial<Student>[]> {
           ).trim();
 
           return {
+            id: `stu_imp_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 6)}`,
             studentCode,
             nameKhmer: nameKhmer || nameLatin || `និស្សិតទី ${index + 1}`,
             nameLatin: nameLatin || nameKhmer,
@@ -321,10 +350,14 @@ export function parseStudentExcel(file: File): Promise<Partial<Student>[]> {
             shift,
             year,
             status,
+            classType: matchedClass?.classType || classType,
+            majorId: matchedMajor?.id || 'maj_pedagogy',
+            majorName: matchedMajor?.nameKhmer || 'គរុកោសល្យភាសាចិន',
+            classId: matchedClass?.id || undefined,
+            className: matchedClass?.name || classNameRaw || undefined,
             guardianPhone: guardianPhone || undefined,
             address: address || undefined,
-            majorName: majorName || undefined,
-            className: className || undefined
+            createdAt: new Date().toISOString()
           };
         });
 
@@ -931,6 +964,16 @@ export function getShiftLabel(shift: string): string {
     case 'evening': return 'យប់ (Evening)';
     case 'weekend': return 'ចុងសប្តាហ៍ (Weekend)';
     default: return shift || 'ព្រឹក';
+  }
+}
+
+export function getClassTypeLabel(type?: string): string {
+  switch (type) {
+    case 'bachelor': return 'បរិញ្ញាបត្រ (Bachelor)';
+    case 'master': return 'បរិញ្ញាបត្រជាន់ខ្ពស់ (Master)';
+    case 'phd': return 'បណ្ឌិត (Ph.D)';
+    case 'chinese_general': return 'ភាសាចិនទូទៅ (Chinese General)';
+    default: return type ? String(type) : 'បរិញ្ញាបត្រ';
   }
 }
 
