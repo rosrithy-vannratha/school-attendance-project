@@ -24,7 +24,11 @@ import {
   Building2,
   DoorOpen,
   Clock,
-  Settings
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType, ShiftItem, ClassType } from '../types';
 import { instituteService } from '../service/instituteService';
@@ -152,6 +156,27 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     setSelectedYear('all');
     setFilterMode('all');
   };
+
+  // Pagination State
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Reset page on filter or search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedClassType, selectedMajor, selectedShift, selectedYear, filterMode, pageSize]);
+
+  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredClasses.length / pageSize));
+  const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedClasses = useMemo(() => {
+    if (pageSize === -1) return filteredClasses;
+    const start = (validPage - 1) * pageSize;
+    return filteredClasses.slice(start, start + pageSize);
+  }, [filteredClasses, validPage, pageSize]);
+
+  const startIndex = filteredClasses.length === 0 ? 0 : pageSize === -1 ? 1 : (validPage - 1) * pageSize + 1;
+  const endIndex = pageSize === -1 ? filteredClasses.length : Math.min(validPage * pageSize, filteredClasses.length);
 
   React.useEffect(() => {
     if (isAddModalOpen && !isReadOnly) {
@@ -537,7 +562,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredClasses.map((cls) => {
+                  paginatedClasses.map((cls) => {
                     const studentCount = classStudentCounts.get(cls.id) || 0;
                     const isUnder10 = studentCount < 10;
 
@@ -685,7 +710,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               <p className="font-bold text-zinc-700 dark:text-zinc-300 text-sm">ពុំមានទិន្នន័យថ្នាក់រៀនតាមតម្រងនេះទេ</p>
             </div>
           ) : (
-            filteredClasses.map((cls) => {
+            paginatedClasses.map((cls) => {
               const studentCount = classStudentCounts.get(cls.id) || 0;
               const isUnder10 = studentCount < 10;
 
@@ -806,6 +831,81 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 </div>
               );
             })
+          )}
+        </div>
+      )}
+
+      {/* Classes Pagination Controls */}
+      {filteredClasses.length > 0 && (
+        <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-blue-200/60 dark:border-sky-500/20 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+          <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+            <span>
+              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startIndex} - {endIndex}</strong> នៃសរុប <strong className="text-blue-700 dark:text-sky-400 font-bold">{filteredClasses.length}</strong> ថ្នាក់
+            </span>
+
+            <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+              <span className="text-[11px]">ក្នុងមួយទំព័រ:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-blue-500 outline-hidden cursor-pointer"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+                <option value={-1}>ទាំងអស់ (All)</option>
+              </select>
+            </div>
+          </div>
+
+          {pageSize !== -1 && totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={validPage === 1}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
+                title="ទំព័រដំបូងបង្អស់ (First Page)"
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={validPage === 1}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
+                title="ទំព័រមុន (Previous Page)"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="px-3 py-1 font-bold text-zinc-800 dark:text-zinc-200">
+                ទំព័រ {validPage} / {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={validPage === totalPages}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
+                title="ទំព័របន្ទាប់ (Next Page)"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={validPage === totalPages}
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
+                title="ទំព័រចុងក្រោយ (Last Page)"
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       )}
