@@ -1,4 +1,101 @@
-import { Major, Classroom, Student, Teacher, AttendanceRecord } from '../types';
+import { Major, Classroom, Student, Teacher, AttendanceRecord, ShiftItem, ClassType } from '../types';
+
+export interface ClassTypeOption {
+  id: ClassType;
+  nameKhmer: string;
+  nameLatin: string;
+  nameChinese?: string;
+  color: string;
+  badgeBg: string;
+  badgeText: string;
+  description: string;
+}
+
+export const CLASS_TYPE_OPTIONS: ClassTypeOption[] = [
+  {
+    id: 'bachelor',
+    nameKhmer: 'បរិញ្ញាបត្រ (Bachelor)',
+    nameLatin: "Bachelor's Degree",
+    nameChinese: '学士学位',
+    color: 'blue',
+    badgeBg: 'bg-blue-100 dark:bg-blue-950/80 border-blue-200 dark:border-blue-800/60',
+    badgeText: 'text-blue-800 dark:text-blue-300',
+    description: 'កម្មវិធីថ្នាក់បរិញ្ញាបត្ររយៈពេល ៤ ឆ្នាំ'
+  },
+  {
+    id: 'master',
+    nameKhmer: 'បរិញ្ញាបត្រជាន់ខ្ពស់ (Master)',
+    nameLatin: "Master's Degree",
+    nameChinese: '硕士学位',
+    color: 'indigo',
+    badgeBg: 'bg-indigo-100 dark:bg-indigo-950/80 border-indigo-200 dark:border-indigo-800/60',
+    badgeText: 'text-indigo-800 dark:text-indigo-300',
+    description: 'កម្មវិធីថ្នាក់អនុបណ្ឌិត / បរិញ្ញាបត្រជាន់ខ្ពស់ ២ ឆ្នាំ'
+  },
+  {
+    id: 'phd',
+    nameKhmer: 'បណ្ឌិត (Ph.D)',
+    nameLatin: 'Doctorate / Ph.D.',
+    nameChinese: '博士学位',
+    color: 'purple',
+    badgeBg: 'bg-purple-100 dark:bg-purple-950/80 border-purple-200 dark:border-purple-800/60',
+    badgeText: 'text-purple-800 dark:text-purple-300',
+    description: 'កម្មវិធីថ្នាក់បណ្ឌិតស្រាវជ្រាវ ៣-៤ ឆ្នាំ'
+  },
+  {
+    id: 'chinese_general',
+    nameKhmer: 'ភាសាចិនទូទៅ (Chinese General)',
+    nameLatin: 'General Chinese Program',
+    nameChinese: '通用汉语 / HSK',
+    color: 'amber',
+    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 border-amber-200 dark:border-amber-800/60',
+    badgeText: 'text-amber-800 dark:text-amber-300',
+    description: 'វគ្គបណ្តុះបណ្តាលភាសាចិនទូទៅ និងត្រៀមប្រឡង HSK 1-6'
+  }
+];
+
+export const INITIAL_SHIFTS: ShiftItem[] = [
+  {
+    id: 'shift_morning',
+    code: 'morning',
+    nameKhmer: 'វេនព្រឹក (Morning)',
+    nameLatin: 'Morning Shift',
+    timeRange: '07:30 - 11:00',
+    days: 'ច័ន្ទ - សុក្រ (Mon-Fri)',
+    color: 'amber',
+    isDefault: true
+  },
+  {
+    id: 'shift_afternoon',
+    code: 'afternoon',
+    nameKhmer: 'វេនរសៀល (Afternoon)',
+    nameLatin: 'Afternoon Shift',
+    timeRange: '13:30 - 17:00',
+    days: 'ច័ន្ទ - សុក្រ (Mon-Fri)',
+    color: 'orange',
+    isDefault: true
+  },
+  {
+    id: 'shift_evening',
+    code: 'evening',
+    nameKhmer: 'វេនយប់ (Evening)',
+    nameLatin: 'Evening Shift',
+    timeRange: '17:30 - 20:30',
+    days: 'ច័ន្ទ - សុក្រ (Mon-Fri)',
+    color: 'indigo',
+    isDefault: true
+  },
+  {
+    id: 'shift_weekend',
+    code: 'weekend',
+    nameKhmer: 'វេនចុងសប្តាហ៍ (Weekend)',
+    nameLatin: 'Weekend Shift',
+    timeRange: '08:00 - 17:00',
+    days: 'សៅរ៍ - អាទិត្យ (Sat-Sun)',
+    color: 'teal',
+    isDefault: true
+  }
+];
 
 export const INITIAL_MAJORS: Major[] = [
   {
@@ -6,6 +103,7 @@ export const INITIAL_MAJORS: Major[] = [
     code: 'EDU-CN',
     nameKhmer: 'គរុកោសល្យភាសាចិន',
     nameLatin: 'Chinese Language Pedagogy',
+    classType: 'bachelor',
     description: 'បណ្តុះបណ្តាលគរុនិស្សិតឱ្យក្លាយជាគ្រូបង្រៀនភាសាចិនកម្រិតឧត្តមសិក្សា និងមធ្យមសិក្សា',
     totalYears: 4
   },
@@ -14,6 +112,7 @@ export const INITIAL_MAJORS: Major[] = [
     code: 'TRA-CN',
     nameKhmer: 'បកប្រែភាសាចិន',
     nameLatin: 'Chinese Translation & Interpretation',
+    classType: 'bachelor',
     description: 'ជំនាញបកប្រែផ្ទាល់មាត់ និងឯកសារផ្លូវការ ពាណិជ្ជកម្ម ការទូត',
     totalYears: 4
   },
@@ -22,6 +121,7 @@ export const INITIAL_MAJORS: Major[] = [
     code: 'BUS-CN',
     nameKhmer: 'ភាសាចិនពាណិជ្ជកម្ម',
     nameLatin: 'Business Chinese',
+    classType: 'bachelor',
     description: 'ភាសាចិនសម្រាប់វិស័យពាណិជ្ជកម្ម គណនេយ្យ ធនាគារ និងការគ្រប់គ្រង',
     totalYears: 4
   },
@@ -30,6 +130,7 @@ export const INITIAL_MAJORS: Major[] = [
     code: 'TOU-CN',
     nameKhmer: 'ទេសចរណ៍ & បដិសណ្ឋារកិច្ច',
     nameLatin: 'Tourism & Hospitality Chinese',
+    classType: 'bachelor',
     description: 'ភាសាចិនសម្រាប់មគ្គុទ្ទេសក៍ទេសចរណ៍ សណ្ឋាគារ និងអាកាសចរណ៍',
     totalYears: 4
   }
