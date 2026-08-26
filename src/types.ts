@@ -129,6 +129,62 @@ export interface TeacherAttendance {
   createdAt: string;
 }
 
+export type ScholarshipType = 'full' | 'partial_50' | 'partial_30' | 'self_funded' | 'government' | 'special_grant';
+export type PaymentStatus = 'paid' | 'partial' | 'pending' | 'overdue' | 'waived';
+export type PaymentMethod = 'aba_pay' | 'acleda_khqr' | 'wing' | 'cash' | 'bank_transfer';
+
+export interface TuitionPayment {
+  id: string;
+  studentId: string;
+  studentCode: string;
+  studentName: string;
+  academicYear: string; // e.g. "2025-2026"
+  term: 'Semester 1' | 'Semester 2' | 'Full Year' | 'Term 1' | 'Term 2' | 'Term 3' | 'Term 4' | 'Short Course';
+  scholarshipType: ScholarshipType;
+  discountPercentage: number; // e.g. 100, 50, 30, 0
+  originalAmount: number; // USD e.g. 600
+  discountAmount: number; // USD
+  finalAmount: number; // USD to pay
+  paidAmount: number; // USD paid
+  dueAmount: number; // USD remaining
+  status: PaymentStatus;
+  paymentDate?: string; // YYYY-MM-DD
+  paymentMethod?: PaymentMethod;
+  transactionRef?: string;
+  invoiceNumber?: string;
+  recordedBy?: string;
+  notes?: string;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface TelegramConfig {
+  botToken?: string;
+  chatId?: string;
+  channelUsername?: string;
+  isEnabled: boolean;
+  instituteHeader?: string;
+}
+
+export interface AbsenceAlertLog {
+  id: string;
+  date: string;
+  studentId: string;
+  studentCode: string;
+  studentName: string;
+  guardianPhone?: string;
+  className: string;
+  shift: ShiftType;
+  absentCount: number;
+  attendanceRate: number;
+  channel: 'telegram' | 'sms' | 'direct';
+  message: string;
+  status: 'sent' | 'failed' | 'draft';
+  sentAt?: string;
+  sentBy?: string;
+}
+
 export interface AppUser {
   uid: string;
   email: string | null;
@@ -146,6 +202,8 @@ export type ActiveTab =
   | 'teacher_attendance'
   | 'classes'
   | 'majors'
+  | 'tuition'
+  | 'alerts'
   | 'reports';
 
 export interface AttendanceStats {
