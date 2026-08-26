@@ -1,61 +1,87 @@
 import React, { useState, useMemo } from 'react';
 import {
-  UserCheck,
-  Plus,
-  Edit2,
-  Trash2,
+  Users,
   Search,
-  Phone,
-  Mail,
-  BookOpen,
-  X,
-  GraduationCap,
-  CalendarCheck,
+  Filter,
+  Plus,
   FileSpreadsheet,
   Download,
   Upload,
-  Filter,
-  Camera,
-  FileText,
-  Paperclip,
-  Image as ImageIcon,
-  ExternalLink,
-  FileCheck,
-  AlertTriangle,
-  LayoutGrid,
-  Table as TableIcon,
+  Edit2,
+  Trash2,
+  Sun,
+  Sunset,
+  Moon,
+  Calendar,
+  X,
+  CheckCircle,
+  Phone,
+  BookOpen,
+  GraduationCap,
   Eye,
   Lock,
+  Camera,
+  Image as ImageIcon,
+  AlertTriangle,
+  UserCheck,
+  LayoutGrid,
+  Table as TableIcon,
+  MapPin,
+  TrendingUp,
+  Award,
+  CheckSquare,
+  Square,
   ZoomIn,
+  Sparkles,
+  Layers,
+  Check,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight
 } from 'lucide-react';
-import { Teacher, TeacherStatus, ShiftType } from '../types';
+import { Student, Classroom, Major, ShiftType, AcademicYearType, StudentStatus, ShiftItem, ClassType } from '../types';
 import { instituteService } from '../service/instituteService';
-import { ProfileImageViewerModal, ProfileViewTarget } from './ProfileImageViewerModal';
+import { INITIAL_SHIFTS, CLASS_TYPE_OPTIONS } from '../data/initialData';
 import {
-  exportTeachersToExcel,
-  downloadTeacherTemplate,
-  parseTeacherExcel,
+  exportStudentsToExcel,
+  downloadStudentTemplate,
+  parseStudentExcel,
   getShiftLabel,
-  getTeacherStatusLabel
+  getClassTypeLabel,
+  getStatusLabel
 } from '../utils/exportUtils';
+import { ProfileImageViewerModal, ProfileViewTarget } from './ProfileImageViewerModal';
+import { PromoteStudentsModal } from './PromoteStudentsModal';
 
-interface TeachersViewProps {
-  teachers: Teacher[];
+interface StudentsViewProps {
+  students: Student[];
+  classes: Classroom[];
+  majors: Major[];
+  shifts?: ShiftItem[];
+  isAddModalOpen?: boolean;
+  onCloseAddModal?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
   isReadOnly?: boolean;
 }
 
-export const TeachersView: React.FC<TeachersViewProps> = ({
-  teachers,
+export const StudentsView: React.FC<StudentsViewProps> = ({
+  students,
+  classes,
+  majors,
+  shifts = INITIAL_SHIFTS,
+  isAddModalOpen = false,
+  onCloseAddModal,
   showToast,
   isReadOnly = false
 }) => {
   const [search, setSearch] = useState('');
+  const [selectedClassType, setSelectedClassType] = useState<string>('all');
   const [selectedShift, setSelectedShift] = useState<string>('all');
+  const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMajor, setSelectedMajor] = useState<string>('all');
+  const [selectedGeneration, setSelectedGeneration] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
@@ -63,94 +89,156 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
   const [pageSize, setPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
-  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  // Multi-Selection State
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+
+  // Promotion Modal State
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [studentsToPromote, setStudentsToPromote] = useState<Student[]>([]);
 
   // Profile Image Viewer Modal State
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [imageViewerTarget, setImageViewerTarget] = useState<ProfileViewTarget | null>(null);
 
+  // Student Add / Edit Modal states
+  const [isModalOpen, setIsModalOpen] = useState(isAddModalOpen);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
   // Form states
-  const [formTeacherCode, setFormTeacherCode] = useState('');
+  const [formStudentCode, setFormStudentCode] = useState('');
   const [formNameKhmer, setFormNameKhmer] = useState('');
   const [formNameLatin, setFormNameLatin] = useState('');
   const [formNameChinese, setFormNameChinese] = useState('');
-  const [formGender, setFormGender] = useState<'male' | 'female'>('male');
+  const [formGender, setFormGender] = useState<'male' | 'female'>('female');
+  const [formDob, setFormDob] = useState('2004-01-01');
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
-  const [formSubjects, setFormSubjects] = useState('');
-  const [formShift, setFormShift] = useState('morning');
-  const [formStatus, setFormStatus] = useState<TeacherStatus>('active');
-  const [formDegree, setFormDegree] = useState('');
+  const [formClassType, setFormClassType] = useState<ClassType>('bachelor');
+  const [formMajorId, setFormMajorId] = useState(majors[0]?.id || 'maj_pedagogy');
+  const [formClassId, setFormClassId] = useState(classes[0]?.id || '');
+  const [formGeneration, setFormGeneration] = useState('');
+  const [formShift, setFormShift] = useState<ShiftType>('morning');
+  const [formYear, setFormYear] = useState<AcademicYearType>('Year 1');
+  const [formStatus, setFormStatus] = useState<StudentStatus>('active');
+  const [formGuardianPhone, setFormGuardianPhone] = useState('');
+  const [formAddress, setFormAddress] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formPhotoUrl, setFormPhotoUrl] = useState<string | undefined>(undefined);
-  const [formCvName, setFormCvName] = useState<string | undefined>(undefined);
-  const [formCvUrl, setFormCvUrl] = useState<string | undefined>(undefined);
+
+  // Sync external prop if passed
+  React.useEffect(() => {
+    if (isAddModalOpen) {
+      openAddModal();
+    }
+  }, [isAddModalOpen]);
 
   const openAddModal = () => {
-    if (isReadOnly) return;
-    setEditingTeacher(null);
-    setFormTeacherCode(`ICI-TCH-${String(teachers.length + 1).padStart(3, '0')}`);
+    setEditingStudent(null);
+    setFormStudentCode(`ICI-2025-${String(students.length + 1).padStart(3, '0')}`);
     setFormNameKhmer('');
     setFormNameLatin('');
     setFormNameChinese('');
-    setFormGender('male');
+    setFormGender('female');
+    setFormDob('2004-01-01');
     setFormPhone('');
     setFormEmail('');
-    setFormSubjects('');
-    setFormShift('morning');
+    setFormClassType('bachelor');
+    setFormMajorId(majors[0]?.id || 'maj_pedagogy');
+    setFormClassId(classes[0]?.id || '');
+    setFormGeneration('ជំនាន់ទី១');
+    setFormShift((shifts[0]?.code as ShiftType) || 'morning');
+    setFormYear('Year 1');
     setFormStatus('active');
-    setFormDegree('បរិញ្ញាបត្រជាន់ខ្ពស់ (Master\'s)');
+    setFormGuardianPhone('');
+    setFormAddress('');
     setFormNotes('');
     setFormPhotoUrl(undefined);
-    setFormCvName(undefined);
-    setFormCvUrl(undefined);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (t: Teacher) => {
-    setEditingTeacher(t);
-    setFormTeacherCode(t.teacherCode);
-    setFormNameKhmer(t.nameKhmer);
-    setFormNameLatin(t.nameLatin);
-    setFormNameChinese(t.nameChinese || '');
-    setFormGender(t.gender);
-    setFormPhone(t.phone);
-    setFormEmail(t.email || '');
-    setFormSubjects(t.subjects);
-    setFormShift(t.shift || 'morning');
-    setFormStatus(t.status || 'active');
-    setFormDegree(t.degree || 'បរិញ្ញាបត្រជាន់ខ្ពស់ (Master\'s)');
-    setFormNotes(t.notes || '');
-    setFormPhotoUrl(t.photoUrl || undefined);
-    setFormCvName(t.cvName || undefined);
-    setFormCvUrl(t.cvUrl || undefined);
+  const openEditModal = (stu: Student) => {
+    setEditingStudent(stu);
+    setFormStudentCode(stu.studentCode || '');
+    setFormNameKhmer(stu.nameKhmer || '');
+    setFormNameLatin(stu.nameLatin || '');
+    setFormNameChinese(stu.nameChinese || '');
+    setFormGender(stu.gender || 'female');
+    setFormDob(stu.dob || '2004-01-01');
+    setFormPhone(stu.phone || '');
+    setFormEmail(stu.email || '');
+    setFormClassType(stu.classType || 'bachelor');
+    setFormMajorId(stu.majorId || majors[0]?.id || '');
+    setFormClassId(stu.classId || classes[0]?.id || '');
+    setFormGeneration(stu.generation || '');
+    setFormShift(stu.shift || (shifts[0]?.code as ShiftType) || 'morning');
+    setFormYear(stu.year || 'Year 1');
+    setFormStatus(stu.status || 'active');
+    setFormGuardianPhone(stu.guardianPhone || '');
+    setFormAddress(stu.address || '');
+    setFormNotes(stu.notes || '');
+    setFormPhotoUrl(stu.photoUrl || undefined);
     setIsModalOpen(true);
   };
 
   // Image viewer opener
-  const handleOpenPhotoViewer = (t: Teacher) => {
+  const handleOpenPhotoViewer = (stu: Student) => {
     setImageViewerTarget({
-      nameKhmer: t.nameKhmer,
-      nameLatin: t.nameLatin,
-      nameChinese: t.nameChinese,
-      code: t.teacherCode,
-      photoUrl: t.photoUrl,
-      gender: t.gender,
-      degree: t.degree,
-      subjects: t.subjects,
-      shift: t.shift,
-      phone: t.phone,
-      email: t.email,
-      roleOrStatus: t.status,
-      isTeacher: true
+      nameKhmer: stu.nameKhmer,
+      nameLatin: stu.nameLatin,
+      nameChinese: stu.nameChinese,
+      code: stu.studentCode,
+      photoUrl: stu.photoUrl,
+      gender: stu.gender,
+      majorName: stu.majorName,
+      className: stu.className,
+      classType: stu.classType,
+      shift: stu.shift,
+      year: stu.year,
+      roleOrStatus: stu.status
     });
     setIsImageViewerOpen(true);
+  };
+
+  // Selection handlers
+  const handleToggleSelectStudent = (id: string) => {
+    setSelectedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = (filteredList: Student[]) => {
+    const next = new Set<string>();
+    filteredList.forEach((s) => next.add(s.id));
+    setSelectedStudentIds(next);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedStudentIds(new Set());
+  };
+
+  // Promotion triggers
+  const handleOpenPromoteForSelected = () => {
+    const selectedList = students.filter((s) => selectedStudentIds.has(s.id));
+    if (selectedList.length === 0) {
+      showToast('សូមជ្រើសរើសនិស្សិតយ៉ាងហោចណាស់ម្នាក់ដើម្បីតម្លើងកម្រិត!', 'error');
+      return;
+    }
+    setStudentsToPromote(selectedList);
+    setIsPromoteModalOpen(true);
+  };
+
+  const handleOpenPromoteForSingle = (stu: Student) => {
+    setStudentsToPromote([stu]);
+    setIsPromoteModalOpen(true);
   };
 
   const compressImageFile = (file: File, maxWidth = 350, maxHeight = 350, quality = 0.75): Promise<string> => {
@@ -214,7 +302,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       const compressedDataUrl = await compressImageFile(file);
       if (compressedDataUrl) {
         setFormPhotoUrl(compressedDataUrl);
-        showToast('បានផ្ទុកឡើងរូបថតសាស្ត្រាចារ្យជោគជ័យ!', 'success');
+        showToast('បានផ្ទុកឡើងរូបថតជោគជ័យ!', 'success');
       }
     } catch (err) {
       console.warn('Error processing photo:', err);
@@ -222,303 +310,261 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
     }
   };
 
-  const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isReadOnly) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('ទំហំឯកសារ CV ត្រូវតិចជាង 2MB សម្រាប់ការរក្សាទុកលើ Cloud', 'error');
-      return;
-    }
-
-    setFormCvName(file.name);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setFormCvUrl(result);
-      showToast(`បានភ្ជាប់ឯកសារ CV "${file.name}" ជោគជ័យ!`, 'success');
-    };
-    reader.readAsDataURL(file);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingStudent(null);
+    if (onCloseAddModal) onCloseAddModal();
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isReadOnly) {
-      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
-      return;
-    }
-    if (!formNameKhmer.trim()) {
-      showToast('សូមបញ្ចូលឈ្មោះខ្មែររបស់សាស្ត្រាចារ្យ!', 'error');
-      return;
-    }
-
-    setIsSaving(true);
-
-    const generatedCode = `ICI-TCH-${Date.now().toString().slice(-4)}`;
-    const finalCode = formTeacherCode.trim() || (editingTeacher ? editingTeacher.teacherCode : generatedCode);
-
-    const data: Teacher = {
-      id: editingTeacher ? editingTeacher.id : `tch_${Date.now()}`,
-      teacherCode: finalCode,
-      nameKhmer: formNameKhmer.trim(),
-      nameLatin: formNameLatin.trim(),
-      nameChinese: formNameChinese.trim() || undefined,
-      gender: formGender,
-      phone: formPhone.trim(),
-      email: formEmail.trim() || undefined,
-      subjects: formSubjects.trim() || 'ភាសាចិន',
-      shift: formShift,
-      status: formStatus,
-      degree: formDegree.trim() || undefined,
-      notes: formNotes.trim() || undefined,
-      photoUrl: formPhotoUrl || undefined,
-      cvName: formCvName || undefined,
-      cvUrl: formCvUrl || undefined,
-      createdAt: editingTeacher ? editingTeacher.createdAt : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    try {
-      await instituteService.saveTeacher(data);
-      showToast(
-        editingTeacher
-          ? `បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានសាស្ត្រាចារ្យ "${data.nameKhmer}" ជោគជ័យ!`
-          : `បានបន្ថែមសាស្ត្រាចារ្យ "${data.nameKhmer}" ជោគជ័យ!`,
-        'success'
-      );
-      setIsModalOpen(false);
-      setEditingTeacher(null);
-    } catch (e: any) {
-      console.error('Error saving teacher:', e);
-      showToast('មិនអាចរក្សាទុកទិន្នន័យបានទេ សូមព្យាយាមម្តងទៀត', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string, name: string) => {
+  const handleDeleteAllStudents = async () => {
     if (isReadOnly) {
       showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
       return;
     }
-    if (window.confirm(`តើអ្នកពិតជាចង់លុបសាស្ត្រាចារ្យ "${name}" មែនទេ?`)) {
-      try {
-        await instituteService.deleteTeacher(id);
-        showToast('បានលុបសាស្ត្រាចារ្យជោគជ័យ!', 'info');
-      } catch (e) {
-        showToast('មិនអាចលុបបានទេ', 'error');
-      }
-    }
-  };
 
-  const handleDeleteAllTeachers = async () => {
-    if (isReadOnly) {
-      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
-      return;
-    }
     setIsDeletingAll(true);
     try {
-      await instituteService.deleteAllTeachers();
-      showToast('បានលុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់ដោយជោគជ័យ!', 'success');
+      await instituteService.deleteAllStudents();
+      showToast('បានលុបទិន្នន័យនិស្សិតទាំងអស់ដោយជោគជ័យ', 'success');
       setIsDeleteAllModalOpen(false);
-    } catch (e) {
+      setSelectedStudentIds(new Set());
+    } catch (err) {
       showToast('មិនអាចលុបទិន្នន័យបានទេ', 'error');
     } finally {
       setIsDeletingAll(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSaveStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (isReadOnly) {
-      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      showToast('គណនីភ្ញៀវមិនអាចកែប្រែទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
       return;
     }
+
+    const selectedMajorObj = majors.find((m) => m.id === formMajorId);
+    const selectedClassObj = classes.find((c) => c.id === formClassId);
+
+    const studentData: Student = {
+      id: editingStudent ? editingStudent.id : `stu_${Date.now()}`,
+      studentCode: formStudentCode.trim() || `ICI-${Date.now().toString().slice(-4)}`,
+      nameKhmer: formNameKhmer.trim(),
+      nameLatin: formNameLatin.trim(),
+      nameChinese: formNameChinese.trim() || undefined,
+      gender: formGender,
+      dob: formDob || '2004-01-01',
+      phone: formPhone.trim(),
+      email: formEmail.trim() || undefined,
+      classType: formClassType,
+      majorId: formMajorId,
+      majorName: selectedMajorObj ? selectedMajorObj.nameKhmer : (editingStudent?.majorName || 'គរុកោសល្យភាសាចិន'),
+      classId: formClassId,
+      className: selectedClassObj ? selectedClassObj.name : (editingStudent?.className || 'ថ្នាក់គរុកោសល្យ'),
+      generation: formGeneration.trim() || undefined,
+      shift: formShift,
+      year: formYear,
+      status: formStatus,
+      guardianPhone: formGuardianPhone.trim() || undefined,
+      address: formAddress.trim() || undefined,
+      notes: formNotes.trim() || undefined,
+      photoUrl: formPhotoUrl || undefined,
+      createdAt: editingStudent ? editingStudent.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      await instituteService.saveStudent(studentData);
+      showToast(editingStudent ? 'បានកែប្រែព័ត៌មាននិស្សិតជោគជ័យ!' : 'បានចុះឈ្មោះនិស្សិតថ្មីជោគជ័យ!', 'success');
+      closeModal();
+    } catch (err) {
+      showToast('មិនអាចរក្សាទុកទិន្នន័យបានទេ', 'error');
+    }
+  };
+
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
+      return;
+    }
+
+    if (window.confirm(`តើអ្នកពិតជាចង់លុបនិស្សិត "${name}" មែនទេ?`)) {
+      try {
+        await instituteService.deleteStudent(id);
+        showToast('បានលុបនិស្សិតរួចរាល់', 'success');
+        setSelectedStudentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      } catch (err) {
+        showToast('មិនអាចលុបនិស្សិតបានទេ', 'error');
+      }
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនអាច Import ទិន្នន័យបានទេ', 'info');
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsImporting(true);
     try {
-      const parsed = await parseTeacherExcel(file);
-      if (parsed.length === 0) {
-        showToast('មិនមានទិន្នន័យត្រឹមត្រូវក្នុងឯកសារ Excel ទេ', 'error');
+      const importedStudents = await parseStudentExcel(file, majors, classes);
+      if (importedStudents.length === 0) {
+        showToast('ពុំមានទិន្នន័យត្រឹមត្រូវក្នុងឯកសារ Excel ទេ', 'error');
+        setIsImporting(false);
         return;
       }
 
-      let insertedCount = 0;
-      let updatedCount = 0;
-
-      // Build map of existing teachers to prevent duplicates and preserve enriched fields
-      const teacherMap = new Map<string, Teacher>();
-      teachers.forEach((t) => {
-        teacherMap.set(t.id, t);
-      });
-
-      const processedBatch: Teacher[] = [];
-
-      parsed.forEach((p, idx) => {
-        const targetCode = (p.teacherCode || '').trim().toLowerCase();
-        const targetNameKhmer = (p.nameKhmer || '').trim().toLowerCase();
-        const targetPhone = (p.phone || '').trim().replace(/\D/g, '');
-
-        let existingMatch: Teacher | undefined;
-
-        if (targetCode) {
-          existingMatch = Array.from(teacherMap.values()).find(
-            (t) => t.teacherCode.trim().toLowerCase() === targetCode
-          );
-        }
-
-        if (!existingMatch && targetNameKhmer && targetPhone) {
-          existingMatch = Array.from(teacherMap.values()).find(
-            (t) =>
-              t.nameKhmer.trim().toLowerCase() === targetNameKhmer &&
-              (t.phone || '').replace(/\D/g, '') === targetPhone
-          );
-        }
-
-        if (existingMatch) {
-          // Update existing teacher record while preserving custom fields (photo, CV, notes, degree)
-          updatedCount++;
-          const updated: Teacher = {
-            ...existingMatch,
-            teacherCode: p.teacherCode || existingMatch.teacherCode,
-            nameKhmer: p.nameKhmer || existingMatch.nameKhmer,
-            nameLatin: p.nameLatin || existingMatch.nameLatin,
-            nameChinese: p.nameChinese !== undefined && p.nameChinese !== '' ? p.nameChinese : existingMatch.nameChinese,
-            gender: p.gender || existingMatch.gender,
-            phone: p.phone || existingMatch.phone,
-            email: p.email || existingMatch.email,
-            subjects: p.subjects || existingMatch.subjects,
-            shift: p.shift || existingMatch.shift,
-            status: p.status || existingMatch.status,
-            degree: p.degree || existingMatch.degree,
-            notes: p.notes || existingMatch.notes,
-            photoUrl: existingMatch.photoUrl,
-            cvName: existingMatch.cvName,
-            cvUrl: existingMatch.cvUrl,
-            updatedAt: new Date().toISOString()
-          };
-          teacherMap.set(updated.id, updated);
-          processedBatch.push(updated);
-        } else {
-          // Insert new teacher record
-          insertedCount++;
-          const newId = `tch_imp_${Date.now()}_${idx}`;
-          const newTeacher: Teacher = {
-            id: newId,
-            teacherCode: p.teacherCode || `ICI-TCH-${String(teachers.length + insertedCount).padStart(3, '0')}`,
-            nameKhmer: p.nameKhmer || 'សាស្ត្រាចារ្យ',
-            nameLatin: p.nameLatin || '',
-            nameChinese: p.nameChinese || undefined,
-            gender: p.gender || 'male',
-            phone: p.phone || '',
-            email: p.email || undefined,
-            subjects: p.subjects || 'ភាសាចិន',
-            shift: p.shift || 'morning',
-            status: p.status || 'active',
-            degree: p.degree || undefined,
-            notes: p.notes || undefined,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          teacherMap.set(newId, newTeacher);
-          processedBatch.push(newTeacher);
-        }
-      });
-
-      await instituteService.saveTeachersBulk(processedBatch);
-      showToast(`បានបញ្ចូលសាស្ត្រាចារ្យថ្មី ${insertedCount} នាក់ និងធ្វើបច្ចុប្បន្នភាព ${updatedCount} នាក់ដោយជោគជ័យ!`, 'success');
-    } catch (err) {
+      await instituteService.saveStudentsBulk(importedStudents);
+      showToast(`បានបញ្ចូលនិស្សិតចំនួន ${importedStudents.length} នាក់ដោយជោគជ័យ!`, 'success');
+    } catch (err: any) {
       console.error(err);
-      showToast('ទម្រង់ឯកសារ Excel មិនត្រឹមត្រូវ', 'error');
+      showToast(err.message || 'មានបញ្ហាក្នុងការ Import Excel', 'error');
     } finally {
       setIsImporting(false);
       e.target.value = '';
     }
   };
 
-  const handleResetFilters = () => {
-    setSearch('');
-    setSelectedShift('all');
-    setSelectedStatus('all');
-  };
+  // Filtered Students Calculation
+  const filteredStudents = useMemo(() => {
+    return students.filter((s) => {
+      // 1. Class Type filter
+      if (selectedClassType !== 'all') {
+        const stuType = s.classType || 'bachelor';
+        if (stuType !== selectedClassType) return false;
+      }
 
-  const filteredTeachers = useMemo(() => {
-    return teachers.filter((t) => {
-      // 1. Shift filter
+      // 2. Shift filter
       if (selectedShift !== 'all') {
-        const teacherShift = (t.shift || '').toLowerCase();
-        if (teacherShift !== selectedShift.toLowerCase()) return false;
+        if (s.shift !== selectedShift) {
+          const shiftObj = shifts.find(sh => sh.code === selectedShift);
+          if (!shiftObj || (s.shift !== shiftObj.nameKhmer && s.shift !== shiftObj.id)) {
+            return false;
+          }
+        }
       }
 
-      // 2. Status filter
+      // 3. Class filter
+      if (selectedClass !== 'all') {
+        if (s.classId !== selectedClass && s.className !== selectedClass) return false;
+      }
+
+      // 4. Major filter
+      if (selectedMajor !== 'all') {
+        if (s.majorId !== selectedMajor && s.majorName !== selectedMajor) return false;
+      }
+
+      // 5. Academic Year filter
+      if (selectedYear !== 'all') {
+        const studentYear = (s.year || '').toLowerCase();
+        const targetYear = selectedYear.toLowerCase();
+        if (!studentYear.includes(targetYear) && studentYear !== targetYear) return false;
+      }
+
+      // 6. Generation filter
+      if (selectedGeneration !== 'all') {
+        const studentGen = (s.generation || '').toLowerCase();
+        const targetGen = selectedGeneration.toLowerCase();
+        if (!studentGen.includes(targetGen) && studentGen !== targetGen) return false;
+      }
+
+      // 7. Status filter
       if (selectedStatus !== 'all') {
-        if (t.status !== selectedStatus) return false;
+        if (s.status !== selectedStatus) return false;
       }
 
-      // 3. Search query
+      // 8. Search query
       if (search.trim()) {
         const q = search.toLowerCase().trim();
-        const matchCode = (t.teacherCode || '').toLowerCase().includes(q);
-        const matchKhmer = (t.nameKhmer || '').toLowerCase().includes(q);
-        const matchLatin = (t.nameLatin || '').toLowerCase().includes(q);
-        const matchChinese = (t.nameChinese || '').toLowerCase().includes(q);
-        const matchSubjects = (t.subjects || '').toLowerCase().includes(q);
-        const matchPhone = (t.phone || '').toLowerCase().includes(q);
-        const matchEmail = (t.email || '').toLowerCase().includes(q);
+        const matchCode = (s.studentCode || '').toLowerCase().includes(q);
+        const matchKhmer = (s.nameKhmer || '').toLowerCase().includes(q);
+        const matchLatin = (s.nameLatin || '').toLowerCase().includes(q);
+        const matchChinese = (s.nameChinese || '').toLowerCase().includes(q);
+        const matchPhone = (s.phone || '').toLowerCase().includes(q);
+        const matchGuardian = (s.guardianPhone || '').toLowerCase().includes(q);
+        const matchClass = (s.className || '').toLowerCase().includes(q);
+        const matchMajor = (s.majorName || '').toLowerCase().includes(q);
+        const matchGen = (s.generation || '').toLowerCase().includes(q);
 
-        if (!matchCode && !matchKhmer && !matchLatin && !matchChinese && !matchSubjects && !matchPhone && !matchEmail) {
+        if (!matchCode && !matchKhmer && !matchLatin && !matchChinese && !matchPhone && !matchGuardian && !matchClass && !matchMajor && !matchGen) {
           return false;
         }
       }
 
       return true;
     });
-  }, [teachers, selectedShift, selectedStatus, search]);
+  }, [students, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedGeneration, selectedStatus, search, shifts]);
 
-  const activeFiltersCount = [
-    search.trim() !== '',
-    selectedShift !== 'all',
-    selectedStatus !== 'all'
-  ].filter(Boolean).length;
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search.trim()) count++;
+    if (selectedClassType !== 'all') count++;
+    if (selectedMajor !== 'all') count++;
+    if (selectedClass !== 'all') count++;
+    if (selectedShift !== 'all') count++;
+    if (selectedYear !== 'all') count++;
+    if (selectedGeneration !== 'all') count++;
+    if (selectedStatus !== 'all') count++;
+    return count;
+  }, [search, selectedClassType, selectedMajor, selectedClass, selectedShift, selectedYear, selectedGeneration, selectedStatus]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedClassType('all');
+    setSelectedMajor('all');
+    setSelectedClass('all');
+    setSelectedShift('all');
+    setSelectedYear('all');
+    setSelectedGeneration('all');
+    setSelectedStatus('all');
+    setCurrentPage(1);
+  };
+
+  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every((s) => selectedStudentIds.has(s.id));
+  const someFilteredSelected = filteredStudents.some((s) => selectedStudentIds.has(s.id));
 
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedShift, selectedStatus, pageSize]);
+  }, [search, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedGeneration, selectedStatus, pageSize]);
 
-  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredTeachers.length / pageSize));
+  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredStudents.length / pageSize));
   const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
-  const paginatedTeachers = useMemo(() => {
-    if (pageSize === -1) return filteredTeachers;
+  const paginatedStudents = useMemo(() => {
+    if (pageSize === -1) return filteredStudents;
     const start = (validCurrentPage - 1) * pageSize;
-    return filteredTeachers.slice(start, start + pageSize);
-  }, [filteredTeachers, validCurrentPage, pageSize]);
+    return filteredStudents.slice(start, start + pageSize);
+  }, [filteredStudents, validCurrentPage, pageSize]);
 
-  const startRecordIndex = filteredTeachers.length === 0 ? 0 : pageSize === -1 ? 1 : (validCurrentPage - 1) * pageSize + 1;
-  const endRecordIndex = pageSize === -1 ? filteredTeachers.length : Math.min(validCurrentPage * pageSize, filteredTeachers.length);
+  const startRecordIndex = filteredStudents.length === 0 ? 0 : pageSize === -1 ? 1 : (validCurrentPage - 1) * pageSize + 1;
+  const endRecordIndex = pageSize === -1 ? filteredStudents.length : Math.min(validCurrentPage * pageSize, filteredStudents.length);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Bar */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-200/60 dark:border-sky-500/20 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-sm">
-              <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 flex items-center justify-center font-bold text-sm border border-blue-200 dark:border-blue-800/60">
+              <Users className="w-4 h-4 text-blue-700 dark:text-sky-400" />
             </span>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              សាស្ត្រាចារ្យ & គ្រូបង្រៀន (Faculty Directory)
+              បញ្ជីរាយនាមនិស្សិត (Students Directory)
             </h2>
           </div>
-          <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 font-medium">
-            ទិន្នន័យសរុប {teachers.length} នាក់ • កំពុងបង្ហាញតាមតម្រង: {filteredTeachers.length} នាក់
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            ទិន្នន័យសរុប {students.length} នាក់ • កំពុងបង្ហាញតាមតម្រង: {filteredStudents.length} នាក់
           </p>
         </div>
 
-        {/* Action Buttons & View Toggle */}
+        {/* Actions & View Mode Toggle */}
         <div className="flex flex-wrap items-center gap-2">
           {/* View Mode Toggle (Table / Grid) */}
           <div className="flex items-center bg-zinc-100 dark:bg-zinc-800/90 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700/80">
@@ -527,7 +573,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-sky-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពតារាង (Table View)"
@@ -540,7 +586,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
               onClick={() => setViewMode('grid')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-sky-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពកាត (Grid / Card View)"
@@ -550,43 +596,51 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             </button>
           </div>
 
+          {/* Delete All Data - Hidden in Guest mode */}
           {!isReadOnly && (
-            <>
-              {/* Delete All Data */}
-              <button
-                onClick={() => setIsDeleteAllModalOpen(true)}
-                disabled={teachers.length === 0}
-                title="លុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់"
-                className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                <span>លុបទិន្នន័យទាំងអស់ (Delete All)</span>
-              </button>
-
-              {/* Import Excel */}
-              <label className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700">
-                <Upload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-                <span>{isImporting ? 'កំពុង Import...' : 'Import Excel'}</span>
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={isImporting}
-                />
-              </label>
-            </>
+            <button
+              onClick={() => setIsDeleteAllModalOpen(true)}
+              disabled={students.length === 0}
+              title="លុបទិន្នន័យនិស្សិតទាំងអស់"
+              className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>លុបទិន្នន័យទាំងអស់</span>
+            </button>
           )}
 
-          {/* Export Excel */}
           {!isReadOnly ? (
-            <button
-              onClick={() => exportTeachersToExcel(filteredTeachers)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Export Excel ({filteredTeachers.length})</span>
-            </button>
+            <label className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer">
+              <Upload className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+              <span>{isImporting ? 'កំពុង Import...' : 'Import Excel'}</span>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={isImporting}
+              />
+            </label>
+          ) : null}
+
+          {!isReadOnly ? (
+            <>
+              <button
+                onClick={() => exportStudentsToExcel(filteredStudents)}
+                className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                <span>Export Excel ({filteredStudents.length})</span>
+              </button>
+
+              <button
+                onClick={downloadStudentTemplate}
+                title="ទាញយកគំរូ Excel"
+                className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </>
           ) : (
             <button
               onClick={() => showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកទិន្នន័យទេ (Read-Only Mode)!', 'info')}
@@ -598,42 +652,84 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             </button>
           )}
 
-          {!isReadOnly && (
-            <>
-              {/* Template Download */}
-              <button
-                onClick={downloadTeacherTemplate}
-                title="ទាញយកគំរូ Excel សម្រាប់សាស្ត្រាចារ្យ"
-                className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-
-              {/* Add Teacher */}
-              <button
-                onClick={openAddModal}
-                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ បន្ថែមសាស្ត្រាចារ្យ</span>
-              </button>
-            </>
+          {!isReadOnly ? (
+            <button
+              onClick={openAddModal}
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ បន្ថែមនិស្សិតថ្មី</span>
+            </button>
+          ) : (
+            <div className="px-3 py-2 rounded-xl bg-amber-100 dark:bg-amber-950/50 border border-amber-300/50 dark:border-amber-800/50 text-amber-900 dark:text-amber-200 font-bold text-xs inline-flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5" />
+              <span>របៀបភ្ញៀវ (Read-Only)</span>
+            </div>
           )}
         </div>
       </div>
 
+      {/* Prominent Selection & Promotion Action Bar (Appears when 1+ students selected) */}
+      {selectedStudentIds.size > 0 && (
+        <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white p-4 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn border border-blue-500/40">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-sky-200 font-bold text-xs">
+              <CheckSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-xs text-white flex items-center gap-2">
+                <span>បានជ្រើសរើស: <strong className="text-sky-300 underline font-mono text-sm">{selectedStudentIds.size} នាក់</strong></span>
+                <span className="text-[11px] text-sky-200 font-normal">({selectedStudentIds.size} Students Selected)</span>
+              </p>
+              <p className="text-[11px] text-sky-200/80">
+                អ្នកអាចតម្លើងកម្រិតឆ្នាំសិក្សា ផ្ទេរថ្នាក់ ឬប្តូរវេនសិក្សាជាក្រុម
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isReadOnly && (
+              <button
+                type="button"
+                onClick={handleOpenPromoteForSelected}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-transform active:scale-95 cursor-pointer"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>តម្លើងកម្រិត / ផ្លាស់ប្តូរថ្នាក់ (Promote Selected)</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => handleSelectAllFiltered(filteredStudents)}
+              className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              ជ្រើសរើសទាំងអស់ ({filteredStudents.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sky-200 font-medium text-xs transition-colors cursor-pointer"
+            >
+              ដកជម្រើស (Clear)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters & Search Control */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-blue-200/60 dark:border-sky-500/20 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-2.5 text-xs">
           {/* Search */}
-          <div className="relative sm:col-span-2 lg:col-span-2">
-            <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative sm:col-span-2 md:col-span-3 lg:col-span-2">
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ស្វែងរកតាមឈ្មោះ, អត្តលេខ, មុខវិជ្ជា, ឬទូរស័ព្ទ..."
-              className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-hidden transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
+              placeholder="ស្វែងរកតាមឈ្មោះ, អត្តលេខ, ទូរសព្ទ..."
+              className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-hidden transition-all"
             />
             {search && (
               <button
@@ -645,459 +741,580 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
             )}
           </div>
 
-          {/* Shift Filter */}
+          {/* Class Type Filter */}
+          <div>
+            <select
+              value={selectedClassType}
+              onChange={(e) => setSelectedClassType(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">កម្រិតទាំងអស់ (All Degrees)</option>
+              {CLASS_TYPE_OPTIONS.map((ct) => (
+                <option key={ct.id} value={ct.id} className="dark:bg-[#111c38]">
+                  {ct.nameKhmer}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Major Filter */}
+          <div>
+            <select
+              value={selectedMajor}
+              onChange={(e) => setSelectedMajor(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">ជំនាញទាំងអស់ (All Majors)</option>
+              {majors.map((m) => (
+                <option key={m.id} value={m.id} className="dark:bg-[#111c38]">
+                  {m.nameKhmer}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Class Filter */}
+          <div>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">ថ្នាក់ទាំងអស់ (All Classes)</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id} className="dark:bg-[#111c38]">
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Generation Filter */}
+          <div>
+            <select
+              value={selectedGeneration}
+              onChange={(e) => setSelectedGeneration(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">ជំនាន់ទាំងអស់ (All Batches)</option>
+              <option value="ជំនាន់ទី១">ជំនាន់ទី១ (Batch 1)</option>
+              <option value="ជំនាន់ទី២">ជំនាន់ទី២ (Batch 2)</option>
+              <option value="ជំនាន់ទី៣">ជំនាន់ទី៣ (Batch 3)</option>
+              <option value="ជំនាន់ទី៤">ជំនាន់ទី៤ (Batch 4)</option>
+              <option value="ជំនាន់ទី៥">ជំនាន់ទី៥ (Batch 5)</option>
+            </select>
+          </div>
+
+          {/* Dynamic Shift Filter */}
           <div>
             <select
               value={selectedShift}
               onChange={(e) => setSelectedShift(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">វេនទាំងអស់ (All Shifts)</option>
-              <option value="morning">វេនព្រឹក (Morning)</option>
-              <option value="afternoon">វេនរសៀល (Afternoon)</option>
-              <option value="evening">វេនយប់ (Evening)</option>
-              <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
+              {shifts.map((s) => (
+                <option key={s.id} value={s.code} className="dark:bg-[#111c38]">
+                  {s.nameKhmer}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* Status Filter */}
+          {/* Year Filter */}
           <div>
             <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
-              <option value="all">ស្ថានភាពទាំងអស់ (All Status)</option>
-              <option value="active">កំពុងបង្រៀន (Active)</option>
-              <option value="on_leave">សុំច្បាប់សម្រាក (On Leave)</option>
-              <option value="resigned">ឈប់បង្រៀន (Resigned)</option>
+              <option value="all">ឆ្នាំទាំងអស់ (All Years)</option>
+              <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
+              <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
+              <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
+              <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+              <option value="Year 5">ឆ្នាំទី៥ (Year 5)</option>
+              <option value="Short Course">វគ្គខ្លី (Short Course)</option>
             </select>
           </div>
         </div>
 
-        {/* Active Filters Bar & Reset */}
-        {activeFiltersCount > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
-            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-medium">
-              <Filter className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>
-                តម្រងសកម្ម: <strong className="font-bold">{activeFiltersCount}</strong> លក្ខខណ្ឌ (រកឃើញ {filteredTeachers.length} នាក់)
-              </span>
-            </div>
-            <button
-              onClick={handleResetFilters}
-              className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-xs inline-flex items-center gap-1 cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
+        {/* Status Filter row and active filter count */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-zinc-600 dark:text-zinc-400">ស្ថានភាព:</span>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="px-3 py-1 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:border-blue-500 outline-hidden cursor-pointer"
             >
-              <X className="w-3 h-3" />
-              <span>សម្អាតតម្រងទាំងអស់ (Reset)</span>
-            </button>
+              <option value="all">ស្ថានភាពទាំងអស់ (All Status)</option>
+              <option value="active">កំពុងរៀន (Active)</option>
+              <option value="suspended">ព្យួរការសិក្សា (Suspended)</option>
+              <option value="dropped">បោះបង់ (Dropped)</option>
+              <option value="graduated">បញ្ចប់ការសិក្សា (Graduated)</option>
+            </select>
           </div>
-        )}
+
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-blue-800 dark:text-sky-300 text-xs">
+                <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                <span>
+                  តម្រងសកម្ម: <strong className="font-semibold">{activeFiltersCount}</strong> លក្ខខណ្ឌ (រកឃើញ {filteredStudents.length} នាក់)
+                </span>
+              </div>
+              <button
+                onClick={handleResetFilters}
+                className="px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-medium text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <X className="w-3 h-3" />
+                <span>សម្អាតតម្រង (Reset)</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Content View: Table or Cards Grid */}
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#111c38] rounded-3xl border border-blue-200/60 dark:border-sky-500/20 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
+              <thead className="bg-zinc-50 dark:bg-[#182645] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="py-3.5 px-4">អត្តលេខ & រូបថត</th>
-                  <th className="py-3.5 px-4">ឈ្មោះសាស្ត្រាចារ្យ (ខ្មែរ / Chinese / Latin)</th>
-                  <th className="py-3.5 px-4">កម្រិតវប្បធម៌</th>
-                  <th className="py-3.5 px-4">មុខវិជ្ជាបង្រៀន</th>
-                  <th className="py-3.5 px-4">វេនបង្រៀន</th>
-                  <th className="py-3.5 px-4">
+                  {/* Select All Checkbox Column */}
+                  <th className="py-3.5 px-3 w-10 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (allFilteredSelected) {
+                          handleClearSelection();
+                        } else {
+                          handleSelectAllFiltered(filteredStudents);
+                        }
+                      }}
+                      className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
+                      title={allFilteredSelected ? 'ដកជម្រើសទាំងអស់' : 'ជ្រើសរើសទាំងអស់'}
+                    >
+                      {allFilteredSelected ? (
+                        <CheckSquare className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                      ) : (
+                        <Square className="w-4 h-4 text-zinc-400" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
+                  <th className="py-3.5 px-3">អត្តលេខ & រូបថត</th>
+                  <th className="py-3.5 px-4">ឈ្មោះនិស្សិត (ខ្មែរ / Chinese / Latin)</th>
+                  <th className="py-3.5 px-3">កម្រិត & ជំនាញ</th>
+                  <th className="py-3.5 px-3">ថ្នាក់ & វេនសិក្សា</th>
+                  <th className="py-3.5 px-3">ឆ្នាំសិក្សា</th>
+                  <th className="py-3.5 px-3">
                     <span className="flex items-center gap-1">
-                      <span>ទំនាក់ទំនង & អ៊ីមែល</span>
+                      <span>ទូរសព្ទ</span>
                       {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
                     </span>
                   </th>
-                  <th className="py-3.5 px-4">
-                    <span className="flex items-center gap-1">
-                      <span>ឯកសារ CV</span>
-                      {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold lowercase">🔒(Blur)</span>}
-                    </span>
-                  </th>
-                  <th className="py-3.5 px-4">ស្ថានភាព</th>
+                  <th className="py-3.5 px-3">ស្ថានភាព</th>
                   <th className="py-3.5 px-4 text-right">សកម្មភាព</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {filteredTeachers.length === 0 ? (
+                {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-zinc-400">
-                      <UserCheck className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
-                      <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យសាស្ត្រាចារ្យទេ</p>
+                    <td colSpan={10} className="py-12 text-center text-zinc-400">
+                      <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
+                      <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យនិស្សិតទេ</p>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        សូមសាកល្បងផ្លាស់ប្តូរលក្ខខណ្ឌ Filter ឬបន្ថែមសាស្ត្រាចារ្យថ្មី
+                        សូមសាកល្បងផ្លាស់ប្តូរលក្ខខណ្ឌ Filter ឬបន្ថែមនិស្សិតថ្មី
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  paginatedTeachers.map((t) => (
-                    <tr
-                      key={t.id}
-                      className="hover:bg-emerald-50/40 dark:hover:bg-[#182620]/60 transition-colors"
-                    >
-                      {/* Teacher ID & Photo (Click to View Full Photo) */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
+                  paginatedStudents.map((stu, index) => {
+                    const isSelected = selectedStudentIds.has(stu.id);
+                    const globalIndex = (pageSize === -1 ? 0 : (validCurrentPage - 1) * pageSize) + index + 1;
+
+                    return (
+                      <tr
+                        key={stu.id}
+                        className={`transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/50'
+                            : 'hover:bg-blue-50/30 dark:hover:bg-[#182645]/50'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <td className="py-3 px-3 text-center">
                           <button
                             type="button"
-                            onClick={() => handleOpenPhotoViewer(t)}
-                            className="relative group w-10 h-10 rounded-xl overflow-hidden border border-emerald-500/40 dark:border-emerald-600/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
-                            title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                            onClick={() => handleToggleSelectStudent(stu.id)}
+                            className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
                           >
-                            {t.photoUrl ? (
-                              <img
-                                src={t.photoUrl}
-                                alt={t.nameKhmer}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
-                                referrerPolicy="no-referrer"
-                              />
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600 dark:text-sky-400" />
                             ) : (
-                              <div
-                                className={`w-full h-full flex items-center justify-center font-bold text-xs ${
-                                  t.gender === 'female'
-                                    ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                                    : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                                }`}
-                              >
-                                {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
-                              </div>
+                              <Square className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
                             )}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                              <ZoomIn className="w-3.5 h-3.5" />
-                            </div>
                           </button>
-                          <div>
-                            <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">
-                              {t.teacherCode}
-                            </div>
-                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
-                              {t.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)'}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Name */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
-                            {t.nameKhmer}
-                          </span>
-                          {t.nameChinese && (
-                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
-                              {t.nameChinese}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
-                          {t.nameLatin || '-'}
-                        </div>
-                      </td>
+                        {/* Row Number */}
+                        <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                          {globalIndex}
+                        </td>
 
-                      {/* Degree */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <GraduationCap className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                            {t.degree || 'បរិញ្ញាបត្រ'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Subjects */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span
-                            className="text-xs font-medium text-zinc-700 dark:text-zinc-300 max-w-[180px] truncate"
-                            title={t.subjects}
-                          >
-                            {t.subjects || 'មិនទាន់បញ្ជាក់'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Shift */}
-                      <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold text-[11px] border border-zinc-200/60 dark:border-zinc-700/60">
-                          <CalendarCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          {getShiftLabel(t.shift || 'morning')}
-                        </span>
-                      </td>
-
-                      {/* Contact & Email */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
-                          <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
-                            {t.phone || '-'}
-                          </span>
-                        </div>
-                        {t.email && (
-                          <div
-                            className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 text-[11px] mt-0.5 truncate max-w-[160px]"
-                            title={isReadOnly ? undefined : t.email}
-                          >
-                            <Mail className="w-3 h-3 text-zinc-400 shrink-0" />
-                            <span className={`truncate ${isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-70' : ''}`}>
-                              {t.email}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* CV */}
-                      <td className="py-3 px-4">
-                        {t.cvUrl ? (
-                          isReadOnly ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 text-[11px] font-bold border border-zinc-200/60 dark:border-zinc-700/40">
-                              <Lock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                              <span className="filter blur-[3px] select-none pointer-events-none opacity-60 max-w-[50px] truncate">CV_Doc</span>
-                            </span>
-                          ) : (
-                            <a
-                              href={t.cvUrl}
-                              download={t.cvName || 'CV_Teacher'}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200/60 dark:border-emerald-800/40 transition-colors"
-                              title={t.cvName}
-                            >
-                              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="max-w-[70px] truncate">{t.cvName || 'ទាញយក'}</span>
-                            </a>
-                          )
-                        ) : (
-                          <span className="text-zinc-400 text-[11px]">-</span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold ${
-                            t.status === 'active'
-                              ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
-                              : t.status === 'on_leave'
-                              ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
-                              : t.status === 'retired'
-                              ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50'
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
-                          }`}
-                        >
-                          {getTeacherStatusLabel(t.status)}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => openEditModal(t)}
-                            className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
-                            title={isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}
-                          >
-                            {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
-                          </button>
-                          {!isReadOnly && (
+                        {/* Student ID & Clickable Photo */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2.5">
+                            {/* Profile Picture (Click to View) */}
                             <button
-                              onClick={() => handleDelete(t.id, t.nameKhmer)}
-                              className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
-                              title="លុប"
+                              type="button"
+                              onClick={() => handleOpenPhotoViewer(stu)}
+                              className="relative group w-10 h-10 rounded-xl overflow-hidden border border-blue-400/40 dark:border-sky-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                              title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              {stu.photoUrl ? (
+                                <img
+                                  src={stu.photoUrl}
+                                  alt={stu.nameKhmer}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <div
+                                  className={`w-full h-full flex items-center justify-center font-bold text-xs ${
+                                    stu.gender === 'female'
+                                      ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                      : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200'
+                                  }`}
+                                >
+                                  {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                <ZoomIn className="w-3.5 h-3.5" />
+                              </div>
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+
+                            <div>
+                              <div className="font-mono font-bold text-blue-700 dark:text-sky-400 text-xs">
+                                {stu.studentCode}
+                              </div>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                {stu.gender === 'female' ? 'ស្រី (F)' : 'ប្រុស (M)'}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Name */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm">
+                              {stu.nameKhmer}
+                            </span>
+                            {stu.nameChinese && (
+                              <span className="text-[11px] font-bold text-blue-800 dark:text-sky-300 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded-md border border-blue-200/60 dark:border-blue-800/40">
+                                {stu.nameChinese}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                            {stu.nameLatin || '-'}
+                          </div>
+                        </td>
+
+                        {/* Class Type & Major */}
+                        <td className="py-3 px-3">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 font-bold text-[10px] border border-blue-200 dark:border-blue-800/50 mb-1">
+                            {getClassTypeLabel(stu.classType)}
+                          </span>
+                          <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                            {stu.majorName || 'គរុកោសល្យភាសាចិន'}
+                          </div>
+                        </td>
+
+                        {/* Class & Shift */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                              {stu.className || '-'}
+                            </span>
+                            {stu.generation && (
+                              <span className="inline-block px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px] border border-indigo-200/60 dark:border-indigo-800/40">
+                                {stu.generation}
+                              </span>
+                            )}
+                          </div>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-[10px] mt-0.5">
+                            {getShiftLabel(stu.shift)}
+                          </span>
+                        </td>
+
+                        {/* Year */}
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                            {stu.year}
+                          </span>
+                        </td>
+
+                        {/* Contact */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1 text-zinc-800 dark:text-zinc-200 font-medium">
+                            <Phone className="w-3 h-3 text-blue-600 dark:text-sky-400 shrink-0" />
+                            <span className={isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}>
+                              {stu.phone || '-'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              stu.status === 'active'
+                                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50'
+                                : stu.status === 'suspended'
+                                ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
+                                : stu.status === 'graduated'
+                                ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700'
+                            }`}
+                          >
+                            {getStatusLabel(stu.status)}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {/* Promote single student */}
+                            {!isReadOnly && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenPromoteForSingle(stu)}
+                                className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 cursor-pointer transition-colors border border-amber-200 dark:border-amber-800/40"
+                                title="តម្លើងកម្រិត / ផ្លាស់ប្តូរថ្នាក់ (Promote Student)"
+                              >
+                                <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => openEditModal(stu)}
+                              className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
+                              title={isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}
+                            >
+                              {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+                            </button>
+                            {!isReadOnly && (
+                              <button
+                                onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
+                                className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
+                                title="លុប"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
       ) : (
-        /* Teachers Cards Grid */
+        /* Students Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeachers.length === 0 ? (
-            <div className="col-span-full bg-white dark:bg-[#131f1a] rounded-3xl p-12 text-center text-zinc-400 border border-emerald-900/10 dark:border-emerald-800/30">
-              <UserCheck className="w-8 h-8 text-zinc-400 dark:text-zinc-500 mx-auto mb-2" />
-              <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យសាស្ត្រាចារ្យទេ</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">សូមសាកល្បងផ្លាស់ប្តូរលក្ខខណ្ឌ Filter ឬបន្ថែម/Import សាស្ត្រាចារ្យ</p>
+          {filteredStudents.length === 0 ? (
+            <div className="col-span-full bg-white dark:bg-[#111c38] rounded-3xl p-12 text-center text-zinc-400 border border-blue-200/60 dark:border-sky-500/20">
+              <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
+              <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យនិស្សិតទេ</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">
+                សូមសាកល្បងផ្លាស់ប្តូរលក្ខខណ្ឌ Filter ឬបន្ថែម/Import និស្សិត
+              </p>
             </div>
           ) : (
-            paginatedTeachers.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white dark:bg-[#131f1a] rounded-3xl p-5 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-600/40 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      {/* Clickable Teacher Avatar */}
+            paginatedStudents.map((stu) => {
+              const isSelected = selectedStudentIds.has(stu.id);
+
+              return (
+                <div
+                  key={stu.id}
+                  className={`rounded-3xl p-5 border shadow-xs transition-all flex flex-col justify-between ${
+                    isSelected
+                      ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 shadow-md ring-1 ring-blue-500/30'
+                      : 'bg-white dark:bg-[#111c38] border-blue-200/60 dark:border-sky-500/20 hover:border-blue-400 dark:hover:border-sky-500'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
+                        {/* Clickable Profile Picture */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPhotoViewer(stu)}
+                          className="relative group w-12 h-12 rounded-2xl overflow-hidden border-2 border-blue-400/50 dark:border-sky-500/50 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
+                          title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Photo)"
+                        >
+                          {stu.photoUrl ? (
+                            <img
+                              src={stu.photoUrl}
+                              alt={stu.nameKhmer}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div
+                              className={`w-full h-full flex items-center justify-center font-bold text-sm ${
+                                stu.gender === 'female'
+                                  ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
+                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200'
+                              }`}
+                            >
+                              {(stu.nameKhmer || stu.nameLatin || 'S').charAt(0)}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn className="w-4 h-4" />
+                          </div>
+                        </button>
+
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{stu.nameKhmer}</h3>
+                            {stu.nameChinese && (
+                              <span className="text-[11px] font-bold text-blue-800 dark:text-sky-300 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.2 rounded-md">
+                                {stu.nameChinese}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{stu.nameLatin || '-'}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-[11px] font-bold text-blue-700 dark:text-sky-400">{stu.studentCode}</span>
+                            <span className="text-[10px] text-zinc-400">• {stu.gender === 'female' ? 'ស្រី' : 'ប្រុស'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Checkbox */}
                       <button
                         type="button"
-                        onClick={() => handleOpenPhotoViewer(t)}
-                        className="relative group w-12 h-12 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-xs shrink-0 cursor-pointer focus:outline-hidden"
-                        title="ចុចដើម្បីមើលរូបថតពេញទំហំ (Click to View Full Photo)"
+                        onClick={() => handleToggleSelectStudent(stu.id)}
+                        className="p-1 rounded-md text-blue-700 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 cursor-pointer"
+                        title={isSelected ? 'ដកជម្រើស' : 'ជ្រើសរើស'}
                       >
-                        {t.photoUrl ? (
-                          <img
-                            src={t.photoUrl}
-                            alt={t.nameKhmer}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
-                            referrerPolicy="no-referrer"
-                          />
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600 dark:text-sky-400" />
                         ) : (
-                          <div
-                            className={`w-full h-full flex items-center justify-center font-bold text-sm ${
-                              t.gender === 'female'
-                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200'
-                                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200'
-                            }`}
-                          >
-                            {(t.nameKhmer || t.nameLatin || 'T').charAt(0)}
-                          </div>
+                          <Square className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
                         )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                          <ZoomIn className="w-4 h-4" />
-                        </div>
                       </button>
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{t.nameKhmer}</h3>
-                          {t.nameChinese && (
-                            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-800/40">
-                              {t.nameChinese}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">{t.nameLatin || '-'}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="font-mono text-[11px] text-emerald-700 dark:text-emerald-400 font-bold">
-                            {t.teacherCode}
-                          </span>
-                          {t.degree && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-medium truncate max-w-[120px]">
-                              {t.degree}
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
 
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold ${
-                        t.status === 'active'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
-                          : t.status === 'on_leave'
-                          ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
-                          : t.status === 'retired'
-                          ? 'bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
-                      }`}
-                    >
-                      {getTeacherStatusLabel(t.status)}
-                    </span>
-                  </div>
-
-                  {/* Subjects & Contact */}
-                  <div className="space-y-2 text-xs py-3 border-y border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-start gap-2">
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">មុខវិជ្ជា: </span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{t.subjects || 'មិនទាន់បញ្ជាក់'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <CalendarCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <div>
-                        <span className="font-bold text-zinc-800 dark:text-zinc-200">វេនបង្រៀន: </span>
-                        <span className="text-zinc-700 dark:text-zinc-300 font-medium">{getShiftLabel(t.shift || 'morning')}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                      <span className={`text-zinc-700 dark:text-zinc-300 font-medium ${isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-70 font-mono' : ''}`}>
-                        {t.phone || '-'}
-                      </span>
-                    </div>
-
-                    {t.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span className={`text-zinc-600 dark:text-zinc-400 truncate font-medium ${isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-70' : ''}`}>
-                          {t.email}
+                    <div className="space-y-2 py-2 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+                      {/* Class Type & Major */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-sky-300 font-bold">
+                          {getClassTypeLabel(stu.classType)}
+                        </span>
+                        <span className="text-zinc-700 dark:text-zinc-300 font-semibold truncate">
+                          {stu.majorName}
                         </span>
                       </div>
-                    )}
 
-                    {/* CV document badge if uploaded */}
-                    {t.cvName && (
-                      <div className="flex items-center justify-between pt-1 text-[11px] bg-emerald-50/60 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-xl border border-emerald-200/50 dark:border-emerald-800/40">
-                        <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300 font-medium truncate">
-                          <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span className={`truncate ${isReadOnly ? 'filter blur-[3px] select-none pointer-events-none opacity-70 max-w-[80px]' : ''}`}>
-                            {isReadOnly ? 'CV_Teacher_File.pdf' : t.cvName}
-                          </span>
+                      {/* Class & Shift */}
+                      <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-xs">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                          <span>ថ្នាក់: {stu.className}</span>
+                          {stu.generation && (
+                            <span className="inline-block px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px]">
+                              {stu.generation}
+                            </span>
+                          )}
                         </div>
-                        {t.cvUrl && !isReadOnly && (
-                          <a
-                            href={t.cvUrl}
-                            download={t.cvName}
-                            className="text-emerald-700 dark:text-emerald-300 font-bold hover:underline shrink-0 text-[10px]"
-                          >
-                            ទាញយក CV
-                          </a>
-                        )}
-                        {isReadOnly && (
-                          <span className="text-amber-700 dark:text-amber-400 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
-                            <Lock className="w-2.5 h-2.5" /> ការពារ
-                          </span>
-                        )}
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200">{stu.year}</span>
                       </div>
-                    )}
+
+                      {/* Shift Badge & Phone */}
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[11px] font-medium">
+                          {getShiftLabel(stu.shift)}
+                        </span>
+                        <span className="font-mono text-zinc-600 dark:text-zinc-400 text-[11px]">
+                          {stu.phone || '-'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        stu.status === 'active'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300'
+                          : stu.status === 'suspended'
+                          ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300'
+                          : stu.status === 'graduated'
+                          ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      {getStatusLabel(stu.status)}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPromoteForSingle(stu)}
+                          className="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-[11px] font-bold inline-flex items-center gap-1 border border-amber-200 dark:border-amber-800/40 cursor-pointer"
+                          title="តម្លើងកម្រិត"
+                        >
+                          <TrendingUp className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>តម្លើង</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => openEditModal(stu)}
+                        className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 cursor-pointer transition-colors"
+                        title={isReadOnly ? 'មើល' : 'កែប្រែ'}
+                      >
+                        {isReadOnly ? <Eye className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
+                      </button>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => handleDeleteStudent(stu.id, stu.nameKhmer)}
+                          className="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-colors"
+                          title="លុប"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="mt-4 pt-3 flex items-center justify-end gap-2">
-                  <button
-                    onClick={() => openEditModal(t)}
-                    className="px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>{isReadOnly ? 'មើលព័ត៌មាន' : 'កែប្រែ'}</span>
-                  </button>
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => handleDelete(t.id, t.nameKhmer)}
-                      className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
       {/* Pagination Controls */}
-      {filteredTeachers.length > 0 && (
-        <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+      {filteredStudents.length > 0 && (
+        <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-blue-200/60 dark:border-sky-500/20 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           {/* Record Count Range */}
           <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
             <span>
-              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startRecordIndex} - {endRecordIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredTeachers.length}</strong> នាក់
+              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startRecordIndex} - {endRecordIndex}</strong> នៃសរុប <strong className="text-blue-700 dark:text-sky-400 font-bold">{filteredStudents.length}</strong> នាក់
             </span>
 
             {/* Page Size Selector */}
@@ -1109,7 +1326,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+                className="px-2 py-1 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-blue-500 outline-hidden cursor-pointer"
               >
                 <option value={25}>25</option>
                 <option value={50}>50</option>
@@ -1127,7 +1344,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage(1)}
                 disabled={validCurrentPage === 1}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រដំបូងបង្អស់ (First Page)"
               >
                 <ChevronsLeft className="w-4 h-4" />
@@ -1136,13 +1353,13 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={validCurrentPage === 1}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រមុន (Previous Page)"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <div className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 rounded-lg text-emerald-900 dark:text-emerald-300 font-bold text-xs">
+              <div className="px-3 py-1 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/60 rounded-lg text-blue-900 dark:text-sky-300 font-bold text-xs">
                 ទំព័រ {validCurrentPage} / {totalPages}
               </div>
 
@@ -1150,7 +1367,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={validCurrentPage === totalPages}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័របន្ទាប់ (Next Page)"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1159,7 +1376,7 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={validCurrentPage === totalPages}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រចុងក្រោយ (Last Page)"
               >
                 <ChevronsRight className="w-4 h-4" />
@@ -1169,225 +1386,321 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
         </div>
       )}
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Student Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4 my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
-                  {isReadOnly ? 'ព័ត៌មានលម្អិតសាស្ត្រាចារ្យ (Faculty Profile)' : editingTeacher ? 'កែប្រែព័ត៌មានសាស្ត្រាចារ្យ' : 'បន្ថែមសាស្ត្រាចារ្យថ្មី'}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 max-w-2xl w-full border border-blue-200/60 dark:border-sky-500/20 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 flex items-center justify-center text-blue-800 dark:text-sky-300 font-bold">
+                  {isReadOnly ? <Eye className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                </div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  {isReadOnly
+                    ? 'ព័ត៌មានលម្អិតអំពីនិស្សិត (Student Profile)'
+                    : editingStudent
+                    ? 'កែប្រែព័ត៌មាននិស្សិត'
+                    : 'ចុះឈ្មោះនិស្សិតថ្មី'}
                 </h3>
-                {isReadOnly && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
-                    Read-Only
-                  </span>
-                )}
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                onClick={closeModal}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} noValidate className="space-y-3.5 text-xs">
-              {/* Guest Read-Only Privacy Notice */}
-              {isReadOnly && (
-                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in duration-200">
-                  <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <p className="font-semibold leading-relaxed">
-                    <b>របៀបភ្ញៀវ (Guest Mode):</b> ព័ត៌មានឯកជនភាពផ្ទាល់ខ្លួន (លេខទូរស័ព្ទ, អ៊ីមែល, CV, កំណត់សម្គាល់) ត្រូវបាន Blur ការពារសុវត្ថិភាព។
+            <form onSubmit={handleSaveStudent} className="space-y-4 pt-4 text-xs">
+              {/* Photo Upload & Preview Section */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-zinc-50 dark:bg-[#182645] rounded-2xl border border-zinc-200/80 dark:border-zinc-700/80">
+                <div className="relative group shrink-0">
+                  {formPhotoUrl ? (
+                    <img
+                      src={formPhotoUrl}
+                      alt="Student"
+                      className="w-20 h-20 rounded-2xl object-cover border-2 border-blue-500 shadow-sm"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex flex-col items-center justify-center text-zinc-400">
+                      <Camera className="w-6 h-6 mb-1" />
+                      <span className="text-[9px] font-bold">រូបថត</span>
+                    </div>
+                  )}
+
+                  {!isReadOnly && formPhotoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormPhotoUrl(undefined)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 cursor-pointer"
+                      title="លុបរូបថតចេញ"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 flex-1 text-center sm:text-left">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">រូបថតសិស្ស (Student Photo)</span>
+                    <span className="text-[10px] text-zinc-400">(ស្រេចចិត្ត - Optional)</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    ផ្ទុកឡើងរូបថតផ្ទាល់ខ្លួនទំហំ 4x6 ឬរូបសន្លឹក (ទំហំអតិបរមា 8MB, JPG/PNG)
                   </p>
-                </div>
-              )}
 
-              {/* Photo Upload & Preview */}
-              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-13 h-13 rounded-2xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 shadow-xs">
-                    {formPhotoUrl ? (
-                      <img
-                        src={formPhotoUrl}
-                        alt="Teacher"
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <Camera className="w-5 h-5 text-zinc-400" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-xs flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>រូបថតសាស្ត្រាចារ្យ (Photo)</span>
-                    </h4>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">JPG, PNG, WebP (អតិបរមា 3MB)</p>
-                  </div>
-                </div>
-
-                {!isReadOnly && (
-                  <div className="flex items-center gap-1.5">
-                    <label className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer shadow-xs">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{formPhotoUrl ? 'ប្តូររូប' : 'ជ្រើសរើសរូប'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {formPhotoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFormPhotoUrl(undefined)}
-                        className="px-2 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-[11px] border border-rose-200 dark:border-rose-800/60 cursor-pointer"
-                      >
-                        លុប
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Status Buttons Selector */}
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1.5">
-                  ស្ថានភាពបង្រៀន (Status) *
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('active')}
-                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'active'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                    <span>កំពុងបង្រៀន</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('on_leave')}
-                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'on_leave'
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                    <span>សុំច្បាប់</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('resigned')}
-                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'resigned'
-                        ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
-                    <span>ឈប់បង្រៀន</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={isReadOnly}
-                    onClick={() => setFormStatus('retired')}
-                    className={`py-2 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      isReadOnly ? 'cursor-default' : 'cursor-pointer'
-                    } ${
-                      formStatus === 'retired'
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                        : 'bg-zinc-50 dark:bg-[#182620] border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
-                    <span>ចូលនិវត្តន៍</span>
-                  </button>
+                  {!isReadOnly && (
+                    <div className="pt-1 flex items-center justify-center sm:justify-start gap-2">
+                      <label className="px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors">
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>ជ្រើសរើសរូបថត (Upload)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">អត្តលេខគ្រូ (Teacher Code)</label>
-                <input
-                  type="text"
-                  disabled={isReadOnly}
-                  value={formTeacherCode}
-                  onChange={(e) => setFormTeacherCode(e.target.value)}
-                  placeholder="ICI-TCH-001"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះខ្មែរ *</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    អត្តលេខនិស្សិត (Student ID) <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     type="text"
+                    required
+                    disabled={isReadOnly}
+                    value={formStudentCode}
+                    onChange={(e) => setFormStudentCode(e.target.value)}
+                    placeholder="ICI-2025-001"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ឈ្មោះជាភាសាខ្មែរ (Khmer Name) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
                     disabled={isReadOnly}
                     value={formNameKhmer}
                     onChange={(e) => setFormNameKhmer(e.target.value)}
-                    placeholder="ឡុង សុខា"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="ឧ. ឡុង សុខា"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះឡាតាំង</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ឈ្មោះជាឡាតាំង (Latin Name)
+                  </label>
                   <input
                     type="text"
                     disabled={isReadOnly}
                     value={formNameLatin}
                     onChange={(e) => setFormNameLatin(e.target.value)}
-                    placeholder="Long Sokha"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="e.g. Long Sokha"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះចិន (Chinese)</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ឈ្មោះជាភាសាចិន (Chinese Name)
+                  </label>
                   <input
                     type="text"
                     disabled={isReadOnly}
                     value={formNameChinese}
                     onChange={(e) => setFormNameChinese(e.target.value)}
-                    placeholder="龙索卡"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    placeholder="例如: 龙淑华"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ភេទ</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ភេទ (Gender)
+                  </label>
                   <select
                     disabled={isReadOnly}
                     value={formGender}
-                    onChange={(e) => setFormGender(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                    onChange={(e) => setFormGender(e.target.value as 'male' | 'female')}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
-                    <option value="male">ប្រុស (Male)</option>
                     <option value="female">ស្រី (Female)</option>
+                    <option value="male">ប្រុស (Male)</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                    <span>លេខទូរស័ព្ទ</span>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <span>ថ្ងៃខែឆ្នាំកំណើត (DOB)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    disabled={isReadOnly}
+                    value={formDob}
+                    onChange={(e) => setFormDob(e.target.value)}
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                    }`}
+                  />
+                </div>
+
+                {/* Class Type */}
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    កម្រិតបណ្តុះបណ្តាល (Class Type) <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formClassType}
+                    onChange={(e) => setFormClassType(e.target.value as ClassType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    {CLASS_TYPE_OPTIONS.map((ct) => (
+                      <option key={ct.id} value={ct.id}>
+                        {ct.nameKhmer}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ជំនាញសិក្សា (Major)
+                  </label>
+                  <select
+                    value={formMajorId}
+                    disabled={isReadOnly}
+                    onChange={(e) => setFormMajorId(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    {majors.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nameKhmer} ({m.nameLatin})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ថ្នាក់រៀន (Class)
+                  </label>
+                  <select
+                    value={formClassId}
+                    disabled={isReadOnly}
+                    onChange={(e) => {
+                      const cId = e.target.value;
+                      setFormClassId(cId);
+                      const cObj = classes.find((c) => c.id === cId);
+                      if (cObj) {
+                        if (cObj.majorId) setFormMajorId(cObj.majorId);
+                        if (cObj.shift) setFormShift(cObj.shift);
+                        if (cObj.year) setFormYear(cObj.year);
+                        if (cObj.generation && !formGeneration) setFormGeneration(cObj.generation);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    <option value="">-- ជ្រើសរើសថ្នាក់ (Select Class) --</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.room ? `(${c.room})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Generation / Batch Input */}
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ជំនាន់សិក្សា (Generation / Batch)
+                  </label>
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      disabled={isReadOnly}
+                      value={formGeneration}
+                      onChange={(e) => setFormGeneration(e.target.value)}
+                      placeholder="ឧ. ជំនាន់ទី១, ជំនាន់ទី២..."
+                      className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['ជំនាន់ទី១', 'ជំនាន់ទី២', 'ជំនាន់ទី៣', 'ជំនាន់ទី៤', 'ជំនាន់ទី៥'].map((gen) => (
+                        <button
+                          key={gen}
+                          type="button"
+                          onClick={() => setFormGeneration(gen)}
+                          disabled={isReadOnly}
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors cursor-pointer ${
+                            formGeneration === gen
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-blue-400'
+                          }`}
+                        >
+                          {gen}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dynamic Shift selection */}
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    វេនសិក្សា (Shift)
+                  </label>
+                  <select
+                    value={formShift}
+                    disabled={isReadOnly}
+                    onChange={(e) => setFormShift(e.target.value as ShiftType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    {shifts.map((s) => (
+                      <option key={s.id} value={s.code}>
+                        {s.nameKhmer} ({s.timeRange})
+                      </option>
+                    ))}
+                    {!shifts.some((s) => s.code === formShift) && formShift && (
+                      <option value={formShift}>{formShift}</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    កម្រិតឆ្នាំសិក្សា (Year)
+                  </label>
+                  <select
+                    value={formYear}
+                    disabled={isReadOnly}
+                    onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
+                    <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
+                    <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
+                    <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+                    <option value="Year 5">ឆ្នាំទី៥ (Year 5)</option>
+                    <option value="Short Course">វគ្គខ្លី (Short Course)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <span>លេខទូរសព្ទ (Phone)</span>
                     {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                   </label>
                   <input
@@ -1395,139 +1708,67 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                     disabled={isReadOnly}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    placeholder="012 889 901"
-                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed ${
-                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                    placeholder="012 345 678"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                     }`}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនបង្រៀន</label>
-                  <select
-                    disabled={isReadOnly}
-                    value={formShift}
-                    onChange={(e) => setFormShift(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="morning">វេនព្រឹក (Morning)</option>
-                    <option value="afternoon">វេនរសៀល (Afternoon)</option>
-                    <option value="evening">វេនយប់ (Evening)</option>
-                    <option value="weekend">ចុងសប្តាហ៍ (Weekend)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតសញ្ញាបត្រ (Degree)</label>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    <span>លេខអាណាព្យាបាល (Guardian Phone)</span>
+                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
+                  </label>
                   <input
                     type="text"
                     disabled={isReadOnly}
-                    value={formDegree}
-                    onChange={(e) => setFormDegree(e.target.value)}
-                    placeholder="ឧ. បរិញ្ញាបត្រជាន់ខ្ពស់ / បណ្ឌិត"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    value={formGuardianPhone}
+                    onChange={(e) => setFormGuardianPhone(e.target.value)}
+                    placeholder="098 765 432"
+                    className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
+                      isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
+                    }`}
                   />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ស្ថានភាពនិស្សិត (Status)
+                  </label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as StudentStatus)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
+                  >
+                    <option value="active">កំពុងរៀន (Active)</option>
+                    <option value="suspended">ព្យួរការសិក្សា (Suspended)</option>
+                    <option value="dropped">បោះបង់ (Dropped)</option>
+                    <option value="graduated">បញ្ចប់ការសិក្សា (Graduated)</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
-                  <span>អ៊ីមែល (Email)</span>
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                  <span>អាសយដ្ឋាន (Address)</span>
                   {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                 </label>
                 <input
                   type="text"
                   disabled={isReadOnly}
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="teacher@ici.edu.kh"
-                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed ${
-                    isReadOnly ? 'filter blur-[4.5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                  value={formAddress}
+                  onChange={(e) => setFormAddress(e.target.value)}
+                  placeholder="រាជធានីភ្នំពេញ"
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium ${
+                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">មុខវិជ្ជាទទួលបន្ទុក</label>
-                <input
-                  type="text"
-                  disabled={isReadOnly}
-                  value={formSubjects}
-                  onChange={(e) => setFormSubjects(e.target.value)}
-                  placeholder="គរុកោសល្យទូទៅ, វេយ្យាករណ៍ភាសាចិន..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* CV Attachment Upload Bar */}
-              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-800 dark:text-zinc-200 text-xs flex items-center gap-1.5">
-                    <Paperclip className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>ឯកសារប្រវត្តិរូបសង្ខេប (CV / Resume)</span>
-                    {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
-                  </span>
-                  {!isReadOnly && (
-                    <label className="px-2.5 py-1 rounded-xl bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 text-zinc-800 dark:text-zinc-200 font-bold text-[10.5px] inline-flex items-center gap-1 cursor-pointer">
-                      <Upload className="w-3 h-3" />
-                      <span>{formCvName ? 'ប្តូរ CV' : 'ជ្រើសរើសឯកសារ CV'}</span>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.txt"
-                        onChange={handleCvUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {formCvName ? (
-                  <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/40">
-                    <div className="flex items-center gap-1.5 text-emerald-900 dark:text-emerald-300 font-medium truncate text-[11px]">
-                      <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className={`truncate ${isReadOnly ? 'filter blur-[3px] select-none pointer-events-none opacity-60 max-w-[120px]' : ''}`}>
-                        {isReadOnly ? 'CV_Teacher_File.pdf' : formCvName}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {formCvUrl && !isReadOnly && (
-                        <a
-                          href={formCvUrl}
-                          download={formCvName}
-                          className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px] hover:bg-emerald-700"
-                        >
-                          ទាញយក
-                        </a>
-                      )}
-                      {isReadOnly && (
-                        <span className="text-amber-700 dark:text-amber-400 font-bold text-[10px] flex items-center gap-0.5">
-                          <Lock className="w-2.5 h-2.5" /> ការពារ
-                        </span>
-                      )}
-                      {!isReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFormCvName(undefined);
-                            setFormCvUrl(undefined);
-                          }}
-                          className="text-rose-600 dark:text-rose-400 font-bold text-[10px] hover:underline cursor-pointer"
-                        >
-                          ដកចេញ
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                    គាំទ្រឯកសារ PDF, DOC, DOCX (អតិបរមា 8MB)
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">
+                <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
                   <span>កំណត់សម្គាល់បន្ថែម (Notes)</span>
                   {isReadOnly && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold ml-1">🔒(Blur)</span>}
                 </label>
@@ -1536,38 +1777,27 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                   disabled={isReadOnly}
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="កំណត់សម្គាល់បន្ថែមអំពីសាស្ត្រាចារ្យ..."
-                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed ${
-                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800' : ''
+                  placeholder="កំណត់សម្គាល់ព័ត៌មានបន្ថែមអំពីនិស្សិត..."
+                  className={`w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium resize-none ${
+                    isReadOnly ? 'filter blur-[5px] select-none pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800 cursor-not-allowed' : ''
                   }`}
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setEditingTeacher(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold cursor-pointer transition-colors border border-zinc-200 dark:border-zinc-700"
+                  onClick={closeModal}
+                  className="px-4 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold cursor-pointer"
                 >
-                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់'}
+                  {isReadOnly ? 'បិទ (Close)' : 'បោះបង់ (Cancel)'}
                 </button>
                 {!isReadOnly && (
                   <button
                     type="submit"
-                    disabled={isSaving}
-                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold shadow-xs cursor-pointer"
                   >
-                    {isSaving ? (
-                      <>
-                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>កំពុងរក្សាទុក...</span>
-                      </>
-                    ) : (
-                      <span>{editingTeacher ? 'ធ្វើបច្ចុប្បន្នភាព (Update)' : 'រក្សាទុក (Save)'}</span>
-                    )}
+                    {editingStudent ? 'រក្សាទុកការកែប្រែ' : 'ចុះឈ្មោះនិស្សិត'}
                   </button>
                 )}
               </div>
@@ -1579,26 +1809,17 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
       {/* Delete All Confirmation Modal */}
       {isDeleteAllModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 max-w-md w-full border border-rose-200 dark:border-rose-900/50 shadow-2xl space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 flex items-center justify-center mx-auto">
+          <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 max-w-md w-full border border-rose-200 dark:border-rose-900/40 shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>
 
             <div className="text-center space-y-1">
               <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                តើអ្នកពិតជាចង់លុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់មែនទេ?
+                តើអ្នកពិតជាចង់លុបទិន្នន័យនិស្សិតទាំងអស់មែនទេ?
               </h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
-                សកម្មភាពនេះនឹងលុបទិន្នន័យសាស្ត្រាចារ្យទាំងអស់ចំនួន <strong className="text-rose-600 dark:text-rose-400 font-bold">{teachers.length} នាក់</strong> ចេញពីប្រព័ន្ធជាអចិន្ត្រៃយ៍។
-              </p>
-            </div>
-
-            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 rounded-2xl p-3 text-xs text-rose-800 dark:text-rose-200 space-y-1">
-              <p className="font-bold flex items-center gap-1.5">
-                <span>⚠️ ការព្រមាន (Warning):</span>
-              </p>
-              <p className="text-[11px] leading-relaxed">
-                ទិន្នន័យទាំងអស់នៅក្នុងមូលដ្ឋានទិន្នន័យ (Cloud Firestore) នឹងត្រូវលុបចោលទាំងស្រុង។ សូមប្រាកដថាអ្នកបាន Export Excel រួចរាល់មុននឹងធ្វើការលុប។
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                សកម្មភាពនេះនឹងលុបទិន្នន័យនិស្សិតទាំងអស់ចំនួន <strong className="text-rose-600 dark:text-rose-400 font-bold">{students.length} នាក់</strong> ចេញពីប្រព័ន្ធជាអចិន្ត្រៃយ៍។
               </p>
             </div>
 
@@ -1607,31 +1828,24 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
                 type="button"
                 onClick={() => setIsDeleteAllModalOpen(false)}
                 disabled={isDeletingAll}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold text-xs transition-colors cursor-pointer"
               >
                 បោះបង់ (Cancel)
               </button>
               <button
                 type="button"
-                onClick={handleDeleteAllTeachers}
+                onClick={handleDeleteAllStudents}
                 disabled={isDeletingAll}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
               >
-                {isDeletingAll ? (
-                  <span>កំពុងលុប...</span>
-                ) : (
-                  <>
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>លុបទាំងអស់ (Confirm Delete)</span>
-                  </>
-                )}
+                {isDeletingAll ? 'កំពុងលុប...' : 'លុបទាំងអស់ (Confirm)'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Profile Image Viewer Modal */}
+      {/* Lightbox Profile Photo Viewer */}
       <ProfileImageViewerModal
         isOpen={isImageViewerOpen}
         onClose={() => {
@@ -1639,6 +1853,23 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
           setImageViewerTarget(null);
         }}
         target={imageViewerTarget}
+      />
+
+      {/* Batch / Single Promote Modal */}
+      <PromoteStudentsModal
+        isOpen={isPromoteModalOpen}
+        onClose={() => {
+          setIsPromoteModalOpen(false);
+          setStudentsToPromote([]);
+        }}
+        selectedStudents={studentsToPromote}
+        classes={classes}
+        shifts={shifts}
+        showToast={showToast}
+        onSuccess={() => {
+          setSelectedStudentIds(new Set());
+        }}
+        isReadOnly={isReadOnly}
       />
     </div>
   );
