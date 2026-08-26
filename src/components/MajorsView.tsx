@@ -330,6 +330,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-zinc-50 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
+                  <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                   <th className="py-3.5 px-4">កូដ & ឈ្មោះជំនាញបណ្តុះបណ្តាល</th>
                   <th className="py-3.5 px-4">ឈ្មោះជាឡាតាំង (Latin Name)</th>
                   <th className="py-3.5 px-4 text-center">រយៈពេលសិក្សា</th>
@@ -342,14 +343,15 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
                 {filteredMajors.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-500 dark:text-zinc-400 font-medium">
+                    <td colSpan={8} className="py-12 text-center text-zinc-500 dark:text-zinc-400 font-medium">
                       <BookOpen className="w-8 h-8 mx-auto mb-2 text-zinc-400 opacity-60" />
                       <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមានទិន្នន័យជំនាញតាមការស្វែងរកទេ</p>
                       <p className="text-xs text-zinc-500 mt-0.5">សូមសាកល្បងបញ្ចូលពាក្យគន្លឹះផ្សេងទៀត</p>
                     </td>
                   </tr>
                 ) : (
-                  paginatedMajors.map((maj) => {
+                  paginatedMajors.map((maj, index) => {
+                    const globalIndex = (pageSize === -1 ? 0 : (validPage - 1) * pageSize) + index + 1;
                     const classCount = classes.filter((c) => c.majorId === maj.id).length;
                     const studentCount = students.filter((s) => s.majorId === maj.id).length;
 
@@ -358,6 +360,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                         key={maj.id}
                         className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors"
                       >
+                        {/* Row Number */}
+                        <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                          {globalIndex}
+                        </td>
+
                         {/* Code & Name Khmer */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
