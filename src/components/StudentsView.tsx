@@ -81,6 +81,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMajor, setSelectedMajor] = useState<string>('all');
+  const [selectedGeneration, setSelectedGeneration] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
@@ -118,6 +119,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [formClassType, setFormClassType] = useState<ClassType>('bachelor');
   const [formMajorId, setFormMajorId] = useState(majors[0]?.id || 'maj_pedagogy');
   const [formClassId, setFormClassId] = useState(classes[0]?.id || '');
+  const [formGeneration, setFormGeneration] = useState('');
   const [formShift, setFormShift] = useState<ShiftType>('morning');
   const [formYear, setFormYear] = useState<AcademicYearType>('Year 1');
   const [formStatus, setFormStatus] = useState<StudentStatus>('active');
@@ -146,7 +148,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     setFormClassType('bachelor');
     setFormMajorId(majors[0]?.id || 'maj_pedagogy');
     setFormClassId(classes[0]?.id || '');
-    setFormShift('morning');
+    setFormGeneration('ជំនាន់ទី១');
+    setFormShift((shifts[0]?.code as ShiftType) || 'morning');
     setFormYear('Year 1');
     setFormStatus('active');
     setFormGuardianPhone('');
@@ -158,19 +161,20 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
   const openEditModal = (stu: Student) => {
     setEditingStudent(stu);
-    setFormStudentCode(stu.studentCode);
-    setFormNameKhmer(stu.nameKhmer);
-    setFormNameLatin(stu.nameLatin);
+    setFormStudentCode(stu.studentCode || '');
+    setFormNameKhmer(stu.nameKhmer || '');
+    setFormNameLatin(stu.nameLatin || '');
     setFormNameChinese(stu.nameChinese || '');
-    setFormGender(stu.gender);
+    setFormGender(stu.gender || 'female');
     setFormDob(stu.dob || '2004-01-01');
     setFormPhone(stu.phone || '');
     setFormEmail(stu.email || '');
     setFormClassType(stu.classType || 'bachelor');
-    setFormMajorId(stu.majorId);
-    setFormClassId(stu.classId);
-    setFormShift(stu.shift);
-    setFormYear(stu.year);
+    setFormMajorId(stu.majorId || majors[0]?.id || '');
+    setFormClassId(stu.classId || classes[0]?.id || '');
+    setFormGeneration(stu.generation || '');
+    setFormShift(stu.shift || (shifts[0]?.code as ShiftType) || 'morning');
+    setFormYear(stu.year || 'Year 1');
     setFormStatus(stu.status || 'active');
     setFormGuardianPhone(stu.guardianPhone || '');
     setFormAddress(stu.address || '');
@@ -312,26 +316,6 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
     if (onCloseAddModal) onCloseAddModal();
   };
 
-  const handleResetFilters = () => {
-    setSearch('');
-    setSelectedClassType('all');
-    setSelectedShift('all');
-    setSelectedClass('all');
-    setSelectedYear('all');
-    setSelectedMajor('all');
-    setSelectedStatus('all');
-  };
-
-  const activeFiltersCount = [
-    search.trim() !== '',
-    selectedClassType !== 'all',
-    selectedShift !== 'all',
-    selectedClass !== 'all',
-    selectedYear !== 'all',
-    selectedMajor !== 'all',
-    selectedStatus !== 'all'
-  ].filter(Boolean).length;
-
   const handleDeleteAllStudents = async () => {
     if (isReadOnly) {
       showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ (Read-Only Mode)!', 'info');
@@ -368,21 +352,22 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
       nameLatin: formNameLatin.trim(),
       nameChinese: formNameChinese.trim() || undefined,
       gender: formGender,
-      dob: formDob,
+      dob: formDob || '2004-01-01',
       phone: formPhone.trim(),
       email: formEmail.trim() || undefined,
       classType: formClassType,
       majorId: formMajorId,
-      majorName: selectedMajorObj ? selectedMajorObj.nameKhmer : 'គរុកោសល្យភាសាចិន',
+      majorName: selectedMajorObj ? selectedMajorObj.nameKhmer : (editingStudent?.majorName || 'គរុកោសល្យភាសាចិន'),
       classId: formClassId,
-      className: selectedClassObj ? selectedClassObj.name : 'ថ្នាក់គរុកោសល្យ',
+      className: selectedClassObj ? selectedClassObj.name : (editingStudent?.className || 'ថ្នាក់គរុកោសល្យ'),
+      generation: formGeneration.trim() || undefined,
       shift: formShift,
       year: formYear,
       status: formStatus,
       guardianPhone: formGuardianPhone.trim() || undefined,
       address: formAddress.trim() || undefined,
       notes: formNotes.trim() || undefined,
-      photoUrl: formPhotoUrl,
+      photoUrl: formPhotoUrl || undefined,
       createdAt: editingStudent ? editingStudent.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -457,17 +442,22 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
       // 2. Shift filter
       if (selectedShift !== 'all') {
-        if (s.shift !== selectedShift) return false;
+        if (s.shift !== selectedShift) {
+          const shiftObj = shifts.find(sh => sh.code === selectedShift);
+          if (!shiftObj || (s.shift !== shiftObj.nameKhmer && s.shift !== shiftObj.id)) {
+            return false;
+          }
+        }
       }
 
       // 3. Class filter
       if (selectedClass !== 'all') {
-        if (s.classId !== selectedClass) return false;
+        if (s.classId !== selectedClass && s.className !== selectedClass) return false;
       }
 
       // 4. Major filter
       if (selectedMajor !== 'all') {
-        if (s.majorId !== selectedMajor) return false;
+        if (s.majorId !== selectedMajor && s.majorName !== selectedMajor) return false;
       }
 
       // 5. Academic Year filter
@@ -477,12 +467,19 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         if (!studentYear.includes(targetYear) && studentYear !== targetYear) return false;
       }
 
-      // 6. Status filter
+      // 6. Generation filter
+      if (selectedGeneration !== 'all') {
+        const studentGen = (s.generation || '').toLowerCase();
+        const targetGen = selectedGeneration.toLowerCase();
+        if (!studentGen.includes(targetGen) && studentGen !== targetGen) return false;
+      }
+
+      // 7. Status filter
       if (selectedStatus !== 'all') {
         if (s.status !== selectedStatus) return false;
       }
 
-      // 7. Search query
+      // 8. Search query
       if (search.trim()) {
         const q = search.toLowerCase().trim();
         const matchCode = (s.studentCode || '').toLowerCase().includes(q);
@@ -493,15 +490,41 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
         const matchGuardian = (s.guardianPhone || '').toLowerCase().includes(q);
         const matchClass = (s.className || '').toLowerCase().includes(q);
         const matchMajor = (s.majorName || '').toLowerCase().includes(q);
+        const matchGen = (s.generation || '').toLowerCase().includes(q);
 
-        if (!matchCode && !matchKhmer && !matchLatin && !matchChinese && !matchPhone && !matchGuardian && !matchClass && !matchMajor) {
+        if (!matchCode && !matchKhmer && !matchLatin && !matchChinese && !matchPhone && !matchGuardian && !matchClass && !matchMajor && !matchGen) {
           return false;
         }
       }
 
       return true;
     });
-  }, [students, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedStatus, search]);
+  }, [students, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedGeneration, selectedStatus, search, shifts]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search.trim()) count++;
+    if (selectedClassType !== 'all') count++;
+    if (selectedMajor !== 'all') count++;
+    if (selectedClass !== 'all') count++;
+    if (selectedShift !== 'all') count++;
+    if (selectedYear !== 'all') count++;
+    if (selectedGeneration !== 'all') count++;
+    if (selectedStatus !== 'all') count++;
+    return count;
+  }, [search, selectedClassType, selectedMajor, selectedClass, selectedShift, selectedYear, selectedGeneration, selectedStatus]);
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedClassType('all');
+    setSelectedMajor('all');
+    setSelectedClass('all');
+    setSelectedShift('all');
+    setSelectedYear('all');
+    setSelectedGeneration('all');
+    setSelectedStatus('all');
+    setCurrentPage(1);
+  };
 
   const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every((s) => selectedStudentIds.has(s.id));
   const someFilteredSelected = filteredStudents.some((s) => selectedStudentIds.has(s.id));
@@ -509,7 +532,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedStatus, pageSize]);
+  }, [search, selectedClassType, selectedShift, selectedClass, selectedMajor, selectedYear, selectedGeneration, selectedStatus, pageSize]);
 
   const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredStudents.length / pageSize));
   const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -697,7 +720,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
       {/* Filters & Search Control */}
       <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-blue-200/60 dark:border-sky-500/20 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-2.5 text-xs">
           {/* Search */}
           <div className="relative sm:col-span-2 md:col-span-3 lg:col-span-2">
             <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -766,6 +789,22 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             </select>
           </div>
 
+          {/* Generation Filter */}
+          <div>
+            <select
+              value={selectedGeneration}
+              onChange={(e) => setSelectedGeneration(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-700 dark:text-zinc-200 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">ជំនាន់ទាំងអស់ (All Batches)</option>
+              <option value="ជំនាន់ទី១">ជំនាន់ទី១ (Batch 1)</option>
+              <option value="ជំនាន់ទី២">ជំនាន់ទី២ (Batch 2)</option>
+              <option value="ជំនាន់ទី៣">ជំនាន់ទី៣ (Batch 3)</option>
+              <option value="ជំនាន់ទី៤">ជំនាន់ទី៤ (Batch 4)</option>
+              <option value="ជំនាន់ទី៥">ជំនាន់ទី៥ (Batch 5)</option>
+            </select>
+          </div>
+
           {/* Dynamic Shift Filter */}
           <div>
             <select
@@ -794,6 +833,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
               <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
               <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+              <option value="Year 5">ឆ្នាំទី៥ (Year 5)</option>
+              <option value="Short Course">វគ្គខ្លី (Short Course)</option>
             </select>
           </div>
         </div>
@@ -990,8 +1031,15 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
                         {/* Class & Shift */}
                         <td className="py-3 px-3">
-                          <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                            {stu.className || '-'}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                              {stu.className || '-'}
+                            </span>
+                            {stu.generation && (
+                              <span className="inline-block px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px] border border-indigo-200/60 dark:border-indigo-800/40">
+                                {stu.generation}
+                              </span>
+                            )}
                           </div>
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-[10px] mt-0.5">
                             {getShiftLabel(stu.shift)}
@@ -1175,9 +1223,14 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
 
                       {/* Class & Shift */}
                       <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 text-xs">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                           <span>ថ្នាក់: {stu.className}</span>
+                          {stu.generation && (
+                            <span className="inline-block px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-semibold text-[10px]">
+                              {stu.generation}
+                            </span>
+                          )}
                         </div>
                         <span className="font-bold text-zinc-800 dark:text-zinc-200">{stu.year}</span>
                       </div>
@@ -1541,15 +1594,60 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                   <select
                     value={formClassId}
                     disabled={isReadOnly}
-                    onChange={(e) => setFormClassId(e.target.value)}
+                    onChange={(e) => {
+                      const cId = e.target.value;
+                      setFormClassId(cId);
+                      const cObj = classes.find((c) => c.id === cId);
+                      if (cObj) {
+                        if (cObj.majorId) setFormMajorId(cObj.majorId);
+                        if (cObj.shift) setFormShift(cObj.shift);
+                        if (cObj.year) setFormYear(cObj.year);
+                        if (cObj.generation && !formGeneration) setFormGeneration(cObj.generation);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden cursor-pointer font-medium"
                   >
+                    <option value="">-- ជ្រើសរើសថ្នាក់ (Select Class) --</option>
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}
+                        {c.name} {c.room ? `(${c.room})` : ''}
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Generation / Batch Input */}
+                <div>
+                  <label className="block font-bold text-zinc-700 dark:text-zinc-300 mb-1">
+                    ជំនាន់សិក្សា (Generation / Batch)
+                  </label>
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      disabled={isReadOnly}
+                      value={formGeneration}
+                      onChange={(e) => setFormGeneration(e.target.value)}
+                      placeholder="ឧ. ជំនាន់ទី១, ជំនាន់ទី២..."
+                      className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium"
+                    />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {['ជំនាន់ទី១', 'ជំនាន់ទី២', 'ជំនាន់ទី៣', 'ជំនាន់ទី៤', 'ជំនាន់ទី៥'].map((gen) => (
+                        <button
+                          key={gen}
+                          type="button"
+                          onClick={() => setFormGeneration(gen)}
+                          disabled={isReadOnly}
+                          className={`px-2 py-0.5 rounded-md text-[11px] font-bold border transition-colors cursor-pointer ${
+                            formGeneration === gen
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-blue-400'
+                          }`}
+                        >
+                          {gen}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Dynamic Shift selection */}
@@ -1568,6 +1666,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                         {s.nameKhmer} ({s.timeRange})
                       </option>
                     ))}
+                    {!shifts.some((s) => s.code === formShift) && formShift && (
+                      <option value={formShift}>{formShift}</option>
+                    )}
                   </select>
                 </div>
 
@@ -1585,6 +1686,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
                     <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
                     <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+                    <option value="Year 5">ឆ្នាំទី៥ (Year 5)</option>
+                    <option value="Short Course">វគ្គខ្លី (Short Course)</option>
                   </select>
                 </div>
 
