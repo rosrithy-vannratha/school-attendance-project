@@ -118,8 +118,6 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
   // Deletion confirm
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const resetForm = () => {
     setActiveTab('list');
     setEditingDurationId(null);
@@ -281,6 +279,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
       return matchSearch && matchLevel;
     });
   }, [durations, searchQuery, selectedFilterLevel]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4">
