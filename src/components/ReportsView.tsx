@@ -337,6 +337,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-100/90 dark:bg-[#182620] text-zinc-800 dark:text-zinc-200 font-bold uppercase text-[10.5px]">
               <tr>
+                <th className="py-2.5 px-3 w-12 text-center">ល.រ</th>
                 <th className="py-2.5 px-3">អត្តលេខ</th>
                 <th className="py-2.5 px-3">ឈ្មោះនិស្សិត</th>
                 <th className="py-2.5 px-3">ថ្នាក់ & វេន</th>
@@ -353,14 +354,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
               {highAbsenceStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-zinc-400 dark:text-zinc-500">
+                  <td colSpan={7} className="py-8 text-center text-zinc-400 dark:text-zinc-500">
                     <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-1" />
                     <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមាននិស្សិតណាមានអវត្តមានទេ</p>
                   </td>
                 </tr>
               ) : (
-                highAbsenceStudents.map((stu) => (
+                highAbsenceStudents.map((stu, index) => (
                   <tr key={stu.id} className="hover:bg-rose-50/40 dark:hover:bg-rose-950/20">
+                    <td className="py-2.5 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                      {index + 1}
+                    </td>
                     <td className="py-2.5 px-3 font-mono font-bold text-zinc-800 dark:text-zinc-200">
                       {stu.studentCode}
                     </td>
