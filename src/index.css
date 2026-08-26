@@ -42,20 +42,27 @@
   }
 
   .dark {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --primary-light: #1e3a8a;
+    --primary-border: #60a5fa;
+    --accent: #38bdf8;
+    --accent-light: #0369a1;
+
     --text-main: #f8fafc;
     --text-heading: #ffffff;
     --text-body: #f1f5f9;
-    --text-muted: #cbd5e1;
-    --text-subtle: #94a3b8;
+    --text-muted: #94a3b8;
+    --text-subtle: #64748b;
     
-    --bg-page: #090d16;
-    --bg-surface: #111c2e;
-    --border-color: rgba(56, 189, 248, 0.18);
+    --bg-page: #0b1329;
+    --bg-surface: #111c38;
+    --border-color: rgba(59, 130, 246, 0.22);
   }
 
   .dark body,
   html.dark body {
-    background-color: #090d16;
+    background-color: #0b1329;
     color: #f1f5f9;
   }
 
