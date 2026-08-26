@@ -600,21 +600,34 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             </label>
           ) : null}
 
-          <button
-            onClick={() => exportStudentsToExcel(filteredStudents)}
-            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-            <span>Export Excel ({filteredStudents.length})</span>
-          </button>
+          {!isReadOnly ? (
+            <>
+              <button
+                onClick={() => exportStudentsToExcel(filteredStudents)}
+                className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                <span>Export Excel ({filteredStudents.length})</span>
+              </button>
 
-          <button
-            onClick={downloadStudentTemplate}
-            title="ទាញយកគំរូ Excel"
-            className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-          </button>
+              <button
+                onClick={downloadStudentTemplate}
+                title="ទាញយកគំរូ Excel"
+                className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 transition-colors cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកទិន្នន័យទេ (Read-Only Mode)!', 'info')}
+              className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 text-zinc-400 dark:text-zinc-500 font-semibold text-xs inline-flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 cursor-not-allowed opacity-60"
+              title="គណនីភ្ញៀវមិនអាច Export បានទេ"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export (Locked)</span>
+            </button>
+          )}
 
           {!isReadOnly ? (
             <button
