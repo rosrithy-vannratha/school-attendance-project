@@ -1,4 +1,16 @@
-import { Major, Classroom, Student, Teacher, AttendanceRecord, ShiftItem, StudyDurationItem, ClassType } from '../types';
+import {
+  Major,
+  Classroom,
+  Student,
+  Teacher,
+  AttendanceRecord,
+  ShiftItem,
+  StudyDurationItem,
+  ClassType,
+  TuitionPayment,
+  AbsenceAlertLog,
+  ScholarshipType
+} from '../types';
 
 export interface ClassTypeOption {
   id: ClassType;
@@ -557,5 +569,207 @@ export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
     status: 'permission',
     note: 'ឈឺគ្រុនក្តៅ មានលិខិតសុំច្បាប់ពីអាណាព្យាបាល',
     createdAt: new Date().toISOString()
+  }
+];
+
+export interface ScholarshipOption {
+  id: ScholarshipType;
+  nameKhmer: string;
+  nameLatin: string;
+  discountPercentage: number;
+  badgeBg: string;
+  badgeText: string;
+  description: string;
+}
+
+export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
+  {
+    id: 'full',
+    nameKhmer: 'អាហារូបករណ៍ ១០០% (ពេញលេញ)',
+    nameLatin: '100% Full Scholarship',
+    discountPercentage: 100,
+    badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
+    badgeText: 'text-emerald-800 dark:text-emerald-300',
+    description: 'ឧបត្ថម្ភថ្លៃសិក្សា ១០០% ឥតគិតថ្លៃសម្រាប់និស្សិតឆ្នើម ឬអាហារូបករណ៍រដ្ឋ'
+  },
+  {
+    id: 'partial_50',
+    nameKhmer: 'អាហារូបករណ៍ ៥០% (ពាក់កណ្តាល)',
+    nameLatin: '50% Partial Scholarship',
+    discountPercentage: 50,
+    badgeBg: 'bg-blue-100 dark:bg-blue-950/80 border-blue-300 dark:border-blue-700',
+    badgeText: 'text-blue-800 dark:text-blue-300',
+    description: 'បញ្ចុះតម្លៃសិក្សា ៥០% សម្រាប់និស្សិតជាប់លំដាប់ពិន្ទុល្អ'
+  },
+  {
+    id: 'partial_30',
+    nameKhmer: 'អាហារូបករណ៍ ៣០%',
+    nameLatin: '30% Partial Scholarship',
+    discountPercentage: 30,
+    badgeBg: 'bg-cyan-100 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-700',
+    badgeText: 'text-cyan-800 dark:text-cyan-300',
+    description: 'បញ្ចុះតម្លៃសិក្សា ៣០% តាមគោលការណ៍លើកទឹកចិត្ត'
+  },
+  {
+    id: 'government',
+    nameKhmer: 'អាហារូបករណ៍ក្រសួង/រដ្ឋាភិបាល',
+    nameLatin: 'Government / Ministry Grant',
+    discountPercentage: 100,
+    badgeBg: 'bg-purple-100 dark:bg-purple-950/80 border-purple-300 dark:border-purple-700',
+    badgeText: 'text-purple-800 dark:text-purple-300',
+    description: 'គម្រោងអាហារូបករណ៍គរុកោសល្យរដ្ឋ'
+  },
+  {
+    id: 'special_grant',
+    nameKhmer: 'អាហារូបករណ៍ពិសេសពីដៃគូចិន',
+    nameLatin: 'Chinese Partner Institute Grant',
+    discountPercentage: 70,
+    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700',
+    badgeText: 'text-amber-800 dark:text-amber-300',
+    description: 'ឧបត្ថម្ភពីសាកលវិទ្យាល័យដៃគូចិន (Confucius/CLEC)'
+  },
+  {
+    id: 'self_funded',
+    nameKhmer: 'បង់ថ្លៃសិក្សាផ្ទាល់ខ្លួន (Self-Funded)',
+    nameLatin: 'Self-Funded / Regular Tuition',
+    discountPercentage: 0,
+    badgeBg: 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700',
+    badgeText: 'text-zinc-800 dark:text-zinc-200',
+    description: 'បង់ថ្លៃសិក្សាពេញតាមតម្លៃកំណត់ក្នុងកម្មវិធី'
+  }
+];
+
+export const INITIAL_PAYMENTS: TuitionPayment[] = [
+  {
+    id: 'pay_001',
+    studentId: 'stu_01',
+    studentCode: 'CPI-2025-001',
+    studentName: 'ជា សុខនីកា',
+    academicYear: '2025-2026',
+    term: 'Semester 1',
+    scholarshipType: 'full',
+    discountPercentage: 100,
+    originalAmount: 600,
+    discountAmount: 600,
+    finalAmount: 0,
+    paidAmount: 0,
+    dueAmount: 0,
+    status: 'waived',
+    invoiceNumber: 'INV-2025-001',
+    paymentDate: '2025-09-01',
+    recordedBy: 'Admin',
+    notes: 'អាហារូបករណ៍គរុកោសល្យពេញ ១០០%',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pay_002',
+    studentId: 'stu_02',
+    studentCode: 'CPI-2025-002',
+    studentName: 'សុខ វិបុល',
+    academicYear: '2025-2026',
+    term: 'Semester 1',
+    scholarshipType: 'partial_50',
+    discountPercentage: 50,
+    originalAmount: 600,
+    discountAmount: 300,
+    finalAmount: 300,
+    paidAmount: 300,
+    dueAmount: 0,
+    status: 'paid',
+    paymentMethod: 'aba_pay',
+    transactionRef: 'ABA-889921',
+    invoiceNumber: 'INV-2025-002',
+    paymentDate: '2025-09-05',
+    recordedBy: 'Admin',
+    notes: 'បង់គ្រប់ចំនួនតាម ABA KHQR',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pay_003',
+    studentId: 'stu_03',
+    studentCode: 'CPI-2025-003',
+    studentName: 'ហុង ស្រីលីន',
+    academicYear: '2025-2026',
+    term: 'Semester 1',
+    scholarshipType: 'self_funded',
+    discountPercentage: 0,
+    originalAmount: 600,
+    discountAmount: 0,
+    finalAmount: 600,
+    paidAmount: 300,
+    dueAmount: 300,
+    status: 'partial',
+    paymentMethod: 'acleda_khqr',
+    transactionRef: 'ACL-334109',
+    invoiceNumber: 'INV-2025-003',
+    paymentDate: '2025-09-10',
+    dueDate: '2025-11-15',
+    recordedBy: 'Admin',
+    notes: 'បានបង់ដំណាក់កាលទី១ ចំនួន $300 នៅសល់ $300',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pay_004',
+    studentId: 'stu_04',
+    studentCode: 'CPI-2025-004',
+    studentName: 'កែវ មករា',
+    academicYear: '2025-2026',
+    term: 'Semester 1',
+    scholarshipType: 'self_funded',
+    discountPercentage: 0,
+    originalAmount: 650,
+    discountAmount: 0,
+    finalAmount: 650,
+    paidAmount: 0,
+    dueAmount: 650,
+    status: 'pending',
+    dueDate: '2025-10-30',
+    invoiceNumber: 'INV-2025-004',
+    recordedBy: 'Admin',
+    notes: 'រង់ចាំការបង់ប្រាក់ឆមាសទី១',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pay_005',
+    studentId: 'stu_05',
+    studentCode: 'CPI-2025-005',
+    studentName: 'លី ម៉េងហុង',
+    academicYear: '2025-2026',
+    term: 'Semester 1',
+    scholarshipType: 'special_grant',
+    discountPercentage: 70,
+    originalAmount: 650,
+    discountAmount: 455,
+    finalAmount: 195,
+    paidAmount: 195,
+    dueAmount: 0,
+    status: 'paid',
+    paymentMethod: 'aba_pay',
+    transactionRef: 'ABA-772101',
+    invoiceNumber: 'INV-2025-005',
+    paymentDate: '2025-09-02',
+    recordedBy: 'Admin',
+    notes: 'អាហារូបករណ៍ស្ថាប័នដៃគូ ៧០%',
+    createdAt: new Date().toISOString()
+  }
+];
+
+export const INITIAL_ALERT_LOGS: AbsenceAlertLog[] = [
+  {
+    id: 'alt_001',
+    date: new Date().toISOString().split('T')[0],
+    studentId: 'stu_03',
+    studentCode: 'CPI-2025-003',
+    studentName: 'ហុង ស្រីលីន',
+    guardianPhone: '098 776 543',
+    className: 'ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ (ព្រឹក)',
+    shift: 'morning',
+    absentCount: 3,
+    attendanceRate: 75,
+    channel: 'telegram',
+    message: '【ICETI សេចក្តីជូនដំណឹងវត្តមាន】សូមគោរពជម្រាបជូនអាណាព្យាបាល និស្សិត ហុង ស្រីលីន (CPI-2025-003) ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ វេនព្រឹក បានអវត្តមានចំនួន 3 លើក (អត្រាវត្តមាន 75%)។ សូមទាក់ទងមកវិទ្យាស្ថានដើម្បីបញ្ជាក់ព័ត៌មានបន្ថែម។',
+    status: 'sent',
+    sentAt: new Date().toISOString(),
+    sentBy: 'Admin System'
   }
 ];
