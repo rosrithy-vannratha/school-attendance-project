@@ -42,11 +42,23 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /study_durations/{durationId} {
+      allow read, write: if true;
+    }
+
     match /attendance/{attendanceId} {
       allow read, write: if true;
     }
 
     match /teacher_attendance/{id} {
+      allow read, write: if true;
+    }
+
+    match /tuition_payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    match /absence_alerts/{alertId} {
       allow read, write: if true;
     }
 
