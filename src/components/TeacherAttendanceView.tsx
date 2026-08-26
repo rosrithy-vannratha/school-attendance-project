@@ -193,6 +193,10 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
   };
 
   const handleMonthlyExport = () => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយករបាយការណ៍ទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     try {
       const yearMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
       exportTeacherMonthlyAttendanceToExcel(teachers, attendance, yearMonth);
@@ -203,6 +207,10 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
   };
 
   const handleDownloadTemplate = () => {
+    if (isReadOnly) {
+      showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកទិន្នន័យទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     try {
       const yearMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
       downloadTeacherMonthlyTemplate(teachers, yearMonth);
@@ -744,21 +752,34 @@ export const TeacherAttendanceView: React.FC<TeacherAttendanceViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>ទាញយកគំរូ Excel (Template)</span>
-                </button>
+                {!isReadOnly ? (
+                  <>
+                    <button
+                      onClick={handleDownloadTemplate}
+                      className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>ទាញយកគំរូ Excel (Template)</span>
+                    </button>
 
-                <button
-                  onClick={handleMonthlyExport}
-                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Export របាយការណ៍ប្រចាំខែ</span>
-                </button>
+                    <button
+                      onClick={handleMonthlyExport}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>Export របាយការណ៍ប្រចាំខែ</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយករបាយការណ៍ទេ (Read-Only Mode)!', 'info')}
+                    className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700 font-bold text-xs inline-flex items-center gap-1.5 cursor-not-allowed opacity-60"
+                    title="គណនីភ្ញៀវមិនអាច Export បានទេ"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>Export (Locked)</span>
+                  </button>
+                )}
 
                 {!isReadOnly && (
                   <label
