@@ -283,7 +283,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Welcome & Quick Action Bar */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-900 text-white rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
         <div className="absolute right-0 top-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -292,14 +292,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <img src={icetiLogo} alt="ICETI Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 border border-emerald-500/40 text-emerald-200 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-700/60 border border-blue-400/40 text-blue-100 text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>ប្រព័ន្ធគ្រប់គ្រងអប់រំ និងវត្តមានឆ្នាំសិក្សា ២០២៥-២០២៦</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 សួស្តី! សូមស្វាគមន៍មកកាន់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
               </h2>
-              <p className="text-emerald-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
+              <p className="text-blue-100/90 text-xs sm:text-sm max-w-2xl leading-relaxed">
                 គ្រប់គ្រងទិន្នន័យនិស្សិតគ្រប់កម្រិត (បរិញ្ញាបត្រ, អនុបណ្ឌិត, បណ្ឌិត, វគ្គខ្លី) វេនសិក្សា កត់ត្រាវត្តមានប្រចាំថ្ងៃ និងតាមដានរបាយការណ៍សិក្សាដោយស្វ័យប្រវត្តិ។
               </p>
             </div>
@@ -308,14 +308,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setActiveTab('attendance')}
-              className="px-4 py-2.5 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 font-bold text-xs inline-flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white text-blue-950 hover:bg-blue-50 font-bold text-xs inline-flex items-center gap-2 shadow-xs transition-all cursor-pointer"
             >
-              <CalendarCheck className="w-4 h-4 text-emerald-700" />
+              <CalendarCheck className="w-4 h-4 text-blue-700" />
               <span>{isReadOnly ? 'ពិនិត្យវត្តមានថ្ងៃនេះ' : 'កត់ត្រាវត្តមានថ្ងៃនេះ'}</span>
             </button>
             <button
               onClick={() => setActiveTab('students')}
-              className="px-4 py-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 border border-emerald-500/30 text-white font-semibold text-xs inline-flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-blue-600/90 hover:bg-blue-500 border border-blue-400/30 text-white font-semibold text-xs inline-flex items-center gap-2 transition-all cursor-pointer"
             >
               <Users className="w-4 h-4" />
               <span>{isReadOnly ? 'ពិនិត្យបញ្ជីនិស្សិត' : '+ បន្ថែមនិស្សិតថ្មី'}</span>
@@ -329,17 +329,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 1 */}
         <div 
           onClick={() => setActiveTab('students')}
-          className="bg-white dark:bg-[#131f1a] p-5 rounded-2xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 transition-all cursor-pointer group"
+          className="bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-blue-900/10 dark:border-blue-900/40 shadow-xs hover:border-blue-500/40 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">និស្សិតសរុប (Students)</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Users className="w-5 h-5" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-zinc-950 dark:text-white">{totalStudents}</span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-300 font-bold">នាក់ (Active: {activeStudents})</span>
+            <span className="text-xs text-blue-700 dark:text-blue-400 font-bold">នាក់ (Active: {activeStudents})</span>
           </div>
           <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 font-medium">
             <span>ស្រី {femaleStudents} នាក់ ({femalePercentage}%)</span>
@@ -350,33 +350,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 2 */}
         <div 
           onClick={() => setActiveTab('attendance')}
-          className="bg-white dark:bg-[#131f1a] p-5 rounded-2xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 transition-all cursor-pointer group"
+          className="bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-blue-900/10 dark:border-blue-900/40 shadow-xs hover:border-blue-500/40 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">អត្រាវត្តមាន (Attendance)</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{attendanceRate}%</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400">{attendanceRate}%</span>
             <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">ថ្ងៃនេះ</span>
           </div>
           <div className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-1 font-medium">
-            <span className="text-emerald-700 dark:text-emerald-300 font-bold">វត្តមាន {presentCount}</span>
+            <span className="text-blue-700 dark:text-blue-400 font-bold">វត្តមាន {presentCount}</span>
             <span>•</span>
-            <span className="text-rose-600 dark:text-rose-300 font-bold">អវត្តមាន {absentCount}</span>
+            <span className="text-rose-600 dark:text-rose-400 font-bold">អវត្តមាន {absentCount}</span>
           </div>
         </div>
 
         {/* Metric 3 */}
         <div 
           onClick={() => setActiveTab('teachers')}
-          className="bg-white dark:bg-[#131f1a] p-5 rounded-2xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 transition-all cursor-pointer group"
+          className="bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-blue-900/10 dark:border-blue-900/40 shadow-xs hover:border-blue-500/40 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">សាស្ត្រាចារ្យ (Faculty)</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <UserCheck className="w-5 h-5" />
             </div>
           </div>
@@ -393,11 +393,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Metric 4 */}
         <div 
           onClick={() => setActiveTab('classes')}
-          className="bg-white dark:bg-[#131f1a] p-5 rounded-2xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 transition-all cursor-pointer group"
+          className="bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-blue-900/10 dark:border-blue-900/40 shadow-xs hover:border-blue-500/40 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ថ្នាក់រៀនសរុប (Classes)</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <Layers className="w-5 h-5" />
             </div>
           </div>
@@ -415,11 +415,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* ========================================================================= */}
       {/* TOTAL TYPE OF STUDENTS (កម្រិតសញ្ញាបត្រ និងប្រភេទកម្មវិធីសិក្សា) */}
       {/* ========================================================================= */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-900/10 dark:border-blue-900/40 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <h3 className="text-base font-bold text-zinc-950 dark:text-white">
                 ចំនួននិស្សិតសរុបតាមប្រភេទកម្មវិធីសិក្សា (Total Students by Program & Degree Level)
               </h3>
@@ -430,7 +430,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <button
             onClick={() => setActiveTab('students')}
-            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            className="text-xs font-bold text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
             <span>គ្រប់គ្រងនិស្សិត</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -450,7 +450,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div>
                   {/* Top Header */}
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 shadow-xs flex items-center justify-center text-emerald-700 dark:text-emerald-400 group-hover:rotate-6 transition-transform">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 shadow-xs flex items-center justify-center text-blue-700 dark:text-blue-400 group-hover:rotate-6 transition-transform">
                       <IconComponent className="w-5 h-5" />
                     </div>
                     <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${item.badgeBg} ${item.badgeText}`}>
@@ -476,7 +476,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </span>
                       <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">នាក់</span>
                     </div>
-                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400">
                       Active: {item.activeCount}
                     </span>
                   </div>
@@ -507,7 +507,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Secondary Demographic Sub-Grid: Gender, Status, and Academic Years */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
           {/* Gender Ratio Card */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2.5">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-800 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
@@ -543,13 +543,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Academic Years Card */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <BookOpen className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>កម្រិតឆ្នាំសិក្សា (Academic Years)</span>
               </span>
-              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+              <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400">
                 Year 1 - 4
               </span>
             </div>
@@ -557,7 +557,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {academicYearStats.map((yr) => (
                 <div
                   key={yr.key}
-                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#131f1a] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between text-xs"
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#111c38] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between text-xs"
                 >
                   <span className="font-semibold text-zinc-700 dark:text-zinc-300 text-[11px]">{yr.key}</span>
                   <span className="font-bold text-zinc-950 dark:text-white">{yr.count} នាក់</span>
@@ -567,10 +567,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           {/* Student Status Card */}
-          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 <span>ស្ថានភាពនិស្សិត (Student Status)</span>
               </span>
               <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
@@ -578,9 +578,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
             <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-              <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-emerald-800 dark:text-emerald-300 text-[11px]">កំពុងរៀន</span>
-                <span className="font-bold text-emerald-900 dark:text-emerald-200">{statusStats.active}</span>
+              <div className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-blue-800 dark:text-blue-300 text-[11px]">កំពុងរៀន</span>
+                <span className="font-bold text-blue-900 dark:text-blue-200">{statusStats.active}</span>
               </div>
               <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between text-xs">
                 <span className="font-semibold text-amber-800 dark:text-amber-300 text-[11px]">ព្យួរការសិក្សា</span>
@@ -590,9 +590,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="font-semibold text-rose-800 dark:text-rose-300 text-[11px]">បោះបង់</span>
                 <span className="font-bold text-rose-900 dark:text-rose-200">{statusStats.dropped}</span>
               </div>
-              <div className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between text-xs">
-                <span className="font-semibold text-blue-800 dark:text-blue-300 text-[11px]">បញ្ចប់ការសិក្សា</span>
-                <span className="font-bold text-blue-900 dark:text-blue-200">{statusStats.graduated}</span>
+              <div className="px-2.5 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-sky-800 dark:text-sky-300 text-[11px]">បញ្ចប់ការសិក្សា</span>
+                <span className="font-bold text-sky-900 dark:text-sky-200">{statusStats.graduated}</span>
               </div>
             </div>
           </div>
@@ -603,10 +603,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div
               onClick={() => setActiveTab('tuition')}
-              className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+              className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-700 text-white shadow-xs">
+                <div className="p-2.5 rounded-xl bg-blue-700 text-white shadow-xs">
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
@@ -618,7 +618,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-blue-700 dark:text-blue-400 group-hover:translate-x-1 transition-transform" />
             </div>
 
             <div
@@ -645,11 +645,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Shifts Breakdown (វេនសិក្សា) */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-900/10 dark:border-blue-900/40 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>ការបែងចែកនិស្សិតតាមវេនសិក្សា (Study Shifts Breakdown)</span>
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
@@ -658,7 +658,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <button
             onClick={() => setActiveTab('students')}
-            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            className="text-xs font-bold text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
             <span>មើលបញ្ជីនិស្សិតទាំងអស់</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -726,11 +726,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Grid: AI Assistant & Risk Watchlist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: AI Insights & Majors Overview */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
+        <div className="lg:col-span-2 bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-900/10 dark:border-blue-900/40 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+              <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-blue-700 dark:text-blue-400" />
               </div>
               <div>
                 <h3 className="font-bold text-zinc-950 dark:text-white text-sm sm:text-base">
@@ -743,20 +743,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={generateAiInsight}
               disabled={aiInsightLoading}
-              className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-200 text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
               <span>{aiInsightLoading ? 'កំពុងវិភាគ...' : 'ដំណើរការវិភាគ AI'}</span>
             </button>
           </div>
 
           {aiInsight ? (
-            <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 leading-relaxed whitespace-pre-line font-medium">
+            <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 leading-relaxed whitespace-pre-line font-medium">
               {aiInsight}
             </div>
           ) : (
-            <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-dashed border-zinc-300 dark:border-zinc-700 text-center space-y-2">
-              <Sparkles className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mx-auto" />
+            <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-[#182645] border border-dashed border-zinc-300 dark:border-zinc-700 text-center space-y-2">
+              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400 mx-auto" />
               <p className="text-xs text-zinc-700 dark:text-zinc-200 font-semibold">
                 ចុចប៊ូតុង "ដំណើរការវិភាគ AI" ដើម្បីទទួលបានការវិភាគស្ថិតិវត្តមាន និងការណែនាំគរុកោសល្យ។
               </p>
@@ -767,12 +767,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="pt-2">
             <div className="flex items-center justify-between mb-2.5">
               <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                <BookOpen className="w-3.5 h-3.5 text-blue-700 dark:text-blue-400" />
                 <span>ដេប៉ាតឺម៉ង់ & ឯកទេសបណ្តុះបណ្តាល ({majors.length})</span>
               </h4>
               <button
                 onClick={() => setActiveTab('majors')}
-                className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                className="text-[11px] font-bold text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
               >
                 គ្រប់គ្រងជំនាញ
               </button>
@@ -784,7 +784,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div
                     key={m.id}
                     onClick={() => setActiveTab('students')}
-                    className="p-3 rounded-xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 text-xs hover:border-emerald-400 transition-all cursor-pointer flex items-center justify-between"
+                    className="p-3 rounded-xl bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-800 text-xs hover:border-blue-400 transition-all cursor-pointer flex items-center justify-between"
                   >
                     <div>
                       <div className="font-bold text-zinc-950 dark:text-zinc-100">{m.nameKhmer}</div>
@@ -793,7 +793,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="font-black text-sm text-emerald-700 dark:text-emerald-400">
+                      <span className="font-black text-sm text-blue-700 dark:text-blue-400">
                         {majorStudentCount}
                       </span>
                       <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block font-semibold">
@@ -808,7 +808,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Right 1 Col: Absence Risk Watchlist */}
-        <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
+        <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-blue-900/10 dark:border-blue-900/40 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
@@ -822,7 +822,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
             {riskStudents.length === 0 ? (
               <div className="text-center py-8 text-xs text-zinc-600 dark:text-zinc-300">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-2" />
+                <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                 <p className="font-bold text-zinc-950 dark:text-zinc-100">ពុំមាននិស្សិតប្រឈមអវត្តមាន</p>
                 <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">និស្សិតទាំងអស់មានវត្តមានទៀងទាត់</p>
               </div>
@@ -848,7 +848,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <button
             onClick={() => setActiveTab('reports')}
-            className="w-full py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-100 font-bold text-xs transition-colors cursor-pointer text-center"
+            className="w-full py-2 rounded-xl bg-zinc-100 dark:bg-[#182645] hover:bg-zinc-200 dark:hover:bg-blue-900/40 text-zinc-800 dark:text-zinc-100 font-bold text-xs transition-colors cursor-pointer text-center"
           >
             មើលរបាយការណ៍លម្អិត
           </button>
