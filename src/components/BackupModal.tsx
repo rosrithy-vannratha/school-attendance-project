@@ -98,6 +98,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   };
 
   const handleExportLocal = () => {
+    if (isGuestReadOnly) {
+      showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកឯកសារ Backup ទេ (Read-Only Mode)!', 'info');
+      return;
+    }
     try {
       instituteService.exportLocalBackupFile();
       showToast('បានទាញយកឯកសារ Backup (JSON) ទៅក្នុងកុំព្យូទ័រដោយជោគជ័យ', 'success');
@@ -270,10 +274,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               <button
                 type="button"
                 onClick={handleExportLocal}
-                className="w-full py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                disabled={isGuestReadOnly}
+                className="w-full py-2 px-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <HardDrive className="w-3.5 h-3.5" />
-                <span>ទាញយកឯកសារ Backup (.json)</span>
+                <span>{isGuestReadOnly ? 'បិទសម្រាប់ភ្ញៀវ (Disabled)' : 'ទាញយកឯកសារ Backup (.json)'}</span>
               </button>
             </div>
           </div>
