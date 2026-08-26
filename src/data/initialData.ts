@@ -4,13 +4,17 @@ import {
   Student,
   Teacher,
   AttendanceRecord,
+  TeacherAttendance,
   ShiftItem,
   StudyDurationItem,
   ClassType,
   TuitionPayment,
   AbsenceAlertLog,
-  ScholarshipType
+  ScholarshipType,
+  ScholarshipOption
 } from '../types';
+
+export type { ScholarshipOption };
 
 export interface ClassTypeOption {
   id: ClassType;
@@ -572,17 +576,37 @@ export const INITIAL_ATTENDANCE: AttendanceRecord[] = [
   }
 ];
 
-export interface ScholarshipOption {
-  id: ScholarshipType;
-  nameKhmer: string;
-  nameLatin: string;
-  discountPercentage: number;
-  badgeBg: string;
-  badgeText: string;
-  description: string;
-}
-
 export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
+  {
+    id: 'two_plus_two',
+    nameKhmer: 'អាហារូបករណ៍ ២+២ (បរិញ្ញាបត្រ)',
+    nameLatin: '2+2 Bachelor Dual Degree Scholarship',
+    discountPercentage: 100,
+    badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
+    badgeText: 'text-emerald-800 dark:text-emerald-300',
+    description: 'កម្មវិធីអាហារូបករណ៍ ២+២ សិក្សា ២ឆ្នាំនៅកម្ពុជា និង ២ឆ្នាំនៅសាកលវិទ្យាល័យដៃគូចិន',
+    isDefault: true
+  },
+  {
+    id: 'partial_25',
+    nameKhmer: 'អាហារូបករណ៍ ២៥%',
+    nameLatin: '25% Partial Scholarship',
+    discountPercentage: 25,
+    badgeBg: 'bg-teal-100 dark:bg-teal-950/80 border-teal-300 dark:border-teal-700',
+    badgeText: 'text-teal-800 dark:text-teal-300',
+    description: 'បញ្ចុះតម្លៃសិក្សា ២៥% សម្រាប់និស្សិតទូទៅ',
+    isDefault: true
+  },
+  {
+    id: 'president_grant',
+    nameKhmer: 'អាហារូបករណ៍ឯកឧត្តមប្រធាន',
+    nameLatin: "President's Excellence Scholarship",
+    discountPercentage: 100,
+    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700',
+    badgeText: 'text-amber-800 dark:text-amber-300',
+    description: 'អាហារូបករណ៍កិត្តិយសពិសេសឧបត្ថម្ភដោយឯកឧត្តមប្រធានវិទ្យាស្ថាន',
+    isDefault: true
+  },
   {
     id: 'full',
     nameKhmer: 'អាហារូបករណ៍ ១០០% (ពេញលេញ)',
@@ -590,7 +614,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     discountPercentage: 100,
     badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
     badgeText: 'text-emerald-800 dark:text-emerald-300',
-    description: 'ឧបត្ថម្ភថ្លៃសិក្សា ១០០% ឥតគិតថ្លៃសម្រាប់និស្សិតឆ្នើម ឬអាហារូបករណ៍រដ្ឋ'
+    description: 'ឧបត្ថម្ភថ្លៃសិក្សា ១០០% ឥតគិតថ្លៃសម្រាប់និស្សិតឆ្នើម',
+    isDefault: true
   },
   {
     id: 'partial_50',
@@ -599,7 +624,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     discountPercentage: 50,
     badgeBg: 'bg-blue-100 dark:bg-blue-950/80 border-blue-300 dark:border-blue-700',
     badgeText: 'text-blue-800 dark:text-blue-300',
-    description: 'បញ្ចុះតម្លៃសិក្សា ៥០% សម្រាប់និស្សិតជាប់លំដាប់ពិន្ទុល្អ'
+    description: 'បញ្ចុះតម្លៃសិក្សា ៥០% សម្រាប់និស្សិតជាប់លំដាប់ពិន្ទុល្អ',
+    isDefault: true
   },
   {
     id: 'partial_30',
@@ -608,7 +634,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     discountPercentage: 30,
     badgeBg: 'bg-cyan-100 dark:bg-cyan-950/80 border-cyan-300 dark:border-cyan-700',
     badgeText: 'text-cyan-800 dark:text-cyan-300',
-    description: 'បញ្ចុះតម្លៃសិក្សា ៣០% តាមគោលការណ៍លើកទឹកចិត្ត'
+    description: 'បញ្ចុះតម្លៃសិក្សា ៣០% តាមគោលការណ៍លើកទឹកចិត្ត',
+    isDefault: true
   },
   {
     id: 'government',
@@ -617,16 +644,18 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     discountPercentage: 100,
     badgeBg: 'bg-purple-100 dark:bg-purple-950/80 border-purple-300 dark:border-purple-700',
     badgeText: 'text-purple-800 dark:text-purple-300',
-    description: 'គម្រោងអាហារូបករណ៍គរុកោសល្យរដ្ឋ'
+    description: 'គម្រោងអាហារូបករណ៍គរុកោសល្យរដ្ឋ',
+    isDefault: true
   },
   {
     id: 'special_grant',
     nameKhmer: 'អាហារូបករណ៍ពិសេសពីដៃគូចិន',
     nameLatin: 'Chinese Partner Institute Grant',
     discountPercentage: 70,
-    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700',
-    badgeText: 'text-amber-800 dark:text-amber-300',
-    description: 'ឧបត្ថម្ភពីសាកលវិទ្យាល័យដៃគូចិន (Confucius/CLEC)'
+    badgeBg: 'bg-orange-100 dark:bg-orange-950/80 border-orange-300 dark:border-orange-700',
+    badgeText: 'text-orange-800 dark:text-orange-300',
+    description: 'ឧបត្ថម្ភពីសាកលវិទ្យាល័យដៃគូចិន (Confucius/CLEC)',
+    isDefault: true
   },
   {
     id: 'self_funded',
@@ -635,9 +664,12 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     discountPercentage: 0,
     badgeBg: 'bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700',
     badgeText: 'text-zinc-800 dark:text-zinc-200',
-    description: 'បង់ថ្លៃសិក្សាពេញតាមតម្លៃកំណត់ក្នុងកម្មវិធី'
+    description: 'បង់ថ្លៃសិក្សាពេញតាមតម្លៃកំណត់ក្នុងកម្មវិធី',
+    isDefault: true
   }
 ];
+
+export const INITIAL_SCHOLARSHIPS = SCHOLARSHIP_OPTIONS;
 
 export const INITIAL_PAYMENTS: TuitionPayment[] = [
   {
