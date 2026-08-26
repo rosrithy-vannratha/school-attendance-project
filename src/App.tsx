@@ -104,6 +104,15 @@ export default function App() {
     return () => unsubAuth();
   }, []);
 
+  const isReadOnly = user?.role === 'Guest' || user?.isAnonymous || !user;
+
+  // Protect Tuition & Alerts tabs from Guest access (Unconditionally registered hook)
+  useEffect(() => {
+    if (isReadOnly && (activeTab === 'tuition' || activeTab === 'alerts')) {
+      setActiveTab('dashboard');
+    }
+  }, [isReadOnly, activeTab]);
+
   // 2. Real-time subscriptions to Firestore collections
   useEffect(() => {
     const unsubStudents = typeof instituteService?.subscribeStudents === 'function'
@@ -226,8 +235,6 @@ export default function App() {
       </>
     );
   }
-
-  const isReadOnly = user?.role === 'Guest' || user?.isAnonymous || false;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0b1329] text-zinc-900 dark:text-zinc-100 flex flex-col selection:bg-blue-600 selection:text-white font-sans antialiased transition-colors">
