@@ -83,6 +83,21 @@
       },
       "required": ["id", "code", "nameKhmer"]
     },
+    "StudyDuration": {
+      "title": "StudyDuration",
+      "description": "Degree program durations and classifications (Associate, Bachelor, Master, PhD)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameKhmer": { "type": "string" },
+        "nameLatin": { "type": "string" },
+        "years": { "type": "number" },
+        "degreeLevel": { "type": "string" },
+        "description": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "nameKhmer", "years"]
+    },
     "AttendanceRecord": {
       "title": "AttendanceRecord",
       "description": "Student daily attendance log",
@@ -137,6 +152,60 @@
         "data": { "type": "string" }
       },
       "required": ["id", "timestamp"]
+    },
+    "TuitionPayment": {
+      "title": "TuitionPayment",
+      "description": "Tuition fees, scholarship discounts, and payment records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentCode": { "type": "string" },
+        "studentName": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "term": { "type": "string" },
+        "scholarshipType": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "originalAmount": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "finalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "dueAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "partial", "pending", "overdue", "waived"] },
+        "paymentDate": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "transactionRef": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "recordedBy": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "studentId", "studentCode", "studentName", "scholarshipType", "originalAmount", "finalAmount", "paidAmount", "status"]
+    },
+    "AbsenceAlertLog": {
+      "title": "AbsenceAlertLog",
+      "description": "Automated and manual attendance alert logs via Telegram / SMS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentCode": { "type": "string" },
+        "studentName": { "type": "string" },
+        "guardianPhone": { "type": "string" },
+        "className": { "type": "string" },
+        "shift": { "type": "string" },
+        "absentCount": { "type": "number" },
+        "attendanceRate": { "type": "number" },
+        "channel": { "type": "string", "enum": ["telegram", "sms", "phone_call"] },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["sent", "failed", "pending"] },
+        "sentAt": { "type": "string" },
+        "sentBy": { "type": "string" }
+      },
+      "required": ["id", "date", "studentId", "studentCode", "studentName", "absentCount", "channel", "status"]
     }
   },
   "firestore": {
@@ -156,6 +225,10 @@
       "schema": "Major",
       "description": "Academic majors"
     },
+    "/study_durations/{durationId}": {
+      "schema": "StudyDuration",
+      "description": "Study duration program categories"
+    },
     "/attendance/{attendanceId}": {
       "schema": "AttendanceRecord",
       "description": "Student attendance entries"
@@ -163,6 +236,14 @@
     "/teacher_attendance/{id}": {
       "schema": "TeacherAttendance",
       "description": "Teacher attendance logs"
+    },
+    "/tuition_payments/{paymentId}": {
+      "schema": "TuitionPayment",
+      "description": "Tuition and scholarship payments"
+    },
+    "/absence_alerts/{alertId}": {
+      "schema": "AbsenceAlertLog",
+      "description": "Sent attendance alerts"
     },
     "/backups/{backupId}": {
       "schema": "BackupSnapshot",
