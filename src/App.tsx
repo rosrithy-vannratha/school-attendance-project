@@ -12,8 +12,9 @@ import { MajorsView } from './components/MajorsView';
 import { ReportsView } from './components/ReportsView';
 import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
+import { ScholarshipsModal } from './components/ScholarshipsModal';
 import { instituteService, authService } from './service/instituteService';
-import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS } from './data/initialData';
+import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS, INITIAL_SCHOLARSHIPS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -26,7 +27,8 @@ import {
   ShiftItem,
   StudyDurationItem,
   TuitionPayment,
-  AbsenceAlertLog
+  AbsenceAlertLog,
+  ScholarshipOption
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
