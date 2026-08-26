@@ -203,10 +203,10 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#111e17] p-5 rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs">
         <div>
           <h2 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Send className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
+            <Send className="w-6 h-6 text-blue-700 dark:text-blue-400" />
             <span>ប្រព័ន្ធជូនដំណឹងអវត្តមាន & Telegram Alerts</span>
           </h2>
           <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1">
@@ -220,7 +220,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
             onClick={() => setActiveSubTab('watchlist')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubTab === 'watchlist'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900'
             }`}
           >
@@ -232,7 +232,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
             onClick={() => setActiveSubTab('history')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubTab === 'history'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900'
             }`}
           >
@@ -244,7 +244,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
             onClick={() => setActiveSubTab('settings')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeSubTab === 'settings'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900'
             }`}
           >
@@ -260,7 +260,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
       {activeSubTab === 'watchlist' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* Controls Bar */}
-          <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -269,7 +269,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="ស្វែងរកតាមឈ្មោះ ឬអត្តលេខនិស្សិត..."
-                  className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -278,7 +278,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
                 aria-label="ជ្រើសរើសថ្នាក់រៀន"
-                className="px-3 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="px-3 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">គ្រប់ថ្នាក់រៀន (All Classes)</option>
                 {classes.map((c) => (
@@ -318,11 +318,12 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
           </div>
 
           {/* At-Risk Table */}
-          <div className="bg-white dark:bg-[#111e17] rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs overflow-hidden">
+          <div className="bg-white dark:bg-[#111c38] rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-zinc-50 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold">
+                    <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                     <th className="py-3.5 px-4">និស្សិត & អត្តលេខ</th>
                     <th className="py-3.5 px-4">ថ្នាក់រៀន & វេន</th>
                     <th className="py-3.5 px-4 text-center">អវត្តមាន (Absent)</th>
@@ -335,14 +336,14 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
                   {atRiskStudents.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-zinc-600 dark:text-zinc-400">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-2 opacity-80" />
+                      <td colSpan={8} className="py-12 text-center text-zinc-600 dark:text-zinc-400">
+                        <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-2 opacity-80" />
                         <p className="font-bold">ពុំមាននិស្សិតដែលជាប់ហានិភ័យអវត្តមានក្រោម {threshold}% ទេ!</p>
                         <p className="text-[11px] text-zinc-500 mt-0.5">វត្តមានទូទៅរបស់និស្សិតស្ថិតក្នុងកម្រិតល្អប្រសើរ</p>
                       </td>
                     </tr>
                   ) : (
-                    atRiskStudents.map((item) => {
+                    atRiskStudents.map((item, index) => {
                       const isCritical = item.attendanceRate < 75 || item.absentCount >= 3;
 
                       return (
@@ -350,6 +351,10 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                           key={item.student.id}
                           className="hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-colors"
                         >
+                          <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                            {index + 1}
+                          </td>
+
                           <td className="py-3 px-4">
                             <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                               <span>{item.student.nameKhmer}</span>
@@ -398,7 +403,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
 
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-1.5 font-mono font-bold text-zinc-800 dark:text-zinc-200">
-                              <PhoneCall className="w-3 h-3 text-emerald-600" />
+                              <PhoneCall className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                               <span>{item.student.guardianPhone || item.student.phone || 'ពុំមាន'}</span>
                             </div>
                           </td>
@@ -406,7 +411,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                           <td className="py-3 px-4 text-center">
                             <button
                               onClick={() => openSingleAlert(item)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                              className="px-3 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
                             >
                               <Send className="w-3 h-3" />
                               <span>ផ្ញើដំណឹង Telegram</span>
@@ -427,10 +432,10 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
       {/* TAB 2: SENT ALERTS HISTORY LOG                                            */}
       {/* ========================================================================= */}
       {activeSubTab === 'history' && (
-        <div className="bg-white dark:bg-[#111e17] rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#111c38] rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+              <Clock className="w-4 h-4 text-blue-700 dark:text-blue-400" />
               <span>ប្រវត្តិដំណឹងដែលបានបញ្ជូនកន្លងមក</span>
             </h3>
             <span className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -442,6 +447,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-zinc-50 dark:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold">
+                  <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                   <th className="py-3.5 px-4">កាលបរិច្ឆេទ</th>
                   <th className="py-3.5 px-4">និស្សិត</th>
                   <th className="py-3.5 px-4">ថ្នាក់រៀន</th>
@@ -453,13 +459,16 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
                 {alertLogs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-zinc-600 dark:text-zinc-400">
+                    <td colSpan={7} className="py-12 text-center text-zinc-600 dark:text-zinc-400">
                       មិនទាន់មានប្រវត្តិផ្ញើសារនៅឡើយទេ
                     </td>
                   </tr>
                 ) : (
-                  alertLogs.map((log) => (
+                  alertLogs.map((log, index) => (
                     <tr key={log.id} className="hover:bg-zinc-50/60 dark:hover:bg-zinc-900/40">
+                      <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                        {index + 1}
+                      </td>
                       <td className="py-3 px-4 font-mono text-zinc-700 dark:text-zinc-300">
                         {log.date}
                       </td>
@@ -476,7 +485,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                         {log.message}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
                           <CheckCircle2 className="w-3 h-3" />
                           <span>បានផ្ញើរួច</span>
                         </span>
@@ -494,7 +503,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
       {/* TAB 3: TELEGRAM BOT INTEGRATION SETTINGS                                  */}
       {/* ========================================================================= */}
       {activeSubTab === 'settings' && (
-        <div className="bg-white dark:bg-[#111e17] p-6 rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs max-w-2xl space-y-5">
+        <div className="bg-white dark:bg-[#111c38] p-6 rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs max-w-2xl space-y-5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300">
               <Send className="w-5 h-5" />
@@ -519,7 +528,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                 value={botTokenInput}
                 onChange={(e) => setBotTokenInput(e.target.value)}
                 placeholder="e.g. 7192839182:AAFlw98zX..."
-                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <p className="text-[11px] text-zinc-500 mt-1">
                 បង្កើត Bot តាមរយៈ Telegram ដោយផ្ញើ /newbot ទៅកាន់ @BotFather
@@ -536,7 +545,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                   value={chatIdInput}
                   onChange={(e) => setChatIdInput(e.target.value)}
                   placeholder="e.g. -1002345678901 ឬ @channel_name"
-                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
@@ -549,12 +558,12 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                   value={channelInput}
                   onChange={(e) => setChannelInput(e.target.value)}
                   placeholder="@iceti_cambodia_alerts"
-                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-300 space-y-1">
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-900 dark:text-blue-300 space-y-1">
               <p className="font-bold flex items-center gap-1">
                 <Info className="w-3.5 h-3.5" />
                 <span>ចំណាំសម្រាប់ការបញ្ជូនសារ៖</span>
@@ -566,7 +575,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
               >
                 <Check className="w-4 h-4" />
                 <span>រក្សាទុកការកំណត់ Telegram</span>
@@ -579,10 +588,10 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
       {/* SINGLE ALERT CONFIRMATION MODAL */}
       {selectedStudentForAlert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#111e17] border border-zinc-200 dark:border-emerald-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-[#111c38] border border-zinc-200 dark:border-blue-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b pb-3 border-zinc-200 dark:border-zinc-800">
               <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <Send className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <Send className="w-4 h-4 text-blue-700 dark:text-blue-400" />
                 <span>ផ្ញើសេចក្តីជូនដំណឹងអវត្តមាន (Telegram Alert)</span>
               </h3>
               <button
@@ -614,7 +623,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">ទូរស័ព្ទអាណាព្យាបាល៖</span>
-                <span className="font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                <span className="font-bold text-blue-700 dark:text-blue-400 font-mono">
                   {selectedStudentForAlert.student.guardianPhone || 'ពុំមាន'}
                 </span>
               </div>
@@ -630,7 +639,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
                 placeholder="ឧទាហរណ៍៖ សូមមកជួបការិយាល័យសិក្សា នៅថ្ងៃច័ន្ទ វេលាម៉ោង ៩:០០ ព្រឹក..."
-                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
 
@@ -645,7 +654,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
               <button
                 onClick={handleSendSingleAlert}
                 disabled={isSending}
-                className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{isSending ? 'កំពុងផ្ញើ...' : 'បញ្ជូនសារ Telegram ឥឡូវនេះ'}</span>
@@ -658,7 +667,7 @@ export const AbsenceAlertsView: React.FC<AbsenceAlertsViewProps> = ({
       {/* BATCH ALERT CONFIRMATION MODAL */}
       {isBatchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#111e17] border border-zinc-200 dark:border-emerald-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-[#111c38] border border-zinc-200 dark:border-blue-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-rose-700 dark:text-rose-400">
               <AlertTriangle className="w-6 h-6" />
               <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
