@@ -3,6 +3,8 @@ import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { StudentsView } from './components/StudentsView';
 import { AttendanceView } from './components/AttendanceView';
+import { TuitionView } from './components/TuitionView';
+import { AbsenceAlertsView } from './components/AbsenceAlertsView';
 import { TeachersView } from './components/TeachersView';
 import { TeacherAttendanceView } from './components/TeacherAttendanceView';
 import { ClassesView } from './components/ClassesView';
@@ -11,7 +13,7 @@ import { ReportsView } from './components/ReportsView';
 import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
 import { instituteService, authService } from './service/instituteService';
-import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS } from './data/initialData';
+import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -22,7 +24,9 @@ import {
   AppUser,
   ActiveTab,
   ShiftItem,
-  StudyDurationItem
+  StudyDurationItem,
+  TuitionPayment,
+  AbsenceAlertLog
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -68,6 +72,8 @@ export default function App() {
   const [studyDurations, setStudyDurations] = useState<StudyDurationItem[]>(INITIAL_STUDY_DURATIONS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [teacherAttendance, setTeacherAttendance] = useState<TeacherAttendance[]>([]);
+  const [payments, setPayments] = useState<TuitionPayment[]>(INITIAL_PAYMENTS);
+  const [alertLogs, setAlertLogs] = useState<AbsenceAlertLog[]>(INITIAL_ALERT_LOGS);
 
   // Modals triggered from quick action buttons
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -116,6 +122,8 @@ export default function App() {
     });
     const unsubAttendance = instituteService.subscribeAttendance((data) => setAttendance(data));
     const unsubTeacherAtt = instituteService.subscribeTeacherAttendance((data) => setTeacherAttendance(data));
+    const unsubPayments = instituteService.subscribePayments((data) => setPayments(data));
+    const unsubAlertLogs = instituteService.subscribeAlertLogs((data) => setAlertLogs(data));
 
     return () => {
       unsubStudents();
@@ -126,6 +134,8 @@ export default function App() {
       unsubDurations();
       unsubAttendance();
       unsubTeacherAtt();
+      unsubPayments();
+      unsubAlertLogs();
     };
   }, []);
 
@@ -264,6 +274,28 @@ export default function App() {
             students={students}
             classes={classes}
             attendance={attendance}
+            showToast={showToast}
+            isReadOnly={isReadOnly}
+          />
+        )}
+
+        {activeTab === 'tuition' && (
+          <TuitionView
+            students={students}
+            classes={classes}
+            majors={majors}
+            payments={payments}
+            showToast={showToast}
+            isReadOnly={isReadOnly}
+          />
+        )}
+
+        {activeTab === 'alerts' && (
+          <AbsenceAlertsView
+            students={students}
+            attendance={attendance}
+            classes={classes}
+            alertLogs={alertLogs}
             showToast={showToast}
             isReadOnly={isReadOnly}
           />
