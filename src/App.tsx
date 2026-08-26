@@ -224,6 +224,7 @@ export default function App() {
             majors={majors}
             attendance={attendance}
             shifts={shifts}
+            studyDurations={studyDurations}
             setActiveTab={setActiveTab}
             isReadOnly={isReadOnly}
             onOpenAddStudent={() => {
