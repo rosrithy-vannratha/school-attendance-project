@@ -579,13 +579,24 @@ export const TeachersView: React.FC<TeachersViewProps> = ({
           )}
 
           {/* Export Excel */}
-          <button
-            onClick={() => exportTeachersToExcel(filteredTeachers)}
-            className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Export Excel ({filteredTeachers.length})</span>
-          </button>
+          {!isReadOnly ? (
+            <button
+              onClick={() => exportTeachersToExcel(filteredTeachers)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Export Excel ({filteredTeachers.length})</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកទិន្នន័យទេ (Read-Only Mode)!', 'info')}
+              className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 text-zinc-400 dark:text-zinc-500 font-semibold text-xs inline-flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 cursor-not-allowed opacity-60"
+              title="គណនីភ្ញៀវមិនអាច Export បានទេ"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export (Locked)</span>
+            </button>
+          )}
 
           {!isReadOnly && (
             <>
