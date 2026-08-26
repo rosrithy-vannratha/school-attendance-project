@@ -904,6 +904,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                       )}
                     </button>
                   </th>
+                  <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                   <th className="py-3.5 px-3">អត្តលេខ & រូបថត</th>
                   <th className="py-3.5 px-4">ឈ្មោះនិស្សិត (ខ្មែរ / Chinese / Latin)</th>
                   <th className="py-3.5 px-3">កម្រិត & ជំនាញ</th>
@@ -922,7 +923,7 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-zinc-400">
+                    <td colSpan={10} className="py-12 text-center text-zinc-400">
                       <Users className="w-8 h-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
                       <p className="font-bold text-zinc-700 dark:text-zinc-200">ពុំមានទិន្នន័យនិស្សិតទេ</p>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -931,8 +932,9 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  paginatedStudents.map((stu) => {
+                  paginatedStudents.map((stu, index) => {
                     const isSelected = selectedStudentIds.has(stu.id);
+                    const globalIndex = (pageSize === -1 ? 0 : (validCurrentPage - 1) * pageSize) + index + 1;
 
                     return (
                       <tr
@@ -956,6 +958,11 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
                               <Square className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
                             )}
                           </button>
+                        </td>
+
+                        {/* Row Number */}
+                        <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                          {globalIndex}
                         </td>
 
                         {/* Student ID & Clickable Photo */}
