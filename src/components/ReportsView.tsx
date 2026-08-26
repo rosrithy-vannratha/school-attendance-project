@@ -151,13 +151,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => exportStudentsToExcel(students, 'CPI_Full_Report')}
-            className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-            <span>Export Full Data</span>
-          </button>
+          {!isReadOnly ? (
+            <button
+              onClick={() => exportStudentsToExcel(students, 'CPI_Full_Report')}
+              className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+              <span>Export Full Data</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => showToast('គណនីភ្ញៀវមិនមានសិទ្ធិទាញយកទិន្នន័យទេ (Read-Only Mode)!', 'info')}
+              className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 font-bold text-xs inline-flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-700 cursor-not-allowed opacity-60"
+              title="គណនីភ្ញៀវមិនអាច Export បានទេ"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export (Locked)</span>
+            </button>
+          )}
 
           <button
             onClick={handleGenerateAiReport}
