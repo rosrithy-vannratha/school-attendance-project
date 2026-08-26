@@ -106,36 +106,56 @@ export default function App() {
 
   // 2. Real-time subscriptions to Firestore collections
   useEffect(() => {
-    const unsubStudents = instituteService.subscribeStudents((data) => setStudents(data));
-    const unsubTeachers = instituteService.subscribeTeachers((data) => setTeachers(data));
-    const unsubClasses = instituteService.subscribeClasses((data) => setClasses(data));
-    const unsubMajors = instituteService.subscribeMajors((data) => setMajors(data));
-    const unsubShifts = instituteService.subscribeShifts((data) => {
-      if (data && data.length > 0) {
-        setShifts(data);
-      }
-    });
-    const unsubDurations = instituteService.subscribeStudyDurations((data) => {
-      if (data && data.length > 0) {
-        setStudyDurations(data);
-      }
-    });
-    const unsubAttendance = instituteService.subscribeAttendance((data) => setAttendance(data));
-    const unsubTeacherAtt = instituteService.subscribeTeacherAttendance((data) => setTeacherAttendance(data));
-    const unsubPayments = instituteService.subscribePayments((data) => setPayments(data));
-    const unsubAlertLogs = instituteService.subscribeAlertLogs((data) => setAlertLogs(data));
+    const unsubStudents = typeof instituteService?.subscribeStudents === 'function'
+      ? instituteService.subscribeStudents((data) => setStudents(data))
+      : () => {};
+    const unsubTeachers = typeof instituteService?.subscribeTeachers === 'function'
+      ? instituteService.subscribeTeachers((data) => setTeachers(data))
+      : () => {};
+    const unsubClasses = typeof instituteService?.subscribeClasses === 'function'
+      ? instituteService.subscribeClasses((data) => setClasses(data))
+      : () => {};
+    const unsubMajors = typeof instituteService?.subscribeMajors === 'function'
+      ? instituteService.subscribeMajors((data) => setMajors(data))
+      : () => {};
+    const unsubShifts = typeof instituteService?.subscribeShifts === 'function'
+      ? instituteService.subscribeShifts((data) => {
+          if (data && data.length > 0) {
+            setShifts(data);
+          }
+        })
+      : () => {};
+    const unsubDurations = typeof instituteService?.subscribeStudyDurations === 'function'
+      ? instituteService.subscribeStudyDurations((data) => {
+          if (data && data.length > 0) {
+            setStudyDurations(data);
+          }
+        })
+      : () => {};
+    const unsubAttendance = typeof instituteService?.subscribeAttendance === 'function'
+      ? instituteService.subscribeAttendance((data) => setAttendance(data))
+      : () => {};
+    const unsubTeacherAtt = typeof instituteService?.subscribeTeacherAttendance === 'function'
+      ? instituteService.subscribeTeacherAttendance((data) => setTeacherAttendance(data))
+      : () => {};
+    const unsubPayments = typeof instituteService?.subscribePayments === 'function'
+      ? instituteService.subscribePayments((data) => setPayments(data))
+      : () => {};
+    const unsubAlertLogs = typeof instituteService?.subscribeAlertLogs === 'function'
+      ? instituteService.subscribeAlertLogs((data) => setAlertLogs(data))
+      : () => {};
 
     return () => {
-      unsubStudents();
-      unsubTeachers();
-      unsubClasses();
-      unsubMajors();
-      unsubShifts();
-      unsubDurations();
-      unsubAttendance();
-      unsubTeacherAtt();
-      unsubPayments();
-      unsubAlertLogs();
+      if (typeof unsubStudents === 'function') unsubStudents();
+      if (typeof unsubTeachers === 'function') unsubTeachers();
+      if (typeof unsubClasses === 'function') unsubClasses();
+      if (typeof unsubMajors === 'function') unsubMajors();
+      if (typeof unsubShifts === 'function') unsubShifts();
+      if (typeof unsubDurations === 'function') unsubDurations();
+      if (typeof unsubAttendance === 'function') unsubAttendance();
+      if (typeof unsubTeacherAtt === 'function') unsubTeacherAtt();
+      if (typeof unsubPayments === 'function') unsubPayments();
+      if (typeof unsubAlertLogs === 'function') unsubAlertLogs();
     };
   }, []);
 
