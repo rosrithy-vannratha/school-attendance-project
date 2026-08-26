@@ -33,7 +33,8 @@ import {
   StudyDurationItem,
   TuitionPayment,
   AbsenceAlertLog,
-  TelegramConfig
+  TelegramConfig,
+  ScholarshipOption
 } from '../types';
 import {
   INITIAL_MAJORS,
@@ -44,7 +45,8 @@ import {
   INITIAL_SHIFTS,
   INITIAL_STUDY_DURATIONS,
   INITIAL_PAYMENTS,
-  INITIAL_ALERT_LOGS
+  INITIAL_ALERT_LOGS,
+  INITIAL_SCHOLARSHIPS
 } from '../data/initialData';
 
 // Local storage backup keys for seamless offline / instant preview
@@ -55,6 +57,7 @@ const LS_KEYS = {
   MAJORS: 'cpi_majors_data_v2',
   SHIFTS: 'cpi_shifts_data_v2',
   DURATIONS: 'cpi_durations_data_v2',
+  SCHOLARSHIPS: 'cpi_scholarships_data_v2',
   ATTENDANCE: 'cpi_attendance_data_v2',
   TEACHER_ATT: 'cpi_teacher_attendance_data_v2',
   PAYMENTS: 'cpi_payments_data_v2',
@@ -693,6 +696,100 @@ export const instituteService = {
     }
   },
 
+  // --- SCHOLARSHIPS MANAGEMENT (ប្រភេទអាហារូបករណ៍) ---
+  getScholarships(): ScholarshipOption[] {
+    return getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+  },
+
+  subscribeScholarships(callback: (data: ScholarshipOption[]) => void): Unsubscribe {
+    const local = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.SCHOLARSHIPS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'scholarships'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              nameKhmer: data.nameKhmer || 'អាហារូបករណ៍',
+              nameLatin: data.nameLatin || '',
+              discountPercentage: typeof data.discountPercentage === 'number' ? data.discountPercentage : (parseFloat(data.discountPercentage) || 0),
+              badgeBg: data.badgeBg || 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
+              badgeText: data.badgeText || 'text-emerald-800 dark:text-emerald-300',
+              description: data.description || '',
+              isDefault: Boolean(data.isDefault)
+            } as ScholarshipOption;
+          });
+          setLocal(LS_KEYS.SCHOLARSHIPS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Scholarships synced in real-time');
+        } else {
+          setLocal(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+          callback(INITIAL_SCHOLARSHIPS);
+        }
+      },
+      (err) => {
+        console.warn('Scholarships snapshot error (using local cache):', err);
+        const currentLocal = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveScholarship(scholarship: ScholarshipOption): Promise<void> {
+    const local = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+    const idx = local.findIndex((s) => s.id === scholarship.id);
+    if (idx >= 0) local[idx] = scholarship;
+    else local.push(scholarship);
+    setLocal(LS_KEYS.SCHOLARSHIPS, local);
+    notifyLocal(LS_KEYS.SCHOLARSHIPS, local);
+    updateSyncStatus('syncing', 'Saving scholarship type...');
+
+    try {
+      await setDoc(doc(db, 'scholarships', scholarship.id), sanitizeDoc(scholarship));
+      updateSyncStatus('synced', 'Scholarship saved');
+    } catch (e: any) {
+      console.warn('Error saving scholarship to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving scholarship');
+    }
+  },
+
+  async deleteScholarship(id: string): Promise<void> {
+    const local = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS).filter((s) => s.id !== id);
+    setLocal(LS_KEYS.SCHOLARSHIPS, local);
+    notifyLocal(LS_KEYS.SCHOLARSHIPS, local);
+    updateSyncStatus('syncing', 'Deleting scholarship type...');
+
+    try {
+      await deleteDoc(doc(db, 'scholarships', id));
+      updateSyncStatus('synced', 'Scholarship deleted');
+    } catch (e: any) {
+      console.warn('Error deleting scholarship from Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting scholarship');
+    }
+  },
+
+  async resetScholarshipsToDefault(): Promise<void> {
+    setLocal(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+    notifyLocal(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
+    updateSyncStatus('syncing', 'Resetting scholarships to default...');
+    try {
+      await commitInChunks(db, 'scholarships', INITIAL_SCHOLARSHIPS);
+      updateSyncStatus('synced', 'Scholarships reset to default');
+    } catch (e: any) {
+      console.warn('Error resetting scholarships:', e);
+    }
+  },
+
   // --- CLASSES ---
   subscribeClasses(callback: (data: Classroom[]) => void): Unsubscribe {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
@@ -1260,6 +1357,16 @@ export const instituteService = {
         setLocal(LS_KEYS.DURATIONS, list);
         notifyLocal(LS_KEYS.DURATIONS, list);
       }
+      try {
+        const scholarshipsSnap = await getDocs(collection(db, 'scholarships'));
+        if (!scholarshipsSnap.empty) {
+          const list = scholarshipsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as ScholarshipOption);
+          setLocal(LS_KEYS.SCHOLARSHIPS, list);
+          notifyLocal(LS_KEYS.SCHOLARSHIPS, list);
+        }
+      } catch (err) {
+        console.warn('Scholarships sync error:', err);
+      }
 
       updateSyncStatus('synced', 'Synchronized successfully with Cloud Firestore');
       return { success: true, message: 'ទិន្នន័យត្រូវបានទាញយក និងធ្វើសមកាលកម្មរួចរាល់' };
@@ -1280,6 +1387,7 @@ export const instituteService = {
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
     const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const scholarships = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
     const payments = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     const alerts = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
 
@@ -1296,6 +1404,7 @@ export const instituteService = {
       totalTeacherAttendance: teacherAttendance.length,
       totalShifts: shifts.length,
       totalDurations: durations.length,
+      totalScholarships: scholarships.length,
       totalPayments: payments.length,
       totalAlerts: alerts.length,
       data: JSON.stringify({
@@ -1307,6 +1416,7 @@ export const instituteService = {
         teacherAttendance,
         shifts,
         durations,
+        scholarships,
         payments,
         alerts
       })
@@ -1385,10 +1495,11 @@ export const instituteService = {
     teacherAttendance?: TeacherAttendance[];
     shifts?: ShiftItem[];
     durations?: StudyDurationItem[];
+    scholarships?: ScholarshipOption[];
     payments?: TuitionPayment[];
     alerts?: AbsenceAlertLog[];
   }): Promise<void> {
-    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations, payments, alerts } = payload;
+    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations, scholarships, payments, alerts } = payload;
     updateSyncStatus('syncing', 'Restoring database from backup...');
 
     try {
@@ -1438,6 +1549,12 @@ export const instituteService = {
         setLocal(LS_KEYS.DURATIONS, durations);
         notifyLocal(LS_KEYS.DURATIONS, durations);
         await commitInChunks(db, 'study_durations', durations);
+      }
+
+      if (scholarships && Array.isArray(scholarships)) {
+        setLocal(LS_KEYS.SCHOLARSHIPS, scholarships);
+        notifyLocal(LS_KEYS.SCHOLARSHIPS, scholarships);
+        await commitInChunks(db, 'scholarships', scholarships);
       }
 
       if (payments && Array.isArray(payments)) {
@@ -1670,6 +1787,7 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
     const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const scholarships = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
     const payments = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     const alerts = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
 
@@ -1686,6 +1804,7 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
         totalTeacherAttendance: teacherAttendance.length,
         totalShifts: shifts.length,
         totalDurations: durations.length,
+        totalScholarships: scholarships.length,
         totalPayments: payments.length,
         totalAlerts: alerts.length,
       },
@@ -1698,6 +1817,7 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
         teacherAttendance,
         shifts,
         durations,
+        scholarships,
         payments,
         alerts,
       }
