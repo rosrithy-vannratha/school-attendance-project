@@ -29,7 +29,11 @@ import {
   TeacherAttendance,
   AppUser,
   ShiftType,
-  ShiftItem
+  ShiftItem,
+  StudyDurationItem,
+  TuitionPayment,
+  AbsenceAlertLog,
+  TelegramConfig
 } from '../types';
 import {
   INITIAL_MAJORS,
@@ -37,7 +41,10 @@ import {
   INITIAL_TEACHERS,
   INITIAL_STUDENTS,
   INITIAL_ATTENDANCE,
-  INITIAL_SHIFTS
+  INITIAL_SHIFTS,
+  INITIAL_STUDY_DURATIONS,
+  INITIAL_PAYMENTS,
+  INITIAL_ALERT_LOGS
 } from '../data/initialData';
 
 // Local storage backup keys for seamless offline / instant preview
@@ -47,8 +54,12 @@ const LS_KEYS = {
   CLASSES: 'cpi_classes_data_v2',
   MAJORS: 'cpi_majors_data_v2',
   SHIFTS: 'cpi_shifts_data_v2',
+  DURATIONS: 'cpi_durations_data_v2',
   ATTENDANCE: 'cpi_attendance_data_v2',
   TEACHER_ATT: 'cpi_teacher_attendance_data_v2',
+  PAYMENTS: 'cpi_payments_data_v2',
+  ALERTS: 'cpi_alerts_data_v2',
+  TELEGRAM_CONFIG: 'cpi_telegram_config_v2',
   APP_USER: 'cpi_app_user_v2',
 };
 
@@ -601,6 +612,87 @@ export const instituteService = {
     }
   },
 
+  // --- STUDY DURATIONS MANAGEMENT (រយៈពេលសិក្សា) ---
+  getStudyDurations(): StudyDurationItem[] {
+    return getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+  },
+
+  subscribeStudyDurations(callback: (data: StudyDurationItem[]) => void): Unsubscribe {
+    const local = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.DURATIONS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'study_durations'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              nameKhmer: data.nameKhmer || '៤ ឆ្នាំ (បរិញ្ញាបត្រ)',
+              nameLatin: data.nameLatin || '4 Years (Bachelor)',
+              years: typeof data.years === 'number' ? data.years : (parseFloat(data.years) || 4),
+              degreeLevel: data.degreeLevel || 'bachelor',
+              description: data.description || '',
+              isDefault: Boolean(data.isDefault)
+            } as StudyDurationItem;
+          });
+          setLocal(LS_KEYS.DURATIONS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Study durations synced in real-time');
+        } else {
+          setLocal(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+          callback(INITIAL_STUDY_DURATIONS);
+        }
+      },
+      (err) => {
+        console.warn('Study durations snapshot error (using local cache):', err);
+        const currentLocal = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveStudyDuration(duration: StudyDurationItem): Promise<void> {
+    const local = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const idx = local.findIndex((d) => d.id === duration.id);
+    if (idx >= 0) local[idx] = duration;
+    else local.push(duration);
+    setLocal(LS_KEYS.DURATIONS, local);
+    notifyLocal(LS_KEYS.DURATIONS, local);
+    updateSyncStatus('syncing', 'Saving study duration...');
+
+    try {
+      await setDoc(doc(db, 'study_durations', duration.id), sanitizeDoc(duration));
+      updateSyncStatus('synced', 'Study duration saved');
+    } catch (e: any) {
+      console.warn('Error saving study duration to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving study duration');
+    }
+  },
+
+  async deleteStudyDuration(id: string): Promise<void> {
+    const local = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS).filter((d) => d.id !== id);
+    setLocal(LS_KEYS.DURATIONS, local);
+    notifyLocal(LS_KEYS.DURATIONS, local);
+    updateSyncStatus('syncing', 'Deleting study duration...');
+
+    try {
+      await deleteDoc(doc(db, 'study_durations', id));
+      updateSyncStatus('synced', 'Study duration deleted');
+    } catch (e: any) {
+      console.warn('Error deleting study duration from Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting study duration');
+    }
+  },
+
   // --- CLASSES ---
   subscribeClasses(callback: (data: Classroom[]) => void): Unsubscribe {
     const local = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
@@ -1117,13 +1209,15 @@ export const instituteService = {
   async forceSyncAll(): Promise<{ success: boolean; message: string }> {
     updateSyncStatus('syncing', 'Refreshing real-time data from Cloud Firestore...');
     try {
-      const [majorsSnap, classesSnap, teachersSnap, studentsSnap, attSnap, teacherAttSnap] = await Promise.all([
+      const [majorsSnap, classesSnap, teachersSnap, studentsSnap, attSnap, teacherAttSnap, shiftsSnap, durationsSnap] = await Promise.all([
         getDocs(collection(db, 'majors')),
         getDocs(collection(db, 'classes')),
         getDocs(collection(db, 'teachers')),
         getDocs(collection(db, 'students')),
         getDocs(collection(db, 'attendance')),
-        getDocs(collection(db, 'teacher_attendance'))
+        getDocs(collection(db, 'teacher_attendance')),
+        getDocs(collection(db, 'shifts')),
+        getDocs(collection(db, 'study_durations'))
       ]);
 
       if (!majorsSnap.empty) {
@@ -1156,6 +1250,16 @@ export const instituteService = {
         setLocal(LS_KEYS.TEACHER_ATT, list);
         notifyLocal(LS_KEYS.TEACHER_ATT, list);
       }
+      if (!shiftsSnap.empty) {
+        const list = shiftsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as ShiftItem);
+        setLocal(LS_KEYS.SHIFTS, list);
+        notifyLocal(LS_KEYS.SHIFTS, list);
+      }
+      if (!durationsSnap.empty) {
+        const list = durationsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as StudyDurationItem);
+        setLocal(LS_KEYS.DURATIONS, list);
+        notifyLocal(LS_KEYS.DURATIONS, list);
+      }
 
       updateSyncStatus('synced', 'Synchronized successfully with Cloud Firestore');
       return { success: true, message: 'ទិន្នន័យត្រូវបានទាញយក និងធ្វើសមកាលកម្មរួចរាល់' };
@@ -1174,6 +1278,8 @@ export const instituteService = {
     const majors = getLocal<Major>(LS_KEYS.MAJORS, INITIAL_MAJORS);
     const attendance = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, INITIAL_ATTENDANCE);
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
+    const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+    const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
 
     const backupId = `backup_${Date.now()}`;
     const backupPayload = {
@@ -1186,13 +1292,17 @@ export const instituteService = {
       totalMajors: majors.length,
       totalAttendance: attendance.length,
       totalTeacherAttendance: teacherAttendance.length,
+      totalShifts: shifts.length,
+      totalDurations: durations.length,
       data: JSON.stringify({
         students,
         teachers,
         classes,
         majors,
         attendance,
-        teacherAttendance
+        teacherAttendance,
+        shifts,
+        durations
       })
     };
 
@@ -1267,8 +1377,10 @@ export const instituteService = {
     majors?: Major[];
     attendance?: AttendanceRecord[];
     teacherAttendance?: TeacherAttendance[];
+    shifts?: ShiftItem[];
+    durations?: StudyDurationItem[];
   }): Promise<void> {
-    const { students, teachers, classes, majors, attendance, teacherAttendance } = payload;
+    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations } = payload;
     updateSyncStatus('syncing', 'Restoring database from backup...');
 
     try {
@@ -1308,6 +1420,18 @@ export const instituteService = {
         await commitInChunks(db, 'teacher_attendance', teacherAttendance);
       }
 
+      if (shifts && Array.isArray(shifts)) {
+        setLocal(LS_KEYS.SHIFTS, shifts);
+        notifyLocal(LS_KEYS.SHIFTS, shifts);
+        await commitInChunks(db, 'shifts', shifts);
+      }
+
+      if (durations && Array.isArray(durations)) {
+        setLocal(LS_KEYS.DURATIONS, durations);
+        notifyLocal(LS_KEYS.DURATIONS, durations);
+        await commitInChunks(db, 'study_durations', durations);
+      }
+
       updateSyncStatus('synced', 'Database restored and synchronized with Cloud Firestore');
     } catch (err: any) {
       console.warn('Restore error:', err);
@@ -1315,13 +1439,217 @@ export const instituteService = {
     }
   },
 
-  exportLocalBackupFile(): void {
+  // --- TUITION & SCHOLARSHIPS MANAGEMENT ---
+  subscribePayments(callback: (data: TuitionPayment[]) => void): Unsubscribe {
+    const local = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.PAYMENTS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'tuition_payments'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data
+            } as TuitionPayment;
+          });
+          setLocal(LS_KEYS.PAYMENTS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Tuition payments synced in real-time');
+        } else {
+          setLocal(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+          callback(INITIAL_PAYMENTS);
+        }
+      },
+      (err) => {
+        console.warn('Tuition payments snapshot error (using local cache):', err);
+        const currentLocal = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async savePayment(payment: TuitionPayment): Promise<void> {
+    const local = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+    const idx = local.findIndex((p) => p.id === payment.id);
+    if (idx >= 0) local[idx] = payment;
+    else local.unshift(payment);
+    setLocal(LS_KEYS.PAYMENTS, local);
+    notifyLocal(LS_KEYS.PAYMENTS, local);
+    updateSyncStatus('syncing', 'Saving payment record...');
+
+    try {
+      await setDoc(doc(db, 'tuition_payments', payment.id), sanitizeDoc(payment));
+      updateSyncStatus('synced', 'Payment saved');
+    } catch (e: any) {
+      console.warn('Error saving payment to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving payment');
+    }
+  },
+
+  async deletePayment(id: string): Promise<void> {
+    const local = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS).filter((p) => p.id !== id);
+    setLocal(LS_KEYS.PAYMENTS, local);
+    notifyLocal(LS_KEYS.PAYMENTS, local);
+    updateSyncStatus('syncing', 'Deleting payment...');
+
+    try {
+      await deleteDoc(doc(db, 'tuition_payments', id));
+      updateSyncStatus('synced', 'Payment deleted');
+    } catch (e: any) {
+      console.warn('Error deleting payment:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting payment');
+    }
+  },
+
+  // --- ABSENCE ALERTS & NOTIFICATIONS ---
+  subscribeAlertLogs(callback: (data: AbsenceAlertLog[]) => void): Unsubscribe {
+    const local = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.ALERTS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'absence_alerts'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AbsenceAlertLog));
+          setLocal(LS_KEYS.ALERTS, list);
+          callback(list);
+        } else {
+          setLocal(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
+          callback(INITIAL_ALERT_LOGS);
+        }
+      },
+      (err) => {
+        console.warn('Absence alerts snapshot error (using local cache):', err);
+        const currentLocal = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveAlertLog(log: AbsenceAlertLog): Promise<void> {
+    const local = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
+    local.unshift(log);
+    setLocal(LS_KEYS.ALERTS, local);
+    notifyLocal(LS_KEYS.ALERTS, local);
+    try {
+      await setDoc(doc(db, 'absence_alerts', log.id), sanitizeDoc(log));
+    } catch (e) {
+      console.warn('Error saving alert log to Firestore:', e);
+    }
+  },
+
+  getTelegramConfig(): TelegramConfig {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.TELEGRAM_CONFIG);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return {
+      isEnabled: true,
+      instituteHeader: 'វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់ (ICETI)',
+      channelUsername: '@iceti_cambodia_alerts'
+    };
+  },
+
+  saveTelegramConfig(config: TelegramConfig): void {
+    try {
+      localStorage.setItem(LS_KEYS.TELEGRAM_CONFIG, JSON.stringify(config));
+    } catch (e) {}
+  },
+
+  async sendTelegramAlert(params: {
+    student: Student;
+    absentCount: number;
+    attendanceRate: number;
+    recentDates?: string[];
+    customNote?: string;
+  }): Promise<{ success: boolean; message: string; log: AbsenceAlertLog }> {
+    const config = this.getTelegramConfig();
+    const student = params.student;
+    const now = new Date();
+    const dateFormatted = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+
+    const textMessage = `🚨 【សេចក្តីជូនដំណឹងវត្តមាន - ICETI】
+-----------------------------------
+🎓 ឈ្មោះនិស្សិត៖ ${student.nameKhmer} (${student.nameLatin})
+🆔 អត្តលេខ៖ ${student.studentCode}
+🏛️ ថ្នាក់រៀន៖ ${student.className || 'មិនទាន់កំណត់'} | វេន៖ ${student.shift}
+⚠️ ចំនួនអវត្តមាន៖ ${params.absentCount} លើក
+📊 អត្រាវត្តមានសរុប៖ ${params.attendanceRate.toFixed(1)}% (ក្រោម ៨០% ជាប់បន្ទាត់ក្រហម)
+📞 ទូរស័ព្ទអាណាព្យាបាល៖ ${student.guardianPhone || 'មិនមាន'}
+📅 កាលបរិច្ឆេទបញ្ជូន៖ ${dateFormatted}
+${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.customNote}\n` : ''}-----------------------------------
+📍 សូមអាណាព្យាបាល ឬសាមីខ្លួនទាក់ទងមកការិយាល័យសិក្សា ICETI ជាបន្ទាន់!`;
+
+    const log: AbsenceAlertLog = {
+      id: `alt_${Date.now()}_${student.id}`,
+      date: new Date().toISOString().split('T')[0],
+      studentId: student.id,
+      studentCode: student.studentCode,
+      studentName: student.nameKhmer || student.nameLatin,
+      guardianPhone: student.guardianPhone,
+      className: student.className || '',
+      shift: student.shift,
+      absentCount: params.absentCount,
+      attendanceRate: params.attendanceRate,
+      channel: 'telegram',
+      message: textMessage,
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+      sentBy: 'Admin / System'
+    };
+
+    // If bot token and chat ID are configured, perform real Telegram Bot API call
+    if (config.botToken && config.chatId) {
+      try {
+        const url = `https://api.telegram.org/bot${config.botToken}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: config.chatId,
+            text: textMessage,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (err) {
+        console.warn('Real Telegram API call error:', err);
+      }
+    }
+
+    await this.saveAlertLog(log);
+    return { success: true, message: 'បានបញ្ជូនដំណឹង Telegram ដោយជោគជ័យ!', log };
+  },
+
+  exportLocalBackupFile(isReadOnly?: boolean): void {
+    if (isReadOnly) {
+      console.warn('Export backup blocked: User has read-only/guest access.');
+      return;
+    }
     const students = getLocal<Student>(LS_KEYS.STUDENTS, INITIAL_STUDENTS);
     const teachers = getLocal<Teacher>(LS_KEYS.TEACHERS, INITIAL_TEACHERS);
     const classes = getLocal<Classroom>(LS_KEYS.CLASSES, INITIAL_CLASSES);
     const majors = getLocal<Major>(LS_KEYS.MAJORS, INITIAL_MAJORS);
     const attendance = getLocal<AttendanceRecord>(LS_KEYS.ATTENDANCE, INITIAL_ATTENDANCE);
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
+    const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
+    const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
 
     const fullBackup = {
       appName: 'International Chinese Education and Teachers Institute (វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់)',
@@ -1334,6 +1662,8 @@ export const instituteService = {
         totalMajors: majors.length,
         totalAttendance: attendance.length,
         totalTeacherAttendance: teacherAttendance.length,
+        totalShifts: shifts.length,
+        totalDurations: durations.length,
       },
       data: {
         students,
@@ -1342,6 +1672,8 @@ export const instituteService = {
         majors,
         attendance,
         teacherAttendance,
+        shifts,
+        durations,
       }
     };
 
