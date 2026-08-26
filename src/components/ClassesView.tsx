@@ -542,6 +542,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-zinc-50 dark:bg-[#182645] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
+                  <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                   <th className="py-3.5 px-4">កូដ & ឈ្មោះថ្នាក់រៀន</th>
                   <th className="py-3.5 px-4">កម្រិត & ជំនាញ</th>
                   <th className="py-3.5 px-4">កម្រិតឆ្នាំ</th>
@@ -555,14 +556,15 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
                 {filteredClasses.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-500 dark:text-zinc-400 font-medium">
+                    <td colSpan={9} className="py-12 text-center text-zinc-500 dark:text-zinc-400 font-medium">
                       <Layers className="w-8 h-8 mx-auto mb-2 text-zinc-400 opacity-60" />
                       <p className="font-bold text-zinc-700 dark:text-zinc-300">ពុំមានទិន្នន័យថ្នាក់រៀនតាមតម្រងនេះទេ</p>
                       <p className="text-xs text-zinc-500 mt-0.5">សូមសាកល្បងផ្លាស់ប្តូរពាក្យស្វែងរក ឬសម្អាតតម្រង</p>
                     </td>
                   </tr>
                 ) : (
-                  paginatedClasses.map((cls) => {
+                  paginatedClasses.map((cls, index) => {
+                    const globalIndex = (pageSize === -1 ? 0 : (validPage - 1) * pageSize) + index + 1;
                     const studentCount = classStudentCounts.get(cls.id) || 0;
                     const isUnder10 = studentCount < 10;
 
@@ -573,6 +575,11 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                           isUnder10 ? 'bg-amber-50/30 dark:bg-amber-950/10' : ''
                         }`}
                       >
+                        {/* Row Number */}
+                        <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
+                          {globalIndex}
+                        </td>
+
                         {/* Class Code & Name */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
