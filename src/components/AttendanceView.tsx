@@ -490,11 +490,11 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Top Header Card with Segmented Tab Switcher */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-5 sm:p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-5 sm:p-6 border border-blue-200/60 dark:border-blue-900/40 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-sm">
-              <CalendarCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
+              <CalendarCheck className="w-4 h-4 text-blue-700 dark:text-blue-400" />
             </span>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
               Student Attendance Workspace
@@ -513,7 +513,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             onClick={() => setSubTab('workspace')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               subTab === 'workspace'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
@@ -527,7 +527,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             onClick={() => setSubTab('daily_report')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               subTab === 'daily_report'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
@@ -541,7 +541,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
             onClick={() => setSubTab('monthly_report')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               subTab === 'monthly_report'
-                ? 'bg-emerald-700 text-white shadow-xs'
+                ? 'bg-blue-700 text-white shadow-xs'
                 : 'text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
@@ -557,12 +557,12 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
       {subTab === 'workspace' && (
         <div className="space-y-5 animate-in fade-in duration-200">
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-zinc-200 dark:border-blue-900/40 shadow-xs">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-zinc-800 dark:text-zinc-100">
                 កាលបរិច្ឆេទកត់ត្រា៖
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-mono font-bold text-xs border border-emerald-200 dark:border-emerald-800/60">
+              <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 font-mono font-bold text-xs border border-blue-200 dark:border-blue-800/60">
                 {selectedDate}
               </span>
               <span className="text-zinc-400">•</span>
@@ -575,9 +575,9 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
               {!isReadOnly && (
                 <button
                   onClick={handleMarkAllPresent}
-                  className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 font-bold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   <span>វត្តមានទាំងអស់ (All Present)</span>
                 </button>
               )}
