@@ -11,7 +11,7 @@ import { ReportsView } from './components/ReportsView';
 import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
 import { instituteService, authService } from './service/instituteService';
-import { INITIAL_SHIFTS } from './data/initialData';
+import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -21,7 +21,8 @@ import {
   TeacherAttendance,
   AppUser,
   ActiveTab,
-  ShiftItem
+  ShiftItem,
+  StudyDurationItem
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -64,6 +65,7 @@ export default function App() {
   const [classes, setClasses] = useState<Classroom[]>([]);
   const [majors, setMajors] = useState<Major[]>([]);
   const [shifts, setShifts] = useState<ShiftItem[]>(INITIAL_SHIFTS);
+  const [studyDurations, setStudyDurations] = useState<StudyDurationItem[]>(INITIAL_STUDY_DURATIONS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [teacherAttendance, setTeacherAttendance] = useState<TeacherAttendance[]>([]);
 
@@ -107,6 +109,11 @@ export default function App() {
         setShifts(data);
       }
     });
+    const unsubDurations = instituteService.subscribeStudyDurations((data) => {
+      if (data && data.length > 0) {
+        setStudyDurations(data);
+      }
+    });
     const unsubAttendance = instituteService.subscribeAttendance((data) => setAttendance(data));
     const unsubTeacherAtt = instituteService.subscribeTeacherAttendance((data) => setTeacherAttendance(data));
 
@@ -116,6 +123,7 @@ export default function App() {
       unsubClasses();
       unsubMajors();
       unsubShifts();
+      unsubDurations();
       unsubAttendance();
       unsubTeacherAtt();
     };
@@ -296,6 +304,7 @@ export default function App() {
             majors={majors}
             classes={classes}
             students={students}
+            studyDurations={studyDurations}
             showToast={showToast}
             isReadOnly={isReadOnly}
           />
