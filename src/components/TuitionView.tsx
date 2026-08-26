@@ -483,10 +483,10 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner & Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#111e17] p-5 rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#111c38] p-5 rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs">
         <div>
           <h2 className="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-emerald-700 dark:text-emerald-400" />
+            <DollarSign className="w-6 h-6 text-blue-700 dark:text-blue-400" />
             <span>ការគ្រប់គ្រងថ្លៃសិក្សា និងអាហារូបករណ៍ (Tuition & Scholarships)</span>
           </h2>
           <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1">
@@ -499,10 +499,10 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
             <button
               type="button"
               onClick={onOpenScholarshipsModal}
-              className="px-3.5 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/50 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-300 text-xs font-bold flex items-center gap-1.5 border border-teal-300/60 dark:border-teal-800/60 cursor-pointer transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 text-xs font-bold flex items-center gap-1.5 border border-blue-300/60 dark:border-blue-800/60 cursor-pointer transition-colors"
               title="គ្រប់គ្រងប្រភេទអាហារូបករណ៍ (Add/Edit/Delete Scholarships)"
             >
-              <Award className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+              <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>គ្រប់គ្រងប្រភេទអាហារូបករណ៍</span>
             </button>
           )}
@@ -511,14 +511,14 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
             onClick={handleExportCSV}
             className="px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold flex items-center gap-1.5 border border-zinc-300 dark:border-zinc-700 cursor-pointer transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Export Excel</span>
           </button>
 
           {!isReadOnly && (
             <button
               onClick={openAddModal}
-              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-98"
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-98"
             >
               <Plus className="w-4 h-4" />
               <span>កត់ត្រាការបង់ប្រាក់ថ្មី</span>
@@ -530,24 +530,24 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Collected */}
-        <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-emerald-200 dark:border-emerald-900/40 shadow-2xs">
+        <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-blue-200 dark:border-blue-900/40 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ចំណូលប្រមូលបានសរុប</span>
-            <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+            <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-2">
+          <p className="text-2xl font-black text-blue-700 dark:text-blue-400 mt-2">
             ${stats.totalCollected.toLocaleString()}
           </p>
           <p className="text-[11px] text-zinc-700 dark:text-zinc-300 mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+            <CheckCircle2 className="w-3 h-3 text-blue-700 dark:text-blue-400" />
             <span>ពីនិស្សិតចំនួន {stats.totalCount} នាក់</span>
           </p>
         </div>
 
         {/* Total Due / Outstanding */}
-        <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-rose-200 dark:border-rose-900/40 shadow-2xs">
+        <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-rose-200 dark:border-rose-900/40 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ប្រាក់នៅខ្វះ (បំណុលថ្លៃសិក្សា)</span>
             <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300">
@@ -564,7 +564,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
         </div>
 
         {/* Scholarships Grant Value */}
-        <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-purple-200 dark:border-purple-900/40 shadow-2xs">
+        <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-purple-200 dark:border-purple-900/40 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ទំហំឧបត្ថម្ភអាហារូបករណ៍</span>
             <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300">
@@ -581,7 +581,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
         </div>
 
         {/* Scholarship Breakdown */}
-        <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-blue-200 dark:border-blue-900/40 shadow-2xs">
+        <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-blue-200 dark:border-blue-900/40 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ប្រភេទនិស្សិតទទួលឧបត្ថម្ភ</span>
             <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300">
@@ -591,7 +591,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
           <div className="mt-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 space-y-1">
             <div className="flex justify-between">
               <span>អាហារូបករណ៍ ១០០%៖</span>
-              <span className="text-emerald-700 dark:text-emerald-400">{stats.fullScholarships} នាក់</span>
+              <span className="text-blue-700 dark:text-blue-400">{stats.fullScholarships} នាក់</span>
             </div>
             <div className="flex justify-between">
               <span>អាហារូបករណ៍ ៣០-៧០%៖</span>
@@ -606,7 +606,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white dark:bg-[#111e17] p-4 rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-[#111c38] p-4 rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -616,7 +616,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="ស្វែងរកតាមឈ្មោះ អត្តលេខ ឬលេខវិក្កយបត្រ (Invoice)..."
-              className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-4 py-2 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {searchTerm && (
               <button
@@ -656,7 +656,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               aria-label="ជ្រើសរើសថ្នាក់"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់ថ្នាក់ (All)</option>
               {availableClasses.map((cls) => (
@@ -676,7 +676,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedGeneration}
               onChange={(e) => setSelectedGeneration(e.target.value)}
               aria-label="ជ្រើសរើសជំនាន់"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់ជំនាន់ (All)</option>
               {availableGenerations.map((gen) => (
@@ -696,7 +696,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedMajor}
               onChange={(e) => setSelectedMajor(e.target.value)}
               aria-label="ជ្រើសរើសជំនាញ"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់ជំនាញ (All)</option>
               {availableMajors.map((maj) => (
@@ -716,7 +716,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               aria-label="ជ្រើសរើសឆ្នាំ"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់ឆ្នាំ (All)</option>
               {availableYears.map((yr) => (
@@ -736,7 +736,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedScholarship}
               onChange={(e) => setSelectedScholarship(e.target.value)}
               aria-label="ជ្រើសរើសប្រភេទអាហារូបករណ៍"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់អាហារូបករណ៍</option>
               {scholarshipOptionsList.map((opt) => (
@@ -756,7 +756,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               aria-label="ជ្រើសរើសស្ថានភាពបង់ប្រាក់"
-              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-2.5 py-1.5 bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">គ្រប់ស្ថានភាព</option>
               <option value="paid">បង់គ្រប់ចំនួន (Paid)</option>
@@ -769,7 +769,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
       </div>
 
       {/* Payments Table */}
-      <div className="bg-white dark:bg-[#111e17] rounded-2xl border border-zinc-200 dark:border-emerald-900/40 shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-[#111c38] rounded-2xl border border-zinc-200 dark:border-blue-900/40 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -814,7 +814,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                       </td>
 
                       {/* Invoice No */}
-                      <td className="py-3 px-4 font-mono font-bold text-emerald-800 dark:text-emerald-300">
+                      <td className="py-3 px-4 font-mono font-bold text-blue-800 dark:text-blue-300">
                         {p.invoiceNumber || 'INV-TEMP'}
                       </td>
 
@@ -881,7 +881,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                       </td>
 
                       {/* Paid Amount */}
-                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-blue-700 dark:text-blue-400">
                         ${p.paidAmount}
                       </td>
 
@@ -893,7 +893,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                       {/* Status */}
                       <td className="py-3 px-4 text-center">
                         {p.status === 'paid' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>បង់រួចរាល់</span>
                           </span>
@@ -978,10 +978,10 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
       {/* ADD / EDIT TUITION PAYMENT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#111e17] border border-zinc-200 dark:border-emerald-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-emerald-50/50 dark:bg-emerald-950/30">
+          <div className="bg-white dark:bg-[#111c38] border border-zinc-200 dark:border-blue-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-blue-50/50 dark:bg-blue-950/30">
               <h3 className="font-extrabold text-zinc-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                <DollarSign className="w-4 h-4 text-blue-700 dark:text-blue-400" />
                 <span>{editingPayment ? 'កែប្រែព័ត៌មានបង់ប្រាក់' : 'ចុះបញ្ជីការបង់ប្រាក់ & អាហារូបករណ៍'}</span>
               </h3>
               <button
@@ -1005,14 +1005,14 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                     value={modalStudentSearch}
                     onChange={(e) => setModalStudentSearch(e.target.value)}
                     placeholder="ស្វែងរកនិស្សិតតាមឈ្មោះ ឬអត្តលេខ..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <select
                   value={formStudentId}
                   onChange={(e) => handleStudentChange(e.target.value)}
                   required
-                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   {modalFilteredStudents.length === 0 ? (
                     <option value="" disabled>
@@ -1039,7 +1039,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                     value={formAcademicYear}
                     onChange={(e) => setFormAcademicYear(e.target.value)}
                     required
-                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -1050,7 +1050,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                   <select
                     value={formTerm}
                     onChange={(e) => setFormTerm(e.target.value as any)}
-                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="Semester 1">ឆមាសទី ១ (Semester 1)</option>
                     <option value="Semester 2">ឆមាសទី ២ (Semester 2)</option>
@@ -1068,7 +1068,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                 <select
                   value={formScholarshipType}
                   onChange={(e) => handleScholarshipChange(e.target.value as ScholarshipType)}
-                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   {scholarshipOptionsList.map((opt) => (
                     <option key={opt.id} value={opt.id}>
@@ -1115,14 +1115,14 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                       type="number"
                       readOnly
                       value={formFinalAmount}
-                      className="w-full p-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg font-bold text-emerald-700 dark:text-emerald-400"
+                      className="w-full p-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg font-bold text-blue-700 dark:text-blue-400"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-zinc-200 dark:border-zinc-700">
                   <div>
-                    <label className="block font-bold text-emerald-800 dark:text-emerald-400 mb-1">
+                    <label className="block font-bold text-blue-800 dark:text-blue-400 mb-1">
                       ប្រាក់បានបង់ជាក់ស្តែង ($) *
                     </label>
                     <input
@@ -1132,7 +1132,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                       value={formPaidAmount}
                       onChange={(e) => setFormPaidAmount(Number(e.target.value))}
                       required
-                      className="w-full p-2 bg-white dark:bg-zinc-800 border border-emerald-400 dark:border-emerald-600 rounded-lg font-bold text-emerald-700 dark:text-emerald-300"
+                      className="w-full p-2 bg-white dark:bg-zinc-800 border border-blue-400 dark:border-blue-600 rounded-lg font-bold text-blue-700 dark:text-blue-300"
                     />
                   </div>
                   <div>
@@ -1158,7 +1158,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                   <select
                     value={formPaymentMethod}
                     onChange={(e) => setFormPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="aba_pay">ABA KHQR / ABA Mobile</option>
                     <option value="acleda_khqr">ACLEDA KHQR</option>
@@ -1177,7 +1177,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                     value={formTransactionRef}
                     onChange={(e) => setFormTransactionRef(e.target.value)}
                     placeholder="e.g. ABA-998822"
-                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                    className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -1192,7 +1192,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
                   placeholder="ព័ត៌មានលម្អិតបន្ថែមអំពីការបង់ប្រាក់..."
-                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full p-2.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
@@ -1208,7 +1208,7 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>{isSaving ? 'កំពុងរក្សាទុក...' : 'រក្សាទុកកំណត់ត្រា'}</span>
