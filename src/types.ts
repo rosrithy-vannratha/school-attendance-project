@@ -47,6 +47,7 @@ export interface Classroom {
   majorName: string;
   classType?: ClassType;
   year: AcademicYearType;
+  generation?: string; // e.g. "ជំនាន់ទី១", "ជំនាន់ទី២", "Gen 1", "Gen 2"
   shift: ShiftType;
   room: string;
   academicYear: string; // e.g. "2025-2026"
@@ -70,6 +71,7 @@ export interface Student {
   classType?: ClassType;
   classId: string;
   className: string;
+  generation?: string; // e.g. "ជំនាន់ទី១", "ជំនាន់ទី២", "Gen 1", "Gen 2"
   shift: ShiftType;
   year: AcademicYearType;
   status: StudentStatus;
@@ -138,6 +140,10 @@ export interface TuitionPayment {
   studentId: string;
   studentCode: string;
   studentName: string;
+  className?: string;
+  majorName?: string;
+  generation?: string;
+  year?: string;
   academicYear: string; // e.g. "2025-2026"
   term: 'Semester 1' | 'Semester 2' | 'Full Year' | 'Term 1' | 'Term 2' | 'Term 3' | 'Term 4' | 'Short Course';
   scholarshipType: ScholarshipType;
