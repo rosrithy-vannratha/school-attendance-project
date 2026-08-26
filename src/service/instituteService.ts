@@ -1280,6 +1280,8 @@ export const instituteService = {
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
     const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const payments = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+    const alerts = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
 
     const backupId = `backup_${Date.now()}`;
     const backupPayload = {
@@ -1294,6 +1296,8 @@ export const instituteService = {
       totalTeacherAttendance: teacherAttendance.length,
       totalShifts: shifts.length,
       totalDurations: durations.length,
+      totalPayments: payments.length,
+      totalAlerts: alerts.length,
       data: JSON.stringify({
         students,
         teachers,
@@ -1302,7 +1306,9 @@ export const instituteService = {
         attendance,
         teacherAttendance,
         shifts,
-        durations
+        durations,
+        payments,
+        alerts
       })
     };
 
@@ -1379,8 +1385,10 @@ export const instituteService = {
     teacherAttendance?: TeacherAttendance[];
     shifts?: ShiftItem[];
     durations?: StudyDurationItem[];
+    payments?: TuitionPayment[];
+    alerts?: AbsenceAlertLog[];
   }): Promise<void> {
-    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations } = payload;
+    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations, payments, alerts } = payload;
     updateSyncStatus('syncing', 'Restoring database from backup...');
 
     try {
@@ -1430,6 +1438,18 @@ export const instituteService = {
         setLocal(LS_KEYS.DURATIONS, durations);
         notifyLocal(LS_KEYS.DURATIONS, durations);
         await commitInChunks(db, 'study_durations', durations);
+      }
+
+      if (payments && Array.isArray(payments)) {
+        setLocal(LS_KEYS.PAYMENTS, payments);
+        notifyLocal(LS_KEYS.PAYMENTS, payments);
+        await commitInChunks(db, 'tuition_payments', payments);
+      }
+
+      if (alerts && Array.isArray(alerts)) {
+        setLocal(LS_KEYS.ALERTS, alerts);
+        notifyLocal(LS_KEYS.ALERTS, alerts);
+        await commitInChunks(db, 'absence_alerts', alerts);
       }
 
       updateSyncStatus('synced', 'Database restored and synchronized with Cloud Firestore');
@@ -1650,6 +1670,8 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
     const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const payments = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
+    const alerts = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
 
     const fullBackup = {
       appName: 'International Chinese Education and Teachers Institute (វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់)',
@@ -1664,6 +1686,8 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
         totalTeacherAttendance: teacherAttendance.length,
         totalShifts: shifts.length,
         totalDurations: durations.length,
+        totalPayments: payments.length,
+        totalAlerts: alerts.length,
       },
       data: {
         students,
@@ -1674,6 +1698,8 @@ ${params.customNote ? `💬 កំណត់សម្គាល់៖ ${params.cus
         teacherAttendance,
         shifts,
         durations,
+        payments,
+        alerts,
       }
     };
 
