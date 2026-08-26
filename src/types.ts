@@ -131,9 +131,22 @@ export interface TeacherAttendance {
   createdAt: string;
 }
 
-export type ScholarshipType = 'full' | 'partial_50' | 'partial_30' | 'self_funded' | 'government' | 'special_grant';
+export type ScholarshipType = string;
 export type PaymentStatus = 'paid' | 'partial' | 'pending' | 'overdue' | 'waived';
 export type PaymentMethod = 'aba_pay' | 'acleda_khqr' | 'wing' | 'cash' | 'bank_transfer';
+
+export interface ScholarshipOption {
+  id: string;
+  nameKhmer: string;
+  nameLatin?: string;
+  discountPercentage: number;
+  badgeBg?: string;
+  badgeText?: string;
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface TuitionPayment {
   id: string;
