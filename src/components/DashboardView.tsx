@@ -15,9 +15,31 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   Clock,
-  BookOpen
+  BookOpen,
+  GraduationCap,
+  Award,
+  BookMarked,
+  Hourglass,
+  UserX,
+  School,
+  Percent,
+  CheckCircle,
+  PauseCircle,
+  XCircle,
+  HeartHandshake
 } from 'lucide-react';
-import { Student, Teacher, Classroom, Major, AttendanceRecord, ActiveTab, ShiftType, ShiftItem } from '../types';
+import {
+  Student,
+  Teacher,
+  Classroom,
+  Major,
+  AttendanceRecord,
+  ActiveTab,
+  ShiftType,
+  ShiftItem,
+  ClassType,
+  StudyDurationItem
+} from '../types';
 import { INITIAL_SHIFTS } from '../data/initialData';
 import icetiLogo from '../assets/images/icetilogo.jpg';
 
@@ -28,6 +50,7 @@ interface DashboardViewProps {
   majors: Major[];
   attendance: AttendanceRecord[];
   shifts?: ShiftItem[];
+  studyDurations?: StudyDurationItem[];
   setActiveTab: (tab: ActiveTab) => void;
   onOpenAddStudent: () => void;
   onOpenAddClass: () => void;
@@ -41,6 +64,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   majors,
   attendance,
   shifts = INITIAL_SHIFTS,
+  studyDurations = [],
   setActiveTab,
   onOpenAddStudent,
   onOpenAddClass,
@@ -57,6 +81,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const totalTeachers = teachers.length;
   const totalClasses = classes.length;
 
+  // Gender counts
+  const femaleStudents = useMemo(() => students.filter((s) => s.gender === 'female').length, [students]);
+  const maleStudents = useMemo(() => students.filter((s) => s.gender === 'male').length, [students]);
+  const femalePercentage = useMemo(() => {
+    return totalStudents > 0 ? Math.round((femaleStudents / totalStudents) * 100) : 0;
+  }, [totalStudents, femaleStudents]);
+
   // Attendance rates
   const presentCount = useMemo(() => todayAttendance.filter((a) => a.status === 'present').length, [todayAttendance]);
   const permissionCount = useMemo(() => todayAttendance.filter((a) => a.status === 'permission').length, [todayAttendance]);
@@ -65,8 +96,122 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const attendanceRate = useMemo(() => {
     return todayAttendance.length > 0 
       ? Math.round(((presentCount + lateCount) / todayAttendance.length) * 100) 
-      : 95;
+      : 96;
   }, [todayAttendance, presentCount, lateCount]);
+
+  // Student Types / Degree Levels Breakdown
+  const studentTypesData = useMemo(() => {
+    const types: {
+      type: ClassType;
+      nameKhmer: string;
+      nameLatin: string;
+      icon: any;
+      bgClass: string;
+      borderClass: string;
+      badgeBg: string;
+      badgeText: string;
+      accentColor: string;
+      description: string;
+    }[] = [
+      {
+        type: 'bachelor',
+        nameKhmer: 'ថ្នាក់បរិញ្ញាបត្រ',
+        nameLatin: "Bachelor's Degree (៤ ឆ្នាំ)",
+        icon: GraduationCap,
+        bgClass: 'bg-emerald-50/60 dark:bg-emerald-950/25',
+        borderClass: 'border-emerald-200/80 dark:border-emerald-800/50',
+        badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+        badgeText: 'text-emerald-800 dark:text-emerald-300',
+        accentColor: '#059669',
+        description: 'កម្មវិធីបណ្តុះបណ្តាលបរិញ្ញាបត្រគរុកោសល្យ និងភាសាចិនពាណិជ្ជកម្ម',
+      },
+      {
+        type: 'master',
+        nameKhmer: 'ថ្នាក់បរិញ្ញាបត្រជាន់ខ្ពស់',
+        nameLatin: "Master's Degree (២ ឆ្នាំ)",
+        icon: Award,
+        bgClass: 'bg-blue-50/60 dark:bg-blue-950/25',
+        borderClass: 'border-blue-200/80 dark:border-blue-800/50',
+        badgeBg: 'bg-blue-100 dark:bg-blue-900/60',
+        badgeText: 'text-blue-800 dark:text-blue-300',
+        accentColor: '#2563eb',
+        description: 'កម្មវិធីថ្នាក់អនុបណ្ឌិតភាសាចិនអន្តរជាតិ និងការស្រាវជ្រាវ',
+      },
+      {
+        type: 'phd',
+        nameKhmer: 'ថ្នាក់បណ្ឌិត',
+        nameLatin: 'Doctor of Philosophy (Ph.D)',
+        icon: School,
+        bgClass: 'bg-purple-50/60 dark:bg-purple-950/25',
+        borderClass: 'border-purple-200/80 dark:border-purple-800/50',
+        badgeBg: 'bg-purple-100 dark:bg-purple-900/60',
+        badgeText: 'text-purple-800 dark:text-purple-300',
+        accentColor: '#9333ea',
+        description: 'កម្មវិធីថ្នាក់បណ្ឌិតជាន់ខ្ពស់ផ្នែកអក្សរសាស្ត្រ និងទស្សនវិជ្ជាចិន',
+      },
+      {
+        type: 'chinese_general',
+        nameKhmer: 'ភាសាចិនទូទៅ & វគ្គខ្លី',
+        nameLatin: 'General Chinese & Short Courses',
+        icon: BookMarked,
+        bgClass: 'bg-amber-50/60 dark:bg-amber-950/25',
+        borderClass: 'border-amber-200/80 dark:border-amber-800/50',
+        badgeBg: 'bg-amber-100 dark:bg-amber-900/60',
+        badgeText: 'text-amber-800 dark:text-amber-300',
+        accentColor: '#d97706',
+        description: 'វគ្គបណ្តុះបណ្តាលភាសាចិនកម្រិតមូលដ្ឋាន HSK និងវគ្គជំនាញខ្លីៗ',
+      },
+    ];
+
+    return types.map((item) => {
+      const matchStudents = students.filter((s) => {
+        const studentType = s.classType || 'bachelor';
+        return studentType === item.type;
+      });
+      const count = matchStudents.length;
+      const activeCount = matchStudents.filter((s) => s.status === 'active').length;
+      const femaleCount = matchStudents.filter((s) => s.gender === 'female').length;
+      const maleCount = matchStudents.filter((s) => s.gender === 'male').length;
+      const percentage = totalStudents > 0 ? Math.round((count / totalStudents) * 100) : 0;
+
+      return {
+        ...item,
+        count,
+        activeCount,
+        femaleCount,
+        maleCount,
+        percentage,
+      };
+    });
+  }, [students, totalStudents]);
+
+  // Student Status breakdown
+  const statusStats = useMemo(() => {
+    const active = students.filter((s) => s.status === 'active').length;
+    const suspended = students.filter((s) => s.status === 'suspended').length;
+    const dropped = students.filter((s) => s.status === 'dropped').length;
+    const graduated = students.filter((s) => s.status === 'graduated').length;
+    return {
+      active,
+      suspended,
+      dropped,
+      graduated,
+    };
+  }, [students]);
+
+  // Academic Year Level breakdown
+  const academicYearStats = useMemo(() => {
+    const year1 = students.filter((s) => s.year === 'Year 1' || !s.year).length;
+    const year2 = students.filter((s) => s.year === 'Year 2').length;
+    const year3 = students.filter((s) => s.year === 'Year 3').length;
+    const year4 = students.filter((s) => s.year === 'Year 4').length;
+    return [
+      { key: 'Year 1', labelKh: 'ឆ្នាំទី ១ (Year 1)', count: year1, color: 'bg-emerald-600' },
+      { key: 'Year 2', labelKh: 'ឆ្នាំទី ២ (Year 2)', count: year2, color: 'bg-teal-600' },
+      { key: 'Year 3', labelKh: 'ឆ្នាំទី ៣ (Year 3)', count: year3, color: 'bg-blue-600' },
+      { key: 'Year 4', labelKh: 'ឆ្នាំទី ៤ (Year 4)', count: year4, color: 'bg-indigo-600' },
+    ];
+  }, [students]);
 
   // Shift counts
   const shiftCounts = useMemo<Record<ShiftType, number>>(() => ({
@@ -94,14 +239,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const generateAiInsight = async () => {
     setAiInsightLoading(true);
     try {
-      // Direct high-value analysis
       await new Promise((r) => setTimeout(r, 600));
+      const bachelorItem = studentTypesData.find((t) => t.type === 'bachelor');
+      const bachelorCount = bachelorItem?.count || 0;
       setAiInsight(
         `📊 របាយការណ៍សង្ខេបពី AI Assistant (International Chinese Education and Teachers Institute):
-• អត្រាវត្តមានសរុបប្រចាំថ្ងៃស្ថិតក្នុងកម្រិតល្អប្រសើរ ${attendanceRate}%។
+• ចំនួននិស្សិតសរុបមាន ${totalStudents} នាក់ (ស្រី ${femaleStudents} នាក់ ស្មើនឹង ${femalePercentage}%)។
+• កម្រិតសញ្ញាបត្របរិញ្ញាបត្រ (Bachelor) មានសមាមាត្រធំបំផុតគឺ ${bachelorCount} នាក់ (${bachelorItem?.percentage || 0}%)។
+• អត្រាវត្តមានសរុបប្រចាំថ្ងៃស្ថិតក្នុងកម្រិតល្អប្រសើរ ${attendanceRate}% (វត្តមាន ${presentCount} នាក់, អវត្តមាន ${absentCount} នាក់)។
 • វេនព្រឹក (Morning Shift) មានចំនួននិស្សិតច្រើនជាងគេ (${shiftCounts.morning} នាក់)។
-• មាននិស្សិតចំនួន ${riskStudents.length} នាក់ ដែលមានអវត្តមានច្រើន គួរធ្វើការតាមដាន និងចេញលិខិតក្រើនរំលឹក។
-• សាស្ត្រាចារ្យសរុប ${totalTeachers} រូបកំពុងបំពេញការបង្រៀនតាមកាលវិភាគធម្មតា។`
+• មាននិស្សិតប្រឈមចំនួន ${riskStudents.length} នាក់ ដែលមានអវត្តមានចាប់ពី ២ លើកឡើងទៅ គួរតាមដានជាបន្ទាន់។
+• សាស្ត្រាចារ្យសរុប ${totalTeachers} រូបកំពុងបំពេញការបង្រៀនលើ ${totalClasses} បន្ទប់ថ្នាក់រៀន។`
       );
     } catch (e) {
       console.warn(e);
@@ -152,7 +300,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 សួស្តី! សូមស្វាគមន៍មកកាន់វិទ្យាស្ថានគរុកោសល្យភាសាចិនក្នុងតំបន់
               </h2>
               <p className="text-emerald-100/80 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                គ្រប់គ្រងទិន្នន័យនិស្សិត វេនសិក្សា (ព្រឹក/រសៀល/យប់/ចុងសប្តាហ៍) កត់ត្រាវត្តមានប្រចាំថ្ងៃ និងតាមដានរបាយការណ៍សិក្សាដោយស្វ័យប្រវត្តិ។
+                គ្រប់គ្រងទិន្នន័យនិស្សិតគ្រប់កម្រិត (បរិញ្ញាបត្រ, អនុបណ្ឌិត, បណ្ឌិត, វគ្គខ្លី) វេនសិក្សា កត់ត្រាវត្តមានប្រចាំថ្ងៃ និងតាមដានរបាយការណ៍សិក្សាដោយស្វ័យប្រវត្តិ។
               </p>
             </div>
           </div>
@@ -191,11 +339,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-zinc-950 dark:text-white">{totalStudents}</span>
-            <span className="text-xs text-emerald-800 dark:text-emerald-300 font-bold">នាក់ (Active: {activeStudents})</span>
+            <span className="text-xs text-emerald-700 dark:text-emerald-300 font-bold">នាក់ (Active: {activeStudents})</span>
           </div>
           <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 font-medium">
-            <span>ឆ្នាំទី១ ដល់ ឆ្នាំទី៤</span>
-            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 dark:text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+            <span>ស្រី {femaleStudents} នាក់ ({femalePercentage}%)</span>
+            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
 
@@ -211,7 +359,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-750 dark:text-emerald-300">{attendanceRate}%</span>
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{attendanceRate}%</span>
             <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">ថ្ងៃនេះ</span>
           </div>
           <div className="mt-2 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-1 font-medium">
@@ -238,7 +386,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 font-medium">
             <span>ឯកទេសភាសាចិន</span>
-            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 dark:text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
 
@@ -259,7 +407,237 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 font-medium">
             <span>បែងចែកតាមវេនសិក្សា</span>
-            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 dark:text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+            <ArrowRight className="w-3 h-3 ml-auto text-zinc-400 group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TOTAL TYPE OF STUDENTS (កម្រិតសញ្ញាបត្រ និងប្រភេទកម្មវិធីសិក្សា) */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-base font-bold text-zinc-950 dark:text-white">
+                ចំនួននិស្សិតសរុបតាមប្រភេទកម្មវិធីសិក្សា (Total Students by Program & Degree Level)
+              </h3>
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium mt-0.5">
+              ស្ថិតិលម្អិតនៃនិស្សិតតាមកម្រិតសញ្ញាបត្រ បរិញ្ញាបត្រ អនុបណ្ឌិត បណ្ឌិត និងភាសាចិនទូទៅ
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveTab('students')}
+            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+          >
+            <span>គ្រប់គ្រងនិស្សិត</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* 4 Program Types Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {studentTypesData.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <div
+                key={item.type}
+                onClick={() => setActiveTab('students')}
+                className={`p-5 rounded-2xl border ${item.borderClass} ${item.bgClass} transition-all cursor-pointer group hover:shadow-md hover:scale-[1.01] flex flex-col justify-between`}
+              >
+                <div>
+                  {/* Top Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 shadow-xs flex items-center justify-center text-emerald-700 dark:text-emerald-400 group-hover:rotate-6 transition-transform">
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${item.badgeBg} ${item.badgeText}`}>
+                      {item.percentage}% នៃសរុប
+                    </span>
+                  </div>
+
+                  {/* Program Title */}
+                  <h4 className="font-bold text-zinc-950 dark:text-white text-sm sm:text-base leading-snug">
+                    {item.nameKhmer}
+                  </h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium mb-3">
+                    {item.nameLatin}
+                  </p>
+                </div>
+
+                <div>
+                  {/* Total count number */}
+                  <div className="flex items-baseline justify-between mb-2">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-black text-zinc-950 dark:text-white">
+                        {item.count}
+                      </span>
+                      <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">នាក់</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                      Active: {item.activeCount}
+                    </span>
+                  </div>
+
+                  {/* Gender Mini Breakdown */}
+                  <div className="pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60 flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">
+                    <span>ស្រី: <strong className="text-zinc-900 dark:text-zinc-200">{item.femaleCount}</strong></span>
+                    <span>•</span>
+                    <span>ប្រុស: <strong className="text-zinc-900 dark:text-zinc-200">{item.maleCount}</strong></span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-zinc-200/80 dark:bg-zinc-700/80 rounded-full h-1.5 mt-2.5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.max(item.percentage, 4)}%`,
+                        backgroundColor: item.accentColor,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Secondary Demographic Sub-Grid: Gender, Status, and Academic Years */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          {/* Gender Ratio Card */}
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+                <span>សមាមាត្រយេនឌ័រ (Gender Ratio)</span>
+              </span>
+              <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+                {totalStudents} នាក់
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs font-bold pt-1">
+              <span className="text-pink-600 dark:text-pink-400">
+                👩 ស្រី: {femaleStudents} ({femalePercentage}%)
+              </span>
+              <span className="text-sky-600 dark:text-sky-400">
+                👨 ប្រុស: {maleStudents} ({100 - femalePercentage}%)
+              </span>
+            </div>
+
+            {/* Split progress bar */}
+            <div className="w-full h-2.5 rounded-full bg-sky-200 dark:bg-sky-950 flex overflow-hidden">
+              <div
+                className="h-full bg-pink-500 transition-all duration-500"
+                style={{ width: `${femalePercentage}%` }}
+                title={`និស្សិតស្រី: ${femalePercentage}%`}
+              />
+              <div
+                className="h-full bg-sky-500 transition-all duration-500"
+                style={{ width: `${100 - femalePercentage}%` }}
+                title={`និស្សិតប្រុស: ${100 - femalePercentage}%`}
+              />
+            </div>
+          </div>
+
+          {/* Academic Years Card */}
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>កម្រិតឆ្នាំសិក្សា (Academic Years)</span>
+              </span>
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                Year 1 - 4
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+              {academicYearStats.map((yr) => (
+                <div
+                  key={yr.key}
+                  className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#131f1a] border border-zinc-200 dark:border-zinc-700/80 flex items-center justify-between text-xs"
+                >
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 text-[11px]">{yr.key}</span>
+                  <span className="font-bold text-zinc-950 dark:text-white">{yr.count} នាក់</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Student Status Card */}
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>ស្ថានភាពនិស្សិត (Student Status)</span>
+              </span>
+              <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+                សរុប {totalStudents}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+              <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-emerald-800 dark:text-emerald-300 text-[11px]">កំពុងរៀន</span>
+                <span className="font-bold text-emerald-900 dark:text-emerald-200">{statusStats.active}</span>
+              </div>
+              <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-amber-800 dark:text-amber-300 text-[11px]">ព្យួរការសិក្សា</span>
+                <span className="font-bold text-amber-900 dark:text-amber-200">{statusStats.suspended}</span>
+              </div>
+              <div className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-rose-800 dark:text-rose-300 text-[11px]">បោះបង់</span>
+                <span className="font-bold text-rose-900 dark:text-rose-200">{statusStats.dropped}</span>
+              </div>
+              <div className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-between text-xs">
+                <span className="font-semibold text-blue-800 dark:text-blue-300 text-[11px]">បញ្ចប់ការសិក្សា</span>
+                <span className="font-bold text-blue-900 dark:text-blue-200">{statusStats.graduated}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Module Shortcuts for Tuition & Alerts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <div
+            onClick={() => setActiveTab('tuition')}
+            className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-700 text-white shadow-xs">
+                <Award className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
+                  <span>ថ្លៃសិក្សា និងអាហារូបករណ៍ (Tuition & Grants)</span>
+                </h4>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  តាមដានការបង់ប្រាក់ បញ្ចុះតម្លៃអាហារូបករណ៍ និងចេញវិក្កយបត្រ
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-transform" />
+          </div>
+
+          <div
+            onClick={() => setActiveTab('alerts')}
+            className="p-4 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/40 dark:to-amber-950/40 border border-rose-300 dark:border-rose-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rose-700 text-white shadow-xs">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
+                  <span>ប្រព័ន្ធជូនដំណឹងអវត្តមាន (Absence Alerts & Telegram)</span>
+                </h4>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  ជូនដំណឹងស្វ័យប្រវត្តិតាម Telegram ដល់អាណាព្យាបាល (វត្តមាន &lt; ៨០%)
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-rose-700 dark:text-rose-400 group-hover:translate-x-1 transition-transform" />
           </div>
         </div>
       </div>
@@ -269,15 +647,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <div>
             <h3 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
-              <span>ការបែងចែកនិស្សិតតាមវេនសិក្សា (Study Shifts)</span>
+              <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>ការបែងចែកនិស្សិតតាមវេនសិក្សា (Study Shifts Breakdown)</span>
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
-              ចុចលើវេនណាមួយ ដើម្បីស្វែងរក ឬ Filter បញ្ជីនិស្សិត
+              វេនព្រឹក រសៀល យប់ និងចុងសប្តាហ៍ ជាមួយនឹងចំនួននិស្សិតតាមវេននីមួយៗ
             </p>
           </div>
           <button
             onClick={() => setActiveTab('students')}
-            className="text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
           >
             <span>មើលបញ្ជីនិស្សិតទាំងអស់</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -308,13 +687,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               : 'bg-teal-200/70 dark:bg-teal-900/70 text-teal-950 dark:text-teal-200';
 
             const icon = isMorning ? (
-              <Sun className="w-4 h-4" />
+              <Sun className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             ) : isAfternoon ? (
-              <Sunset className="w-4 h-4" />
+              <Sunset className="w-4 h-4 text-orange-600 dark:text-orange-400" />
             ) : isEvening ? (
-              <Moon className="w-4 h-4" />
+              <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             ) : (
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             );
 
             return (
@@ -344,7 +723,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Grid: AI Assistant & Risk Watchlist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: AI Insights */}
+        {/* Left 2 Cols: AI Insights & Majors Overview */}
         <div className="lg:col-span-2 bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
             <div className="flex items-center gap-2.5">
@@ -382,19 +761,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           )}
 
-          {/* Quick Academic Programs overview */}
+          {/* Academic Majors & Specializations list */}
           <div className="pt-2">
-            <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 mb-2.5 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-              <span>ដេប៉ាតឺម៉ង់ & ជំនាញបណ្តុះបណ្តាល ({majors.length})</span>
-            </h4>
+            <div className="flex items-center justify-between mb-2.5">
+              <h4 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                <span>ដេប៉ាតឺម៉ង់ & ឯកទេសបណ្តុះបណ្តាល ({majors.length})</span>
+              </h4>
+              <button
+                onClick={() => setActiveTab('majors')}
+                className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                គ្រប់គ្រងជំនាញ
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {majors.map((m) => (
-                <div key={m.id} className="p-3 rounded-xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 text-xs">
-                  <div className="font-bold text-zinc-950 dark:text-zinc-100">{m.nameKhmer}</div>
-                  <div className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">{m.nameLatin} ({m.totalYears} ឆ្នាំ)</div>
-                </div>
-              ))}
+              {majors.map((m) => {
+                const majorStudentCount = students.filter((s) => s.majorId === m.id).length;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => setActiveTab('students')}
+                    className="p-3 rounded-xl bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-800 text-xs hover:border-emerald-400 transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="font-bold text-zinc-950 dark:text-zinc-100">{m.nameKhmer}</div>
+                      <div className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">
+                        {m.nameLatin} ({m.totalYears || 4} ឆ្នាំ)
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black text-sm text-emerald-700 dark:text-emerald-400">
+                        {majorStudentCount}
+                      </span>
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 block font-semibold">
+                        និស្សិត
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
