@@ -599,47 +599,49 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {/* Quick Module Shortcuts for Tuition & Alerts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <div
-            onClick={() => setActiveTab('tuition')}
-            className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-700 text-white shadow-xs">
-                <Award className="w-5 h-5" />
+        {!isReadOnly && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div
+              onClick={() => setActiveTab('tuition')}
+              className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-700 text-white shadow-xs">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
+                    <span>ថ្លៃសិក្សា និងអាហារូបករណ៍ (Tuition & Grants)</span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                    តាមដានការបង់ប្រាក់ បញ្ចុះតម្លៃអាហារូបករណ៍ និងចេញវិក្កយបត្រ
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
-                  <span>ថ្លៃសិក្សា និងអាហារូបករណ៍ (Tuition & Grants)</span>
-                </h4>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  តាមដានការបង់ប្រាក់ បញ្ចុះតម្លៃអាហារូបករណ៍ និងចេញវិក្កយបត្រ
-                </p>
-              </div>
+              <ArrowRight className="w-4 h-4 text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <ArrowRight className="w-4 h-4 text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-transform" />
-          </div>
 
-          <div
-            onClick={() => setActiveTab('alerts')}
-            className="p-4 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/40 dark:to-amber-950/40 border border-rose-300 dark:border-rose-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-700 text-white shadow-xs">
-                <AlertTriangle className="w-5 h-5" />
+            <div
+              onClick={() => setActiveTab('alerts')}
+              className="p-4 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/40 dark:to-amber-950/40 border border-rose-300 dark:border-rose-800/60 flex items-center justify-between cursor-pointer hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-700 text-white shadow-xs">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
+                    <span>ប្រព័ន្ធជូនដំណឹងអវត្តមាន (Absence Alerts & Telegram)</span>
+                  </h4>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                    ជូនដំណឹងស្វ័យប្រវត្តិតាម Telegram ដល់អាណាព្យាបាល (វត្តមាន &lt; ៨០%)
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-extrabold text-xs text-zinc-950 dark:text-white flex items-center gap-1.5">
-                  <span>ប្រព័ន្ធជូនដំណឹងអវត្តមាន (Absence Alerts & Telegram)</span>
-                </h4>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  ជូនដំណឹងស្វ័យប្រវត្តិតាម Telegram ដល់អាណាព្យាបាល (វត្តមាន &lt; ៨០%)
-                </p>
-              </div>
+              <ArrowRight className="w-4 h-4 text-rose-700 dark:text-rose-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <ArrowRight className="w-4 h-4 text-rose-700 dark:text-rose-400 group-hover:translate-x-1 transition-transform" />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Shifts Breakdown (វេនសិក្សា) */}
