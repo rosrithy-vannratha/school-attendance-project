@@ -18,6 +18,16 @@ export interface ShiftItem {
   isDefault?: boolean;
 }
 
+export interface StudyDurationItem {
+  id: string;
+  nameKhmer: string; // e.g. '៤ ឆ្នាំ (បរិញ្ញាបត្រ - Bachelor)'
+  nameLatin: string; // e.g. '4 Years (Bachelor Degree)'
+  years: number; // e.g. 4, 2, 1, 3, 5, 0.5
+  degreeLevel?: 'bachelor' | 'master' | 'associate' | 'phd' | 'short_course' | string;
+  description?: string;
+  isDefault?: boolean;
+}
+
 export interface Major {
   id: string;
   code: string;
@@ -25,6 +35,7 @@ export interface Major {
   nameLatin: string;
   description?: string;
   totalYears: number;
+  durationId?: string;
   classType?: ClassType;
 }
 
