@@ -212,16 +212,16 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
     }
   };
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const handleDelete = async (p: TuitionPayment) => {
     if (isReadOnly) {
       showToast('គណនីភ្ញៀវមិនអាចលុបទិន្នន័យបានទេ!', 'info');
       return;
     }
-    if (!window.confirm(`តើអ្នកពិតជាចង់លុបកំណត់ត្រាបង់ប្រាក់របស់ ${p.studentName} (${p.invoiceNumber}) ឬ?`)) {
-      return;
-    }
     try {
       await instituteService.deletePayment(p.id);
+      setDeleteConfirmId(null);
       showToast('បានលុបកំណត់ត្រាបង់ប្រាក់រួចរាល់!', 'success');
     } catch (err) {
       showToast('បរាជ័យក្នុងការលុប', 'error');
@@ -605,13 +605,30 @@ export const TuitionView: React.FC<TuitionViewProps> = ({
                               >
                                 <Edit2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                               </button>
-                              <button
-                                onClick={() => handleDelete(p)}
-                                title="លុបកំណត់ត្រា"
-                                className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                              </button>
+                              {deleteConfirmId === p.id ? (
+                                <div className="flex items-center gap-1 bg-rose-50 dark:bg-rose-950/80 p-0.5 rounded-lg border border-rose-300 dark:border-rose-800">
+                                  <button
+                                    onClick={() => handleDelete(p)}
+                                    className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] rounded-md cursor-pointer"
+                                  >
+                                    បញ្ជាក់
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="p-1 text-zinc-500 hover:text-zinc-800 dark:text-zinc-300 text-xs"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setDeleteConfirmId(p.id)}
+                                  title="លុបកំណត់ត្រា"
+                                  className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-rose-100 dark:hover:bg-rose-950/60 text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
