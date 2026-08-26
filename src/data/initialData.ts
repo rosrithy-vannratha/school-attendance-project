@@ -1,4 +1,4 @@
-import { Major, Classroom, Student, Teacher, AttendanceRecord, ShiftItem, ClassType } from '../types';
+import { Major, Classroom, Student, Teacher, AttendanceRecord, ShiftItem, StudyDurationItem, ClassType } from '../types';
 
 export interface ClassTypeOption {
   id: ClassType;
@@ -94,6 +94,58 @@ export const INITIAL_SHIFTS: ShiftItem[] = [
     days: 'សៅរ៍ - អាទិត្យ (Sat-Sun)',
     color: 'teal',
     isDefault: true
+  }
+];
+
+export const INITIAL_STUDY_DURATIONS: StudyDurationItem[] = [
+  {
+    id: 'dur_4years',
+    nameKhmer: '៤ ឆ្នាំ (ថ្នាក់បរិញ្ញាបត្រ - Bachelor)',
+    nameLatin: '4 Years (Bachelor Degree)',
+    years: 4,
+    degreeLevel: 'bachelor',
+    description: 'កម្មវិធីថ្នាក់បរិញ្ញាបត្រពេញលេញ ៤ ឆ្នាំ សរុប ៨ ឆមាស',
+    isDefault: true
+  },
+  {
+    id: 'dur_2years',
+    nameKhmer: '២ ឆ្នាំ (បរិញ្ញាបត្ររង / អនុបណ្ឌិត)',
+    nameLatin: '2 Years (Associate / Master)',
+    years: 2,
+    degreeLevel: 'master',
+    description: 'កម្មវិធីថ្នាក់បរិញ្ញាបត្ររង ឬ ថ្នាក់អនុបណ្ឌិត សរុប ៤ ឆមាស'
+  },
+  {
+    id: 'dur_3years',
+    nameKhmer: '៣ ឆ្នាំ (សញ្ញាបត្របច្ចេកទេសជាន់ខ្ពស់)',
+    nameLatin: '3 Years (Higher Technical Diploma)',
+    years: 3,
+    degreeLevel: 'associate',
+    description: 'កម្មវិធីបណ្តុះបណ្តាលបច្ចេកទេស និងគរុកោសល្យជាន់ខ្ពស់ ៣ ឆ្នាំ'
+  },
+  {
+    id: 'dur_1year',
+    nameKhmer: '១ ឆ្នាំ (វគ្គមូលដ្ឋានគ្រឹះ / វិញ្ញាបនបត្រ)',
+    nameLatin: '1 Year (Foundation / Certificate)',
+    years: 1,
+    degreeLevel: 'short_course',
+    description: 'ថ្នាក់ឆ្នាំសិក្សាមូលដ្ឋានគ្រឹះ ឬវគ្គបណ្តុះបណ្តាលវិជ្ជាជីវៈ ១ ឆ្នាំ'
+  },
+  {
+    id: 'dur_5years',
+    nameKhmer: '៥ ឆ្នាំ (ថ្នាក់វិស្វករ / បណ្ឌិត)',
+    nameLatin: '5 Years (Doctorate / Engineering)',
+    years: 5,
+    degreeLevel: 'phd',
+    description: 'កម្មវិធីថ្នាក់វិស្វករជំនាញ ឬថ្នាក់បណ្ឌិតស្រាវជ្រាវ ៥ ឆ្នាំ'
+  },
+  {
+    id: 'dur_6months',
+    nameKhmer: '៦ ខែ (វគ្គខ្លីពន្លឿន - Intensive)',
+    nameLatin: '6 Months (Intensive Course)',
+    years: 0.5,
+    degreeLevel: 'short_course',
+    description: 'វគ្គបំប៉នជំនាញភាសាចិន និងវិធីសាស្ត្របង្រៀនពន្លឿន ៦ ខែ'
   }
 ];
 
