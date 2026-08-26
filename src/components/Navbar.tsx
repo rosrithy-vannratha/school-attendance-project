@@ -71,12 +71,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  const isGuest = user?.role === 'Guest' || user?.isAnonymous || !user;
+
   const tabs = [
     { id: 'dashboard', labelKh: 'ផ្ទាំងគ្រប់គ្រង', labelEn: 'Dashboard', icon: BarChart3 },
     { id: 'students', labelKh: 'និស្សិត', labelEn: 'Students', icon: Users, badge: totalStudents },
     { id: 'attendance', labelKh: 'កត់ត្រាវត្តមាន', labelEn: 'Attendance', icon: CalendarCheck },
-    { id: 'tuition', labelKh: 'ថ្លៃសិក្សា & អាហារូបករណ៍', labelEn: 'Tuition & Grants', icon: DollarSign },
-    { id: 'alerts', labelKh: 'ជូនដំណឹងអវត្តមាន', labelEn: 'Absence Alerts', icon: Send },
+    ...(!isGuest ? [
+      { id: 'tuition', labelKh: 'ថ្លៃសិក្សា & អាហារូបករណ៍', labelEn: 'Tuition & Grants', icon: DollarSign },
+      { id: 'alerts', labelKh: 'ជូនដំណឹងអវត្តមាន', labelEn: 'Absence Alerts', icon: Send }
+    ] : []),
     { id: 'teachers', labelKh: 'សាស្ត្រាចារ្យ', labelEn: 'Teachers', icon: UserCheck },
     { id: 'teacher_attendance', labelKh: 'វត្តមានគ្រូ', labelEn: 'Faculty Att.', icon: CalendarCheck },
     { id: 'classes', labelKh: 'ថ្នាក់រៀន', labelEn: 'Classes', icon: Layers },
