@@ -17,15 +17,21 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Hourglass,
+  Sparkles,
+  Award,
+  Check
 } from 'lucide-react';
-import { Major, Classroom, Student } from '../types';
+import { Major, Classroom, Student, StudyDurationItem } from '../types';
 import { instituteService } from '../service/instituteService';
+import { StudyDurationsModal } from './StudyDurationsModal';
 
 interface MajorsViewProps {
   majors: Major[];
   classes: Classroom[];
   students: Student[];
+  studyDurations?: StudyDurationItem[];
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
   isReadOnly?: boolean;
 }
@@ -34,12 +40,14 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   majors,
   classes,
   students,
+  studyDurations = [],
   showToast,
   isReadOnly = false
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDurationModalOpen, setIsDurationModalOpen] = useState(false);
   const [editingMajor, setEditingMajor] = useState<Major | null>(null);
 
   // Pagination State
@@ -51,6 +59,14 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   const [formNameLatin, setFormNameLatin] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formYears, setFormYears] = useState(4);
+  const [formDurationId, setFormDurationId] = useState<string>('');
+
+  // Duration Map for quick lookup
+  const durationMap = useMemo(() => {
+    const map = new Map<string, StudyDurationItem>();
+    studyDurations.forEach((d) => map.set(d.id, d));
+    return map;
+  }, [studyDurations]);
 
   // Filtered majors
   const filteredMajors = useMemo(() => {
@@ -89,7 +105,16 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
     setFormNameKhmer('');
     setFormNameLatin('');
     setFormDescription('');
-    setFormYears(4);
+    
+    // Default duration
+    const def = studyDurations.find((d) => d.isDefault) || studyDurations[0];
+    if (def) {
+      setFormDurationId(def.id);
+      setFormYears(def.years);
+    } else {
+      setFormDurationId('');
+      setFormYears(4);
+    }
     setIsModalOpen(true);
   };
 
@@ -99,8 +124,32 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
     setFormNameKhmer(m.nameKhmer);
     setFormNameLatin(m.nameLatin);
     setFormDescription(m.description || '');
-    setFormYears(m.totalYears);
+    setFormYears(m.totalYears || 4);
+    
+    // If major has durationId, select it; otherwise find matching years
+    if (m.durationId && durationMap.has(m.durationId)) {
+      setFormDurationId(m.durationId);
+    } else {
+      const match = studyDurations.find((d) => d.years === m.totalYears);
+      setFormDurationId(match ? match.id : '');
+    }
     setIsModalOpen(true);
+  };
+
+  const handleSelectDurationFromDropdown = (durationId: string) => {
+    setFormDurationId(durationId);
+    const item = durationMap.get(durationId);
+    if (item) {
+      setFormYears(item.years);
+    }
+  };
+
+  const handleQuickYearsSelect = (years: number) => {
+    setFormYears(years);
+    const match = studyDurations.find((d) => d.years === years);
+    if (match) {
+      setFormDurationId(match.id);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -120,7 +169,8 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
       nameKhmer: formNameKhmer.trim(),
       nameLatin: formNameLatin.trim(),
       description: formDescription.trim() || undefined,
-      totalYears: Number(formYears) || 4
+      totalYears: Number(formYears) || 4,
+      durationId: formDurationId || undefined
     };
 
     try {
@@ -147,6 +197,18 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
     }
   };
 
+  const getMajorDurationLabel = (maj: Major) => {
+    if (maj.durationId && durationMap.has(maj.durationId)) {
+      const dur = durationMap.get(maj.durationId)!;
+      return `${dur.nameKhmer} (${dur.years} ឆ្នាំ)`;
+    }
+    const match = studyDurations.find((d) => d.years === maj.totalYears);
+    if (match) {
+      return `${match.nameKhmer} (${maj.totalYears} ឆ្នាំ)`;
+    }
+    return `${maj.totalYears || 4} ឆ្នាំ`;
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Bar */}
@@ -161,11 +223,22 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
             </h2>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 font-medium">
-            កម្មវិធីបណ្តុះបណ្តាល និងឯកទេសភាសាចិនថ្នាក់បរិញ្ញាបត្រ (៤ ឆ្នាំ)
+            កម្មវិធីបណ្តុះបណ្តាល កម្រិតសញ្ញាបត្រ និងរយៈពេលសិក្សានៅវិទ្យាស្ថាន
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Manage Durations Button */}
+          <button
+            type="button"
+            onClick={() => setIsDurationModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs inline-flex items-center gap-1.5 border border-emerald-200/80 dark:border-emerald-800/60 transition-all cursor-pointer shadow-xs"
+            title="គ្រប់គ្រង កែប្រែ ឬបង្កើត រយៈពេលសិក្សា"
+          >
+            <Hourglass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>គ្រប់គ្រងរយៈពេលសិក្សា ({studyDurations.length})</span>
+          </button>
+
           {/* View Mode Toggle (Table / Grid) */}
           <div className="flex items-center bg-zinc-100 dark:bg-zinc-800/90 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700/80">
             <button
@@ -309,9 +382,9 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
                         {/* Duration */}
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold text-[11px]">
-                            <Clock className="w-3 h-3 text-emerald-600" />
-                            <span>{maj.totalYears || 4} ឆ្នាំ</span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 font-bold text-[11px]">
+                            <Hourglass className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            <span>{getMajorDurationLabel(maj)}</span>
                           </span>
                         </td>
 
@@ -397,9 +470,15 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                         </div>
                       </div>
 
-                      <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                        {maj.code}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                          {maj.code}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                          <Hourglass className="w-3 h-3" />
+                          <span>{getMajorDurationLabel(maj)}</span>
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed py-3 border-y border-zinc-100 dark:border-zinc-800">
@@ -581,6 +660,86 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 />
               </div>
 
+              {/* Study Duration Selection */}
+              <div className="space-y-1.5 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 text-xs flex items-center gap-1.5">
+                    <Hourglass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>រយៈពេលសិក្សា (Study Duration) *</span>
+                  </label>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setIsDurationModalOpen(true)}
+                      className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                    >
+                      + គ្រប់គ្រង/បង្កើតថ្មី
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown from registered durations */}
+                <select
+                  disabled={isReadOnly}
+                  value={formDurationId}
+                  onChange={(e) => handleSelectDurationFromDropdown(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-hidden font-medium disabled:opacity-75 disabled:cursor-not-allowed"
+                >
+                  <option value="">-- ជ្រើសរើសរយៈពេលសិក្សា --</option>
+                  {studyDurations.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nameKhmer} ({d.years} ឆ្នាំ{d.degreeLevel ? ` - ${d.degreeLevel}` : ''})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Quick Year Selection Chips */}
+                {!isReadOnly && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10.5px] text-zinc-500 dark:text-zinc-400">ជ្រើសរើសរហ័ស:</span>
+                    {[
+                      { label: '៤ ឆ្នាំ (បរិញ្ញាបត្រ)', years: 4 },
+                      { label: '២ ឆ្នាំ (បរិញ្ញាបត្ររង)', years: 2 },
+                      { label: '៣ ឆ្នាំ', years: 3 },
+                      { label: '១ ឆ្នាំ', years: 1 },
+                      { label: '០.៥ ឆ្នាំ (៦ខែ)', years: 0.5 },
+                    ].map((item) => {
+                      const isMatch = formYears === item.years;
+                      return (
+                        <button
+                          key={item.years}
+                          type="button"
+                          onClick={() => handleQuickYearsSelect(item.years)}
+                          className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer border ${
+                            isMatch
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-emerald-400'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Exact Numeric Years */}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-400 font-medium">ចំនួនឆ្នាំពិតប្រាកដ:</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.1"
+                    max="10"
+                    disabled={isReadOnly}
+                    value={formYears}
+                    onChange={(e) => setFormYears(parseFloat(e.target.value) || 0)}
+                    className="w-20 px-2 py-1 bg-white dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 text-xs font-bold text-center focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
+                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ឆ្នាំ</span>
+                </div>
+              </div>
+
               <div>
                 <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ការពិពណ៌នា</label>
                 <textarea
@@ -614,6 +773,20 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Study Durations Management Modal */}
+      <StudyDurationsModal
+        isOpen={isDurationModalOpen}
+        onClose={() => setIsDurationModalOpen(false)}
+        durations={studyDurations}
+        showToast={showToast}
+        isReadOnly={isReadOnly}
+        selectedDurationId={formDurationId}
+        onSelectDuration={(d) => {
+          setFormDurationId(d.id);
+          setFormYears(d.years);
+        }}
+      />
     </div>
   );
 };
