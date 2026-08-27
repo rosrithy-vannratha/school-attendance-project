@@ -14,7 +14,7 @@ import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
 import { ScholarshipsModal } from './components/ScholarshipsModal';
 import { instituteService, authService } from './service/instituteService';
-import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS, INITIAL_SCHOLARSHIPS } from './data/initialData';
+import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS, INITIAL_SCHOLARSHIPS, INITIAL_GENERATIONS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -28,7 +28,8 @@ import {
   StudyDurationItem,
   TuitionPayment,
   AbsenceAlertLog,
-  ScholarshipOption
+  ScholarshipOption,
+  Generation
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -72,6 +73,8 @@ export default function App() {
   const [majors, setMajors] = useState<Major[]>([]);
   const [shifts, setShifts] = useState<ShiftItem[]>(INITIAL_SHIFTS);
   const [studyDurations, setStudyDurations] = useState<StudyDurationItem[]>(INITIAL_STUDY_DURATIONS);
+  const [generations, setGenerations] = useState<Generation[]>(INITIAL_GENERATIONS);
+  const [scholarships, setScholarships] = useState<ScholarshipOption[]>(INITIAL_SCHOLARSHIPS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [teacherAttendance, setTeacherAttendance] = useState<TeacherAttendance[]>([]);
   const [payments, setPayments] = useState<TuitionPayment[]>(INITIAL_PAYMENTS);
@@ -80,6 +83,7 @@ export default function App() {
   // Modals triggered from quick action buttons
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
+  const [isScholarshipsModalOpen, setIsScholarshipsModalOpen] = useState(false);
 
   // Toast notifications
   const [toastMessage, setToastMessage] = useState<{
@@ -143,6 +147,20 @@ export default function App() {
           }
         })
       : () => {};
+    const unsubGenerations = typeof instituteService?.subscribeGenerations === 'function'
+      ? instituteService.subscribeGenerations((data) => {
+          if (data && data.length > 0) {
+            setGenerations(data);
+          }
+        })
+      : () => {};
+    const unsubScholarships = typeof instituteService?.subscribeScholarships === 'function'
+      ? instituteService.subscribeScholarships((data) => {
+          if (data && data.length > 0) {
+            setScholarships(data);
+          }
+        })
+      : () => {};
     const unsubAttendance = typeof instituteService?.subscribeAttendance === 'function'
       ? instituteService.subscribeAttendance((data) => setAttendance(data))
       : () => {};
@@ -163,6 +181,8 @@ export default function App() {
       if (typeof unsubMajors === 'function') unsubMajors();
       if (typeof unsubShifts === 'function') unsubShifts();
       if (typeof unsubDurations === 'function') unsubDurations();
+      if (typeof unsubGenerations === 'function') unsubGenerations();
+      if (typeof unsubScholarships === 'function') unsubScholarships();
       if (typeof unsubAttendance === 'function') unsubAttendance();
       if (typeof unsubTeacherAtt === 'function') unsubTeacherAtt();
       if (typeof unsubPayments === 'function') unsubPayments();
@@ -314,6 +334,8 @@ export default function App() {
             classes={classes}
             majors={majors}
             payments={payments}
+            scholarships={scholarships}
+            onOpenScholarshipsModal={() => setIsScholarshipsModalOpen(true)}
             showToast={showToast}
             isReadOnly={isReadOnly}
           />
@@ -354,6 +376,7 @@ export default function App() {
             teachers={teachers}
             students={students}
             shifts={shifts}
+            generations={generations}
             isAddModalOpen={isAddClassOpen}
             onCloseAddModal={() => setIsAddClassOpen(false)}
             showToast={showToast}
@@ -408,6 +431,21 @@ export default function App() {
         onRefreshData={() => {
           // Re-subscribe or state will automatically update from snapshot
         }}
+      />
+
+      {/* Scholarships Management Modal */}
+      <ScholarshipsModal
+        isOpen={isScholarshipsModalOpen}
+        onClose={() => setIsScholarshipsModalOpen(false)}
+        scholarships={scholarships}
+        onSaveScholarship={async (item) => {
+          await instituteService.saveScholarship(item);
+        }}
+        onDeleteScholarship={async (id) => {
+          await instituteService.deleteScholarship(id);
+        }}
+        showToast={showToast}
+        isReadOnly={isReadOnly}
       />
 
       {/* Toast Alert */}
