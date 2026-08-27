@@ -31,6 +31,7 @@ import {
   ShiftType,
   ShiftItem,
   StudyDurationItem,
+  GenerationItem,
   TuitionPayment,
   AbsenceAlertLog,
   TelegramConfig,
@@ -44,6 +45,7 @@ import {
   INITIAL_ATTENDANCE,
   INITIAL_SHIFTS,
   INITIAL_STUDY_DURATIONS,
+  INITIAL_GENERATIONS,
   INITIAL_PAYMENTS,
   INITIAL_ALERT_LOGS,
   INITIAL_SCHOLARSHIPS
@@ -57,6 +59,7 @@ const LS_KEYS = {
   MAJORS: 'cpi_majors_data_v2',
   SHIFTS: 'cpi_shifts_data_v2',
   DURATIONS: 'cpi_durations_data_v2',
+  GENERATIONS: 'cpi_generations_data_v2',
   SCHOLARSHIPS: 'cpi_scholarships_data_v2',
   ATTENDANCE: 'cpi_attendance_data_v2',
   TEACHER_ATT: 'cpi_teacher_attendance_data_v2',
@@ -696,6 +699,101 @@ export const instituteService = {
     }
   },
 
+  // --- GENERATIONS MANAGEMENT (ជំនាន់សិក្សា) ---
+  getGenerations(): GenerationItem[] {
+    return getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+  },
+
+  subscribeGenerations(callback: (data: GenerationItem[]) => void): Unsubscribe {
+    const local = getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.GENERATIONS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'generations'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              code: data.code || 'Gen 1',
+              nameKhmer: data.nameKhmer || 'ជំនាន់ទី១',
+              nameLatin: data.nameLatin || 'Generation 1',
+              academicYear: data.academicYear || '',
+              startYear: data.startYear || '',
+              endYear: data.endYear || '',
+              description: data.description || '',
+              isDefault: Boolean(data.isDefault)
+            } as GenerationItem;
+          });
+          setLocal(LS_KEYS.GENERATIONS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Generations synced in real-time');
+        } else {
+          setLocal(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+          callback(INITIAL_GENERATIONS);
+        }
+      },
+      (err) => {
+        console.warn('Generations snapshot error (using local cache):', err);
+        const currentLocal = getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveGeneration(generation: GenerationItem): Promise<void> {
+    const local = getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+    const idx = local.findIndex((g) => g.id === generation.id);
+    if (idx >= 0) local[idx] = generation;
+    else local.push(generation);
+    setLocal(LS_KEYS.GENERATIONS, local);
+    notifyLocal(LS_KEYS.GENERATIONS, local);
+    updateSyncStatus('syncing', 'Saving generation...');
+
+    try {
+      await setDoc(doc(db, 'generations', generation.id), sanitizeDoc(generation));
+      updateSyncStatus('synced', 'Generation saved');
+    } catch (e: any) {
+      console.warn('Error saving generation to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving generation');
+    }
+  },
+
+  async deleteGeneration(id: string): Promise<void> {
+    const local = getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS).filter((g) => g.id !== id);
+    setLocal(LS_KEYS.GENERATIONS, local);
+    notifyLocal(LS_KEYS.GENERATIONS, local);
+    updateSyncStatus('syncing', 'Deleting generation...');
+
+    try {
+      await deleteDoc(doc(db, 'generations', id));
+      updateSyncStatus('synced', 'Generation deleted');
+    } catch (e: any) {
+      console.warn('Error deleting generation from Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting generation');
+    }
+  },
+
+  async resetGenerationsToDefault(): Promise<void> {
+    setLocal(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+    notifyLocal(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
+    updateSyncStatus('syncing', 'Resetting generations to default...');
+    try {
+      await commitInChunks(db, 'generations', INITIAL_GENERATIONS);
+      updateSyncStatus('synced', 'Generations reset to default');
+    } catch (e: any) {
+      console.warn('Error resetting generations:', e);
+    }
+  },
+
   // --- SCHOLARSHIPS MANAGEMENT (ប្រភេទអាហារូបករណ៍) ---
   getScholarships(): ScholarshipOption[] {
     return getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
@@ -718,8 +816,8 @@ export const instituteService = {
               nameKhmer: data.nameKhmer || 'អាហារូបករណ៍',
               nameLatin: data.nameLatin || '',
               discountPercentage: typeof data.discountPercentage === 'number' ? data.discountPercentage : (parseFloat(data.discountPercentage) || 0),
-              badgeBg: data.badgeBg || 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
-              badgeText: data.badgeText || 'text-emerald-800 dark:text-emerald-300',
+              badgeBg: data.badgeBg || 'bg-blue-100 dark:bg-blue-950/80 border-blue-300 dark:border-blue-700',
+              badgeText: data.badgeText || 'text-blue-800 dark:text-blue-300',
               description: data.description || '',
               isDefault: Boolean(data.isDefault)
             } as ScholarshipOption;
@@ -807,8 +905,10 @@ export const instituteService = {
               id: d.id,
               classCode: data.classCode || data.code || 'CLS-01',
               name: data.name || 'ថ្នាក់រៀន',
+              classType: data.classType || 'bachelor',
               majorId: data.majorId || 'maj_pedagogy',
               majorName: data.majorName || 'គរុកោសល្យភាសាចិន',
+              generation: data.generation || 'ជំនាន់ទី១',
               year: data.year || 'Year 1',
               shift: data.shift || 'morning',
               room: data.room || data.roomNumber || 'បន្ទប់ A101',
@@ -1306,7 +1406,7 @@ export const instituteService = {
   async forceSyncAll(): Promise<{ success: boolean; message: string }> {
     updateSyncStatus('syncing', 'Refreshing real-time data from Cloud Firestore...');
     try {
-      const [majorsSnap, classesSnap, teachersSnap, studentsSnap, attSnap, teacherAttSnap, shiftsSnap, durationsSnap] = await Promise.all([
+      const [majorsSnap, classesSnap, teachersSnap, studentsSnap, attSnap, teacherAttSnap, shiftsSnap, durationsSnap, generationsSnap] = await Promise.all([
         getDocs(collection(db, 'majors')),
         getDocs(collection(db, 'classes')),
         getDocs(collection(db, 'teachers')),
@@ -1314,7 +1414,8 @@ export const instituteService = {
         getDocs(collection(db, 'attendance')),
         getDocs(collection(db, 'teacher_attendance')),
         getDocs(collection(db, 'shifts')),
-        getDocs(collection(db, 'study_durations'))
+        getDocs(collection(db, 'study_durations')),
+        getDocs(collection(db, 'generations'))
       ]);
 
       if (!majorsSnap.empty) {
@@ -1357,6 +1458,11 @@ export const instituteService = {
         setLocal(LS_KEYS.DURATIONS, list);
         notifyLocal(LS_KEYS.DURATIONS, list);
       }
+      if (!generationsSnap.empty) {
+        const list = generationsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as GenerationItem);
+        setLocal(LS_KEYS.GENERATIONS, list);
+        notifyLocal(LS_KEYS.GENERATIONS, list);
+      }
       try {
         const scholarshipsSnap = await getDocs(collection(db, 'scholarships'));
         if (!scholarshipsSnap.empty) {
@@ -1387,6 +1493,7 @@ export const instituteService = {
     const teacherAttendance = getLocal<TeacherAttendance>(LS_KEYS.TEACHER_ATT, []);
     const shifts = getLocal<ShiftItem>(LS_KEYS.SHIFTS, INITIAL_SHIFTS);
     const durations = getLocal<StudyDurationItem>(LS_KEYS.DURATIONS, INITIAL_STUDY_DURATIONS);
+    const generations = getLocal<GenerationItem>(LS_KEYS.GENERATIONS, INITIAL_GENERATIONS);
     const scholarships = getLocal<ScholarshipOption>(LS_KEYS.SCHOLARSHIPS, INITIAL_SCHOLARSHIPS);
     const payments = getLocal<TuitionPayment>(LS_KEYS.PAYMENTS, INITIAL_PAYMENTS);
     const alerts = getLocal<AbsenceAlertLog>(LS_KEYS.ALERTS, INITIAL_ALERT_LOGS);
@@ -1404,6 +1511,7 @@ export const instituteService = {
       totalTeacherAttendance: teacherAttendance.length,
       totalShifts: shifts.length,
       totalDurations: durations.length,
+      totalGenerations: generations.length,
       totalScholarships: scholarships.length,
       totalPayments: payments.length,
       totalAlerts: alerts.length,
@@ -1416,6 +1524,7 @@ export const instituteService = {
         teacherAttendance,
         shifts,
         durations,
+        generations,
         scholarships,
         payments,
         alerts
@@ -1495,11 +1604,12 @@ export const instituteService = {
     teacherAttendance?: TeacherAttendance[];
     shifts?: ShiftItem[];
     durations?: StudyDurationItem[];
+    generations?: GenerationItem[];
     scholarships?: ScholarshipOption[];
     payments?: TuitionPayment[];
     alerts?: AbsenceAlertLog[];
   }): Promise<void> {
-    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations, scholarships, payments, alerts } = payload;
+    const { students, teachers, classes, majors, attendance, teacherAttendance, shifts, durations, generations, scholarships, payments, alerts } = payload;
     updateSyncStatus('syncing', 'Restoring database from backup...');
 
     try {
@@ -1549,6 +1659,12 @@ export const instituteService = {
         setLocal(LS_KEYS.DURATIONS, durations);
         notifyLocal(LS_KEYS.DURATIONS, durations);
         await commitInChunks(db, 'study_durations', durations);
+      }
+
+      if (generations && Array.isArray(generations)) {
+        setLocal(LS_KEYS.GENERATIONS, generations);
+        notifyLocal(LS_KEYS.GENERATIONS, generations);
+        await commitInChunks(db, 'generations', generations);
       }
 
       if (scholarships && Array.isArray(scholarships)) {
