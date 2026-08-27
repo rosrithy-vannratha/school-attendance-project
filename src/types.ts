@@ -5,7 +5,19 @@ export type AttendanceStatus = 'present' | 'permission' | 'absent' | 'late';
 export type TeacherAttendanceStatus = 'present' | 'permission' | 'absent' | 'substituted';
 export type TeacherStatus = 'active' | 'on_leave' | 'resigned' | 'retired';
 
-export type ClassType = 'bachelor' | 'master' | 'phd' | 'chinese_general';
+export type ClassType = 'bachelor' | 'master' | 'phd' | 'chinese_general' | 'associate' | 'short_course' | string;
+
+export interface YearLevelItem {
+  id: string;
+  code: string; // e.g. 'Foundation', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6', 'Bridging'
+  nameKhmer: string; // e.g. 'ឆ្នាំទី ១ (Year 1)'
+  nameLatin: string; // e.g. 'Year 1'
+  levelNumber?: number;
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface ShiftItem {
   id: string;
