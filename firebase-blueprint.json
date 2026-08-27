@@ -169,6 +169,21 @@
       },
       "required": ["id", "nameKhmer", "timeRange"]
     },
+    "YearLevelItem": {
+      "title": "YearLevelItem",
+      "description": "Student year levels and stages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "nameKhmer": { "type": "string" },
+        "nameLatin": { "type": "string" },
+        "levelNumber": { "type": "number" },
+        "description": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "nameKhmer", "code"]
+    },
     "GenerationItem": {
       "title": "GenerationItem",
       "description": "Student intake batch / generation information",
@@ -281,6 +296,10 @@
     "/shifts/{shiftId}": {
       "schema": "ShiftItem",
       "description": "Study shift timing options"
+    },
+    "/year_levels/{yearLevelId}": {
+      "schema": "YearLevelItem",
+      "description": "Student academic year levels"
     },
     "/generations/{generationId}": {
       "schema": "GenerationItem",
