@@ -50,6 +50,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /year_levels/{yearLevelId} {
+      allow read, write: if true;
+    }
+
     match /generations/{generationId} {
       allow read, write: if true;
     }
