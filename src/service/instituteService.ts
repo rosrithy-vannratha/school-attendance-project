@@ -35,7 +35,8 @@ import {
   TuitionPayment,
   AbsenceAlertLog,
   TelegramConfig,
-  ScholarshipOption
+  ScholarshipOption,
+  YearLevelItem
 } from '../types';
 import {
   INITIAL_MAJORS,
@@ -45,6 +46,7 @@ import {
   INITIAL_ATTENDANCE,
   INITIAL_SHIFTS,
   INITIAL_STUDY_DURATIONS,
+  INITIAL_YEAR_LEVELS,
   INITIAL_GENERATIONS,
   INITIAL_PAYMENTS,
   INITIAL_ALERT_LOGS,
@@ -59,6 +61,7 @@ const LS_KEYS = {
   MAJORS: 'cpi_majors_data_v2',
   SHIFTS: 'cpi_shifts_data_v2',
   DURATIONS: 'cpi_durations_data_v2',
+  YEAR_LEVELS: 'cpi_year_levels_data_v2',
   GENERATIONS: 'cpi_generations_data_v2',
   SCHOLARSHIPS: 'cpi_scholarships_data_v2',
   ATTENDANCE: 'cpi_attendance_data_v2',
@@ -696,6 +699,100 @@ export const instituteService = {
     } catch (e: any) {
       console.warn('Error deleting study duration from Firestore:', e);
       updateSyncStatus('error', e?.message || 'Error deleting study duration');
+    }
+  },
+
+  // --- YEAR LEVELS MANAGEMENT (កម្រិតឆ្នាំសិក្សា) ---
+  getYearLevels(): YearLevelItem[] {
+    return getLocal<YearLevelItem>(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+  },
+
+  subscribeYearLevels(callback: (data: YearLevelItem[]) => void): Unsubscribe {
+    const local = getLocal<YearLevelItem>(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+    callback(local);
+
+    const unregisterLocal = registerLocalListener(LS_KEYS.YEAR_LEVELS, callback as (data: any[]) => void);
+
+    const unsubFirestore = onSnapshot(
+      collection(db, 'year_levels'),
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              code: data.code || 'Year 1',
+              nameKhmer: data.nameKhmer || 'ឆ្នាំទី ១',
+              nameLatin: data.nameLatin || 'Year 1',
+              levelNumber: typeof data.levelNumber === 'number' ? data.levelNumber : 1,
+              description: data.description || '',
+              isDefault: Boolean(data.isDefault),
+              createdAt: data.createdAt || new Date().toISOString()
+            } as YearLevelItem;
+          });
+          setLocal(LS_KEYS.YEAR_LEVELS, list);
+          callback(list);
+          updateSyncStatus('synced', 'Year levels synced in real-time');
+        } else {
+          setLocal(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+          callback(INITIAL_YEAR_LEVELS);
+        }
+      },
+      (err) => {
+        console.warn('Year levels snapshot error (using local cache):', err);
+        const currentLocal = getLocal<YearLevelItem>(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+        callback(currentLocal);
+      }
+    );
+
+    return () => {
+      unregisterLocal();
+      unsubFirestore();
+    };
+  },
+
+  async saveYearLevel(yearLevel: YearLevelItem): Promise<void> {
+    const local = getLocal<YearLevelItem>(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+    const idx = local.findIndex((y) => y.id === yearLevel.id || y.code === yearLevel.code);
+    if (idx >= 0) local[idx] = yearLevel;
+    else local.push(yearLevel);
+    setLocal(LS_KEYS.YEAR_LEVELS, local);
+    notifyLocal(LS_KEYS.YEAR_LEVELS, local);
+    updateSyncStatus('syncing', 'Saving year level...');
+
+    try {
+      await setDoc(doc(db, 'year_levels', yearLevel.id), sanitizeDoc(yearLevel));
+      updateSyncStatus('synced', 'Year level saved');
+    } catch (e: any) {
+      console.warn('Error saving year level to Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error saving year level');
+    }
+  },
+
+  async deleteYearLevel(id: string): Promise<void> {
+    const local = getLocal<YearLevelItem>(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS).filter((y) => y.id !== id);
+    setLocal(LS_KEYS.YEAR_LEVELS, local);
+    notifyLocal(LS_KEYS.YEAR_LEVELS, local);
+    updateSyncStatus('syncing', 'Deleting year level...');
+
+    try {
+      await deleteDoc(doc(db, 'year_levels', id));
+      updateSyncStatus('synced', 'Year level deleted');
+    } catch (e: any) {
+      console.warn('Error deleting year level from Firestore:', e);
+      updateSyncStatus('error', e?.message || 'Error deleting year level');
+    }
+  },
+
+  async resetYearLevelsToDefault(): Promise<void> {
+    setLocal(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+    notifyLocal(LS_KEYS.YEAR_LEVELS, INITIAL_YEAR_LEVELS);
+    updateSyncStatus('syncing', 'Resetting year levels to default...');
+    try {
+      await commitInChunks(db, 'year_levels', INITIAL_YEAR_LEVELS);
+      updateSyncStatus('synced', 'Year levels reset to default');
+    } catch (e: any) {
+      console.warn('Error resetting year levels:', e);
     }
   },
 
