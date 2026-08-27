@@ -7,6 +7,7 @@ import {
   TeacherAttendance,
   ShiftItem,
   StudyDurationItem,
+  GenerationItem,
   ClassType,
   TuitionPayment,
   AbsenceAlertLog,
@@ -14,7 +15,7 @@ import {
   ScholarshipOption
 } from '../types';
 
-export type { ScholarshipOption };
+export type { ScholarshipOption, GenerationItem };
 
 export interface ClassTypeOption {
   id: ClassType;
@@ -165,6 +166,64 @@ export const INITIAL_STUDY_DURATIONS: StudyDurationItem[] = [
   }
 ];
 
+export const INITIAL_GENERATIONS: GenerationItem[] = [
+  {
+    id: 'gen_1',
+    code: 'Gen 1',
+    nameKhmer: 'ជំនាន់ទី១',
+    nameLatin: 'Generation 1',
+    academicYear: '2022-2026',
+    startYear: '2022',
+    endYear: '2026',
+    description: 'ជំនាន់ទី១ កម្មវិធីបណ្តុះបណ្តាល ២០២២-២០២៦',
+    isDefault: true
+  },
+  {
+    id: 'gen_2',
+    code: 'Gen 2',
+    nameKhmer: 'ជំនាន់ទី២',
+    nameLatin: 'Generation 2',
+    academicYear: '2023-2027',
+    startYear: '2023',
+    endYear: '2027',
+    description: 'ជំនាន់ទី២ កម្មវិធីបណ្តុះបណ្តាល ២០២៣-២០២៧',
+    isDefault: true
+  },
+  {
+    id: 'gen_3',
+    code: 'Gen 3',
+    nameKhmer: 'ជំនាន់ទី៣',
+    nameLatin: 'Generation 3',
+    academicYear: '2024-2028',
+    startYear: '2024',
+    endYear: '2028',
+    description: 'ជំនាន់ទី៣ កម្មវិធីបណ្តុះបណ្តាល ២០២៤-២០២៨',
+    isDefault: true
+  },
+  {
+    id: 'gen_4',
+    code: 'Gen 4',
+    nameKhmer: 'ជំនាន់ទី៤',
+    nameLatin: 'Generation 4',
+    academicYear: '2025-2029',
+    startYear: '2025',
+    endYear: '2029',
+    description: 'ជំនាន់ទី៤ កម្មវិធីបណ្តុះបណ្តាល ២០២៥-២០២៩',
+    isDefault: true
+  },
+  {
+    id: 'gen_5',
+    code: 'Gen 5',
+    nameKhmer: 'ជំនាន់ទី៥',
+    nameLatin: 'Generation 5',
+    academicYear: '2026-2030',
+    startYear: '2026',
+    endYear: '2030',
+    description: 'ជំនាន់ទី៥ កម្មវិធីបណ្តុះបណ្តាល ២០២៦-២០៣០',
+    isDefault: true
+  }
+];
+
 export const INITIAL_MAJORS: Major[] = [
   {
     id: 'maj_pedagogy',
@@ -209,8 +268,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y1_m1',
     classCode: 'ED-Y1-M1',
     name: 'ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ (ព្រឹក)',
+    classType: 'bachelor',
     majorId: 'maj_pedagogy',
     majorName: 'គរុកោសល្យភាសាចិន',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 1',
     shift: 'morning',
     room: 'បន្ទប់ A101',
@@ -223,8 +284,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y1_e1',
     classCode: 'ED-Y1-E1',
     name: 'ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ (យប់)',
+    classType: 'bachelor',
     majorId: 'maj_pedagogy',
     majorName: 'គរុកោសល្យភាសាចិន',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 1',
     shift: 'evening',
     room: 'បន្ទប់ A102',
@@ -237,8 +300,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y2_a1',
     classCode: 'TR-Y2-A1',
     name: 'ថ្នាក់បកប្រែ ឆ្នាំទី២ (រសៀល)',
+    classType: 'bachelor',
     majorId: 'maj_translation',
     majorName: 'បកប្រែភាសាចិន',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 2',
     shift: 'afternoon',
     room: 'បន្ទប់ B203',
@@ -251,8 +316,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y2_w1',
     classCode: 'BU-Y2-W1',
     name: 'ថ្នាក់ពាណិជ្ជកម្ម ឆ្នាំទី២ (ចុងសប្តាហ៍)',
+    classType: 'bachelor',
     majorId: 'maj_business',
     majorName: 'ភាសាចិនពាណិជ្ជកម្ម',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 2',
     shift: 'weekend',
     room: 'បន្ទប់ C301',
@@ -265,8 +332,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y3_m1',
     classCode: 'ED-Y3-M1',
     name: 'ថ្នាក់គរុកោសល្យ ឆ្នាំទី៣ (ព្រឹក)',
+    classType: 'bachelor',
     majorId: 'maj_pedagogy',
     majorName: 'គរុកោសល្យភាសាចិន',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 3',
     shift: 'morning',
     room: 'បន្ទប់ A205',
@@ -279,8 +348,10 @@ export const INITIAL_CLASSES: Classroom[] = [
     id: 'cls_y4_e1',
     classCode: 'TR-Y4-E1',
     name: 'ថ្នាក់បកប្រែ ឆ្នាំទី៤ (យប់)',
+    classType: 'bachelor',
     majorId: 'maj_translation',
     majorName: 'បកប្រែភាសាចិន',
+    generation: 'ជំនាន់ទី១',
     year: 'Year 4',
     shift: 'evening',
     room: 'បន្ទប់ B401',
@@ -582,8 +653,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     nameKhmer: 'អាហារូបករណ៍ ២+២',
     nameLatin: '2+2 Bachelor Dual Degree Scholarship',
     discountPercentage: 100,
-    badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700',
-    badgeText: 'text-emerald-800 dark:text-emerald-300',
+    badgeBg: 'bg-blue-100 dark:bg-blue-950/80 border-blue-300 dark:border-blue-700',
+    badgeText: 'text-blue-800 dark:text-blue-300',
     description: 'កម្មវិធីអាហារូបករណ៍ ២+២ សិក្សា ២ឆ្នាំនៅកម្ពុជា និង ២ឆ្នាំនៅសាកលវិទ្យាល័យដៃគូចិន',
     isDefault: true
   },
@@ -592,8 +663,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     nameKhmer: 'អាហារូបករណ៍ ២៥%',
     nameLatin: '25% Partial Scholarship',
     discountPercentage: 25,
-    badgeBg: 'bg-teal-100 dark:bg-teal-950/80 border-teal-300 dark:border-teal-700',
-    badgeText: 'text-teal-800 dark:text-teal-300',
+    badgeBg: 'bg-sky-100 dark:bg-sky-950/80 border-sky-300 dark:border-sky-700',
+    badgeText: 'text-sky-800 dark:text-sky-300',
     description: 'បញ្ចុះតម្លៃសិក្សា ២៥% សម្រាប់និស្សិតទូទៅ',
     isDefault: true
   },
@@ -602,8 +673,8 @@ export const SCHOLARSHIP_OPTIONS: ScholarshipOption[] = [
     nameKhmer: 'អាហារូបករណ៍ឯកឧត្តមប្រធាន',
     nameLatin: "President's Excellence Scholarship",
     discountPercentage: 100,
-    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700',
-    badgeText: 'text-amber-800 dark:text-amber-300',
+    badgeBg: 'bg-indigo-100 dark:bg-indigo-950/80 border-indigo-300 dark:border-indigo-700',
+    badgeText: 'text-indigo-800 dark:text-indigo-300',
     description: 'អាហារូបករណ៍កិត្តិយសពិសេសឧបត្ថម្ភដោយឯកឧត្តមប្រធានវិទ្យាស្ថាន',
     isDefault: true
   }
