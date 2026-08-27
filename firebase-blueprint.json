@@ -153,6 +153,55 @@
       },
       "required": ["id", "timestamp"]
     },
+    "ShiftItem": {
+      "title": "ShiftItem",
+      "description": "Study shift options and schedule times",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "nameKhmer": { "type": "string" },
+        "nameLatin": { "type": "string" },
+        "timeRange": { "type": "string" },
+        "days": { "type": "string" },
+        "color": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "nameKhmer", "timeRange"]
+    },
+    "GenerationItem": {
+      "title": "GenerationItem",
+      "description": "Student intake batch / generation information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "nameKhmer": { "type": "string" },
+        "nameLatin": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "startYear": { "type": "string" },
+        "endYear": { "type": "string" },
+        "description": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "nameKhmer"]
+    },
+    "ScholarshipOption": {
+      "title": "ScholarshipOption",
+      "description": "Scholarship types and discount brackets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameKhmer": { "type": "string" },
+        "nameLatin": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "badgeBg": { "type": "string" },
+        "badgeText": { "type": "string" },
+        "description": { "type": "string" },
+        "isDefault": { "type": "boolean" }
+      },
+      "required": ["id", "nameKhmer", "discountPercentage"]
+    },
     "TuitionPayment": {
       "title": "TuitionPayment",
       "description": "Tuition fees, scholarship discounts, and payment records",
@@ -228,6 +277,18 @@
     "/study_durations/{durationId}": {
       "schema": "StudyDuration",
       "description": "Study duration program categories"
+    },
+    "/shifts/{shiftId}": {
+      "schema": "ShiftItem",
+      "description": "Study shift timing options"
+    },
+    "/generations/{generationId}": {
+      "schema": "GenerationItem",
+      "description": "Student intake batches and generations"
+    },
+    "/scholarships/{scholarshipId}": {
+      "schema": "ScholarshipOption",
+      "description": "Institute scholarship discount categories"
     },
     "/attendance/{attendanceId}": {
       "schema": "AttendanceRecord",
