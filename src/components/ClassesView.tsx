@@ -30,11 +30,12 @@ import {
   ChevronsLeft,
   ChevronsRight
 } from 'lucide-react';
-import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType, ShiftItem, ClassType } from '../types';
+import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType, ShiftItem, GenerationItem, ClassType } from '../types';
 import { instituteService } from '../service/instituteService';
-import { INITIAL_SHIFTS, CLASS_TYPE_OPTIONS } from '../data/initialData';
+import { INITIAL_SHIFTS, INITIAL_GENERATIONS, CLASS_TYPE_OPTIONS } from '../data/initialData';
 import { getShiftLabel, getClassTypeLabel } from '../utils/exportUtils';
 import { ShiftsModal } from './ShiftsModal';
+import { GenerationsModal } from './GenerationsModal';
 
 interface ClassesViewProps {
   classes: Classroom[];
@@ -42,8 +43,10 @@ interface ClassesViewProps {
   teachers: Teacher[];
   students: Student[];
   shifts?: ShiftItem[];
+  generations?: GenerationItem[];
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
+  onOpenGenerationsModal?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
   isReadOnly?: boolean;
 }
@@ -54,8 +57,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   teachers,
   students,
   shifts = INITIAL_SHIFTS,
+  generations = INITIAL_GENERATIONS,
   isAddModalOpen = false,
   onCloseAddModal,
+  onOpenGenerationsModal,
   showToast,
   isReadOnly = false
 }) => {
@@ -65,17 +70,20 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const [selectedMajor, setSelectedMajor] = useState<string>('all');
   const [selectedShift, setSelectedShift] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedGeneration, setSelectedGeneration] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<'all' | 'under10' | 'adequate'>('all');
 
   const [isModalOpen, setIsModalOpen] = useState(isAddModalOpen);
   const [editingClass, setEditingClass] = useState<Classroom | null>(null);
   const [isShiftsModalOpen, setIsShiftsModalOpen] = useState(false);
+  const [isInternalGenModalOpen, setIsInternalGenModalOpen] = useState(false);
 
   // Form fields
   const [formClassCode, setFormClassCode] = useState('');
   const [formName, setFormName] = useState('');
   const [formClassType, setFormClassType] = useState<ClassType>('bachelor');
   const [formMajorId, setFormMajorId] = useState(majors[0]?.id || 'maj_pedagogy');
+  const [formGeneration, setFormGeneration] = useState(generations[0]?.nameKhmer || 'ជំនាន់ទី១');
   const [formYear, setFormYear] = useState<AcademicYearType>('Year 1');
   const [formShift, setFormShift] = useState<ShiftType>('morning');
   const [formRoom, setFormRoom] = useState('បន្ទប់ A101');
@@ -118,6 +126,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
       if (selectedMajor !== 'all' && c.majorId !== selectedMajor) return false;
       if (selectedShift !== 'all' && c.shift !== selectedShift) return false;
       if (selectedYear !== 'all' && c.year !== selectedYear) return false;
+      if (selectedGeneration !== 'all') {
+        const genMatch = c.generation === selectedGeneration || c.name?.includes(selectedGeneration);
+        if (!genMatch) return false;
+      }
 
       // Search query
       if (search.trim()) {
@@ -125,17 +137,18 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
         const matchName = c.name.toLowerCase().includes(q);
         const matchCode = c.classCode.toLowerCase().includes(q);
         const matchMajor = (c.majorName || '').toLowerCase().includes(q);
+        const matchGen = (c.generation || '').toLowerCase().includes(q);
         const matchRoom = (c.room || '').toLowerCase().includes(q);
         const matchTeacher = (c.teacherName || '').toLowerCase().includes(q);
         const matchYear = (c.academicYear || '').toLowerCase().includes(q);
-        if (!matchName && !matchCode && !matchMajor && !matchRoom && !matchTeacher && !matchYear) {
+        if (!matchName && !matchCode && !matchMajor && !matchGen && !matchRoom && !matchTeacher && !matchYear) {
           return false;
         }
       }
 
       return true;
     });
-  }, [classes, filterMode, classStudentCounts, selectedClassType, selectedMajor, selectedShift, selectedYear, search]);
+  }, [classes, filterMode, classStudentCounts, selectedClassType, selectedMajor, selectedShift, selectedYear, selectedGeneration, search]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -144,9 +157,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     if (selectedMajor !== 'all') count++;
     if (selectedShift !== 'all') count++;
     if (selectedYear !== 'all') count++;
+    if (selectedGeneration !== 'all') count++;
     if (filterMode !== 'all') count++;
     return count;
-  }, [search, selectedClassType, selectedMajor, selectedShift, selectedYear, filterMode]);
+  }, [search, selectedClassType, selectedMajor, selectedShift, selectedYear, selectedGeneration, filterMode]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -154,6 +168,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     setSelectedMajor('all');
     setSelectedShift('all');
     setSelectedYear('all');
+    setSelectedGeneration('all');
     setFilterMode('all');
   };
 
@@ -164,7 +179,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   // Reset page on filter or search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedClassType, selectedMajor, selectedShift, selectedYear, filterMode, pageSize]);
+  }, [search, selectedClassType, selectedMajor, selectedShift, selectedYear, selectedGeneration, filterMode, pageSize]);
 
   const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredClasses.length / pageSize));
   const validPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -187,14 +202,18 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const openAddModal = () => {
     if (isReadOnly) return;
     setEditingClass(null);
-    setFormClassCode(`ED-Y1-${String(classes.length + 1)}`);
-    setFormName('');
+    const defaultMajor = majors[0] || { id: 'maj_pedagogy', nameKhmer: 'គរុកោសល្យភាសាចិន' };
+    const defaultGen = generations[0]?.nameKhmer || 'ជំនាន់ទី១';
+    const nextIdx = classes.length + 1;
+    setFormClassCode(`ED-Y1-${String(nextIdx)}`);
+    setFormName(`ថ្នាក់គរុកោសល្យ ${defaultGen} (ព្រឹក)`);
     setFormClassType('bachelor');
-    setFormMajorId(majors[0]?.id || 'maj_pedagogy');
+    setFormMajorId(defaultMajor.id);
+    setFormGeneration(defaultGen);
     setFormYear('Year 1');
     setFormShift('morning');
     setFormRoom('បន្ទប់ A101');
-    setFormAcademicYear('2025-2026');
+    setFormAcademicYear(generations[0]?.academicYear || '2025-2026');
     setFormTeacherId(teachers[0]?.id || '');
     setIsModalOpen(true);
   };
@@ -205,6 +224,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     setFormName(c.name);
     setFormClassType(c.classType || 'bachelor');
     setFormMajorId(c.majorId);
+    setFormGeneration(c.generation || generations[0]?.nameKhmer || 'ជំនាន់ទី១');
     setFormYear(c.year);
     setFormShift(c.shift);
     setFormRoom(c.room);
@@ -217,6 +237,68 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     setIsModalOpen(false);
     setEditingClass(null);
     if (onCloseAddModal) onCloseAddModal();
+  };
+
+  // Helper to generate aligned class name based on major, generation, shift, year
+  const getSuggestedClassName = (majId: string, genName: string, shiftVal: ShiftType) => {
+    const maj = majors.find((m) => m.id === majId);
+    const majShort = maj?.nameKhmer ? maj.nameKhmer.replace('ភាសាចិន', '').trim() : 'គរុកោសល្យ';
+    const shiftName = shiftVal === 'morning' ? 'ព្រឹក' : shiftVal === 'afternoon' ? 'រសៀល' : shiftVal === 'evening' ? 'យប់' : 'ចុងសប្តាហ៍';
+    return `ថ្នាក់${majShort} ${genName} (${shiftName})`;
+  };
+
+  const getSuggestedClassCode = (majId: string, yearVal: string) => {
+    const maj = majors.find((m) => m.id === majId);
+    let prefix = 'ED';
+    if (maj?.code) {
+      prefix = maj.code.split('-')[0] || 'ED';
+    } else if (majId.includes('trans')) {
+      prefix = 'TR';
+    } else if (majId.includes('bus')) {
+      prefix = 'BIZ';
+    } else if (majId.includes('tour')) {
+      prefix = 'TOU';
+    }
+    const yearShort = yearVal === 'Foundation' ? 'FY' : yearVal.replace('Year ', 'Y') || 'Y1';
+    const seq = classes.length + 1;
+    return `${prefix}-${yearShort}-${seq}`;
+  };
+
+  // Synchronized Helper to update class fields smoothly
+  const handleMajorChange = (majId: string) => {
+    setFormMajorId(majId);
+    if (!editingClass) {
+      setFormName(getSuggestedClassName(majId, formGeneration, formShift));
+      setFormClassCode(getSuggestedClassCode(majId, formYear));
+    }
+  };
+
+  const handleGenerationChange = (genName: string) => {
+    setFormGeneration(genName);
+    const genObj = generations.find((g) => g.nameKhmer === genName || g.code === genName);
+    if (genObj?.academicYear) {
+      setFormAcademicYear(genObj.academicYear);
+    }
+    if (!editingClass) {
+      setFormName(getSuggestedClassName(formMajorId, genName, formShift));
+    }
+  };
+
+  const handleShiftChange = (shiftVal: ShiftType) => {
+    setFormShift(shiftVal);
+    if (!editingClass) {
+      setFormName(getSuggestedClassName(formMajorId, formGeneration, shiftVal));
+    }
+  };
+
+  const handleAutoAlignNameAndCode = () => {
+    setFormName(getSuggestedClassName(formMajorId, formGeneration, formShift));
+    setFormClassCode(getSuggestedClassCode(formMajorId, formYear));
+    const genObj = generations.find((g) => g.nameKhmer === formGeneration || g.code === formGeneration);
+    if (genObj?.academicYear) {
+      setFormAcademicYear(genObj.academicYear);
+    }
+    showToast('បានតម្រឹមឈ្មោះ និងកូដថ្នាក់រៀនដោយស្វ័យប្រវត្តិ!', 'info');
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -240,6 +322,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
       classType: formClassType,
       majorId: formMajorId,
       majorName: selectedMaj?.nameKhmer || 'គរុកោសល្យភាសាចិន',
+      generation: formGeneration,
       year: formYear,
       shift: formShift,
       room: formRoom.trim(),
@@ -292,8 +375,23 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Generations Management Trigger */}
+          <button
+            id="manage-generations-btn"
+            type="button"
+            onClick={() => {
+              if (onOpenGenerationsModal) onOpenGenerationsModal();
+              else setIsInternalGenModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+            <span>គ្រប់គ្រងជំនាន់ (Gen: {generations.length})</span>
+          </button>
+
           {/* Shifts Management Trigger */}
           <button
+            id="manage-shifts-btn"
             type="button"
             onClick={() => setIsShiftsModalOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -404,7 +502,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ស្វែងរកតាមឈ្មោះថ្នាក់, កូដ, បន្ទប់, សាស្ត្រាចារ្យ..."
+              placeholder="ស្វែងរកតាមឈ្មោះថ្នាក់, ជំនាន់, កូដ, បន្ទប់..."
               className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-hidden transition-all"
             />
             {search && (
@@ -417,17 +515,18 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             )}
           </div>
 
-          {/* Class Type Filter */}
+          {/* Generation Filter */}
           <div>
             <select
-              value={selectedClassType}
-              onChange={(e) => setSelectedClassType(e.target.value)}
-              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+              id="filter-generation-select"
+              value={selectedGeneration}
+              onChange={(e) => setSelectedGeneration(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
-              <option value="all">កម្រិតទាំងអស់ (All Degrees)</option>
-              {CLASS_TYPE_OPTIONS.map((ct) => (
-                <option key={ct.id} value={ct.id} className="dark:bg-[#111c38]">
-                  {ct.nameKhmer}
+              <option value="all">ជំនាន់ទាំងអស់ (All Gens)</option>
+              {generations.map((g) => (
+                <option key={g.id} value={g.nameKhmer} className="dark:bg-[#111c38]">
+                  {g.nameKhmer} ({g.code})
                 </option>
               ))}
             </select>
@@ -473,6 +572,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">កម្រិតឆ្នាំទាំងអស់ (All Years)</option>
+              <option value="Foundation">ថ្នាក់មូលដ្ឋាន (Foundation)</option>
               <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
               <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
               <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
@@ -593,9 +693,16 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                               <Layers className="w-4 h-4" />
                             </div>
                             <div>
-                              <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm block">
-                                {cls.name}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
+                                  {cls.name}
+                                </span>
+                                {cls.generation && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold text-[10px] border border-blue-200 dark:border-blue-800">
+                                    {cls.generation}
+                                  </span>
+                                )}
+                              </div>
                               <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
                                 {cls.classCode}
                               </span>
@@ -941,30 +1048,132 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             </div>
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កូដថ្នាក់ (Code) *</label>
-                <input
-                  type="text"
-                  required
-                  disabled={isReadOnly}
-                  value={formClassCode}
-                  onChange={(e) => setFormClassCode(e.target.value)}
-                  placeholder="ED-Y1-M1"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
-                />
+              {/* Major & Generation Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ជំនាញសិក្សា (Major) *</label>
+                  <select
+                    id="modal-major-select"
+                    disabled={isReadOnly}
+                    value={formMajorId}
+                    onChange={(e) => handleMajorChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {majors.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nameKhmer}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-zinc-800 dark:text-zinc-200">ជំនាន់ (Generation) *</label>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenGenerationsModal) onOpenGenerationsModal();
+                          else setIsInternalGenModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-sky-400 cursor-pointer"
+                      >
+                        + បង្កើតជំនាន់
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    id="modal-generation-select"
+                    disabled={isReadOnly}
+                    value={formGeneration}
+                    onChange={(e) => handleGenerationChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {generations.map((g) => (
+                      <option key={g.id} value={g.nameKhmer}>
+                        {g.nameKhmer} ({g.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឈ្មោះថ្នាក់រៀន *</label>
-                <input
-                  type="text"
-                  required
-                  disabled={isReadOnly}
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="ថ្នាក់គរុកោសល្យ ឆ្នាំទី១ (ព្រឹក)"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
-                />
+              {/* Shift & Year */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា (Shift) *</label>
+                  <select
+                    id="modal-shift-select"
+                    disabled={isReadOnly}
+                    value={formShift}
+                    onChange={(e) => handleShiftChange(e.target.value as ShiftType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {shifts.map((s) => (
+                      <option key={s.id} value={s.code}>
+                        {s.nameKhmer} ({s.timeRange})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ (Year)</label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formYear}
+                    onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="Foundation">ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation)</option>
+                    <option value="Year 1">ឆ្នាំទី ១ (Year 1)</option>
+                    <option value="Year 2">ឆ្នាំទី ២ (Year 2)</option>
+                    <option value="Year 3">ឆ្នាំទី ៣ (Year 3)</option>
+                    <option value="Year 4">ឆ្នាំទី ៤ (Year 4)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Class Code & Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កូដថ្នាក់ (Code) *</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isReadOnly}
+                    value={formClassCode}
+                    onChange={(e) => setFormClassCode(e.target.value)}
+                    placeholder="ED-G1-M1"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden font-mono font-bold disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-zinc-800 dark:text-zinc-200">ឈ្មោះថ្នាក់រៀន *</label>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={handleAutoAlignNameAndCode}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-sky-400 cursor-pointer"
+                        title="តម្រឹមឈ្មោះ និងកូដថ្នាក់ស្វ័យប្រវត្តិតាមជំនាញ ជំនាន់ និងវេនសិក្សា"
+                      >
+                        ⚡ តម្រឹមស្វ័យប្រវត្តិ
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    disabled={isReadOnly}
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="ថ្នាក់គរុកោសល្យ ជំនាន់ទី១ (ព្រឹក)"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -986,58 +1195,6 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ជំនាញ (Major)</label>
-                  <select
-                    disabled={isReadOnly}
-                    value={formMajorId}
-                    onChange={(e) => setFormMajorId(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    {majors.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nameKhmer}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ (Year)</label>
-                  <select
-                    disabled={isReadOnly}
-                    value={formYear}
-                    onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="Foundation">ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation)</option>
-                    <option value="Year 1">ឆ្នាំទី ១ (Year 1)</option>
-                    <option value="Year 2">ឆ្នាំទី ២ (Year 2)</option>
-                    <option value="Year 3">ឆ្នាំទី ៣ (Year 3)</option>
-                    <option value="Year 4">ឆ្នាំទី ៤ (Year 4)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា (Shift)</label>
-                  <select
-                    disabled={isReadOnly}
-                    value={formShift}
-                    onChange={(e) => setFormShift(e.target.value as ShiftType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    {shifts.map((s) => (
-                      <option key={s.id} value={s.code}>
-                        {s.nameKhmer} ({s.timeRange})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">បន្ទប់រៀន (Room)</label>
                   <input
                     type="text"
@@ -1048,7 +1205,9 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">ឆ្នាំសិក្សា (Academic Year)</label>
                   <input
@@ -1060,23 +1219,23 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                     className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">សាស្ត្រាចារ្យប្រចាំថ្នាក់</label>
-                <select
-                  disabled={isReadOnly}
-                  value={formTeacherId}
-                  onChange={(e) => setFormTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                >
-                  <option value="">-- មិនទាន់ចាត់តាំង --</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nameKhmer} ({t.teacherCode})
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">សាស្ត្រាចារ្យប្រចាំថ្នាក់</label>
+                  <select
+                    disabled={isReadOnly}
+                    value={formTeacherId}
+                    onChange={(e) => setFormTeacherId(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    <option value="">-- មិនទាន់ចាត់តាំង --</option>
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameKhmer} ({t.teacherCode})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -1100,6 +1259,17 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Generations Management Modal */}
+      <GenerationsModal
+        isOpen={isInternalGenModalOpen}
+        onClose={() => setIsInternalGenModalOpen(false)}
+        generations={generations}
+        classes={classes}
+        students={students}
+        showToast={showToast}
+        isReadOnly={isReadOnly}
+      />
 
       {/* Shifts Management Modal */}
       <ShiftsModal
