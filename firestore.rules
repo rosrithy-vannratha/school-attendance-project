@@ -46,6 +46,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    match /shifts/{shiftId} {
+      allow read, write: if true;
+    }
+
+    match /generations/{generationId} {
+      allow read, write: if true;
+    }
+
+    match /scholarships/{scholarshipId} {
+      allow read, write: if true;
+    }
+
     match /attendance/{attendanceId} {
       allow read, write: if true;
     }
