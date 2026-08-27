@@ -14,7 +14,7 @@ import { LoginPage } from './components/LoginPage';
 import { BackupModal } from './components/BackupModal';
 import { ScholarshipsModal } from './components/ScholarshipsModal';
 import { instituteService, authService } from './service/instituteService';
-import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS, INITIAL_SCHOLARSHIPS, INITIAL_GENERATIONS } from './data/initialData';
+import { INITIAL_SHIFTS, INITIAL_STUDY_DURATIONS, INITIAL_PAYMENTS, INITIAL_ALERT_LOGS, INITIAL_SCHOLARSHIPS, INITIAL_GENERATIONS, INITIAL_YEAR_LEVELS } from './data/initialData';
 import {
   Student,
   Teacher,
@@ -29,7 +29,8 @@ import {
   TuitionPayment,
   AbsenceAlertLog,
   ScholarshipOption,
-  Generation
+  Generation,
+  YearLevelItem
 } from './types';
 import { CheckCircle2, AlertCircle, Sparkles, GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -73,6 +74,7 @@ export default function App() {
   const [majors, setMajors] = useState<Major[]>([]);
   const [shifts, setShifts] = useState<ShiftItem[]>(INITIAL_SHIFTS);
   const [studyDurations, setStudyDurations] = useState<StudyDurationItem[]>(INITIAL_STUDY_DURATIONS);
+  const [yearLevels, setYearLevels] = useState<YearLevelItem[]>(INITIAL_YEAR_LEVELS);
   const [generations, setGenerations] = useState<Generation[]>(INITIAL_GENERATIONS);
   const [scholarships, setScholarships] = useState<ScholarshipOption[]>(INITIAL_SCHOLARSHIPS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -147,6 +149,13 @@ export default function App() {
           }
         })
       : () => {};
+    const unsubYearLevels = typeof instituteService?.subscribeYearLevels === 'function'
+      ? instituteService.subscribeYearLevels((data) => {
+          if (data && data.length > 0) {
+            setYearLevels(data);
+          }
+        })
+      : () => {};
     const unsubGenerations = typeof instituteService?.subscribeGenerations === 'function'
       ? instituteService.subscribeGenerations((data) => {
           if (data && data.length > 0) {
@@ -181,6 +190,7 @@ export default function App() {
       if (typeof unsubMajors === 'function') unsubMajors();
       if (typeof unsubShifts === 'function') unsubShifts();
       if (typeof unsubDurations === 'function') unsubDurations();
+      if (typeof unsubYearLevels === 'function') unsubYearLevels();
       if (typeof unsubGenerations === 'function') unsubGenerations();
       if (typeof unsubScholarships === 'function') unsubScholarships();
       if (typeof unsubAttendance === 'function') unsubAttendance();
@@ -376,6 +386,8 @@ export default function App() {
             teachers={teachers}
             students={students}
             shifts={shifts}
+            studyDurations={studyDurations}
+            yearLevels={yearLevels}
             generations={generations}
             isAddModalOpen={isAddClassOpen}
             onCloseAddModal={() => setIsAddClassOpen(false)}
