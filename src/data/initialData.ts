@@ -12,10 +12,11 @@ import {
   TuitionPayment,
   AbsenceAlertLog,
   ScholarshipType,
-  ScholarshipOption
+  ScholarshipOption,
+  YearLevelItem
 } from '../types';
 
-export type { ScholarshipOption, GenerationItem };
+export type { ScholarshipOption, GenerationItem, YearLevelItem };
 
 export interface ClassTypeOption {
   id: ClassType;
@@ -163,6 +164,63 @@ export const INITIAL_STUDY_DURATIONS: StudyDurationItem[] = [
     years: 0.5,
     degreeLevel: 'short_course',
     description: 'វគ្គបំប៉នជំនាញភាសាចិន និងវិធីសាស្ត្របង្រៀនពន្លឿន ៦ ខែ'
+  }
+];
+
+export const INITIAL_YEAR_LEVELS: YearLevelItem[] = [
+  {
+    id: 'yr_foundation',
+    code: 'Foundation',
+    nameKhmer: 'ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation)',
+    nameLatin: 'Foundation Year',
+    levelNumber: 0,
+    description: 'ឆ្នាំសិក្សាមូលដ្ឋានគ្រឹះ',
+    isDefault: true
+  },
+  {
+    id: 'yr_1',
+    code: 'Year 1',
+    nameKhmer: 'ឆ្នាំទី ១ (Year 1)',
+    nameLatin: 'Year 1',
+    levelNumber: 1,
+    description: 'និស្សិតឆ្នាំទី១ ឆមាសទី១ និងទី២',
+    isDefault: true
+  },
+  {
+    id: 'yr_2',
+    code: 'Year 2',
+    nameKhmer: 'ឆ្នាំទី ២ (Year 2)',
+    nameLatin: 'Year 2',
+    levelNumber: 2,
+    description: 'និស្សិតឆ្នាំទី២ ឆមាសទី៣ និងទី៤',
+    isDefault: true
+  },
+  {
+    id: 'yr_3',
+    code: 'Year 3',
+    nameKhmer: 'ឆ្នាំទី ៣ (Year 3)',
+    nameLatin: 'Year 3',
+    levelNumber: 3,
+    description: 'និស្សិតឆ្នាំទី៣ ឆមាសទី៥ និងទី៦',
+    isDefault: true
+  },
+  {
+    id: 'yr_4',
+    code: 'Year 4',
+    nameKhmer: 'ឆ្នាំទី ៤ (Year 4)',
+    nameLatin: 'Year 4',
+    levelNumber: 4,
+    description: 'និស្សិតឆ្នាំទី៤ ឆមាសទី៧ និងទី៨ (ឆ្នាំបញ្ចប់)',
+    isDefault: true
+  },
+  {
+    id: 'yr_5',
+    code: 'Year 5',
+    nameKhmer: 'ឆ្នាំទី ៥ (Year 5 / វិស្វករ)',
+    nameLatin: 'Year 5 (Engineering)',
+    levelNumber: 5,
+    description: 'និស្សិតឆ្នាំទី៥ សម្រាប់កម្មវិធី ៥ ឆ្នាំ',
+    isDefault: false
   }
 ];
 
