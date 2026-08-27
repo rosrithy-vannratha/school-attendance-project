@@ -284,11 +284,11 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-3xl w-full border border-emerald-900/10 dark:border-emerald-800/30 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl max-w-3xl w-full border border-zinc-200 dark:border-blue-900/40 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="bg-emerald-850 dark:bg-emerald-950 p-5 text-white flex items-center justify-between border-b border-emerald-700/50">
+        <div className="bg-blue-800 dark:bg-blue-950 p-5 text-white flex items-center justify-between border-b border-blue-700/50">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-300 border border-white/15 shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-blue-300 border border-white/15 shadow-xs">
               <Hourglass className="w-5 h-5" />
             </div>
             <div>
@@ -302,7 +302,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-emerald-200/90">
+              <p className="text-xs text-blue-200/90">
                 បង្កើត (Create), កែប្រែ & ធ្វើបច្ចុប្បន្នភាព (Edit / Update), ជ្រើសរើស (Select), និងលុប (Delete) រយៈពេលសិក្សា
               </p>
             </div>
@@ -316,14 +316,14 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
         </div>
 
         {/* Navigation Tabs within Modal */}
-        <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2 bg-zinc-50/50 dark:bg-[#15231c]">
+        <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2 bg-zinc-50/50 dark:bg-[#182645]">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab('list')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'list'
-                  ? 'bg-emerald-700 text-white shadow-xs'
+                  ? 'bg-blue-700 text-white shadow-xs'
                   : 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-700'
               }`}
             >
@@ -337,8 +337,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                 onClick={handleStartCreate}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'create'
-                    ? 'bg-emerald-700 text-white shadow-xs'
-                    : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100'
+                    ? 'bg-blue-700 text-white shadow-xs'
+                    : 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-100'
                 }`}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -374,10 +374,10 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
           {/* Form View (Create or Edit/Update) */}
           {activeTab === 'create' || activeTab === 'edit' ? (
             <form onSubmit={handleSaveDuration} className="space-y-4">
-              <div className="p-5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-emerald-200 dark:border-emerald-800/50">
-                  <h4 className="font-bold text-sm text-emerald-900 dark:text-emerald-300 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
+              <div className="p-5 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-blue-200 dark:border-blue-800/50">
+                  <h4 className="font-bold text-sm text-blue-900 dark:text-blue-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
                     <span>
                       {activeTab === 'edit'
                         ? 'កែប្រែ & ធ្វើបច្ចុប្បន្នភាពរយៈពេលសិក្សា (Edit & Update Duration)'
@@ -405,7 +405,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => handleApplyPreset(p)}
-                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#182620] hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-zinc-800 dark:text-zinc-200 text-xs font-semibold border border-zinc-200 dark:border-zinc-700/80 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                          className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-[#182645] hover:bg-blue-100 dark:hover:bg-blue-900/60 text-zinc-800 dark:text-zinc-200 text-xs font-semibold border border-zinc-200 dark:border-zinc-700/80 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                         >
                           <span>{p.years} ឆ្នាំ</span>
                           <span className="text-[10.5px] text-zinc-500 dark:text-zinc-400 font-normal">
@@ -429,7 +429,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                       placeholder="ឧ. ៤ ឆ្នាំ (ថ្នាក់បរិញ្ញាបត្រ - Bachelor)"
                       value={formNameKhmer}
                       onChange={(e) => setFormNameKhmer(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182620] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-hidden font-semibold"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182645] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden font-semibold"
                     />
                   </div>
 
@@ -443,7 +443,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                       placeholder="ឧ. 4 Years (Bachelor Degree)"
                       value={formNameLatin}
                       onChange={(e) => setFormNameLatin(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182620] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-hidden"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182645] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden"
                     />
                   </div>
 
@@ -462,7 +462,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                           required
                           value={formYears}
                           onChange={(e) => setFormYears(parseFloat(e.target.value) || 0)}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182620] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-hidden font-bold"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182645] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden font-bold"
                         />
                         <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 shrink-0">ឆ្នាំ</span>
                       </div>
@@ -476,7 +476,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                             onClick={() => setFormYears(yr)}
                             className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
                               formYears === yr
-                                ? 'bg-emerald-700 text-white border-emerald-800'
+                                ? 'bg-blue-700 text-white border-blue-800'
                                 : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700'
                             }`}
                           >
@@ -495,7 +495,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                     <select
                       value={formDegreeLevel}
                       onChange={(e) => setFormDegreeLevel(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182620] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-hidden font-medium"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182645] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden font-medium"
                     >
                       {DEGREE_LEVEL_OPTIONS.map((opt) => (
                         <option key={opt.id} value={opt.id}>
@@ -515,7 +515,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                       placeholder="ឧ. កម្មវិធីថ្នាក់បរិញ្ញាបត្រពេញលេញ ៤ ឆ្នាំ សរុប ៨ ឆមាស..."
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182620] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-hidden resize-none"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#182645] text-zinc-900 dark:text-zinc-100 text-xs focus:ring-2 focus:ring-blue-500 outline-hidden resize-none"
                     />
                   </div>
 
@@ -526,7 +526,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                       id="formIsDefault"
                       checked={formIsDefault}
                       onChange={(e) => setFormIsDefault(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded-sm border-zinc-300 focus:ring-emerald-500 cursor-pointer"
+                      className="w-4 h-4 text-blue-600 rounded-sm border-zinc-300 focus:ring-blue-500 cursor-pointer"
                     />
                     <label
                       htmlFor="formIsDefault"
@@ -537,7 +537,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-4 border-t border-emerald-200 dark:border-emerald-800/50">
+                <div className="flex items-center justify-end gap-2 pt-4 border-t border-blue-200 dark:border-blue-800/50">
                   <button
                     type="button"
                     onClick={resetForm}
@@ -548,7 +548,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <Check className="w-4 h-4" />
                     <span>
@@ -565,7 +565,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
           ) : (
             <div className="space-y-4">
               {/* Search & Filter Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-50 dark:bg-[#182620] p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-50 dark:bg-[#182645] p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                 <div className="relative flex-1">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <input
@@ -573,7 +573,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                     placeholder="ស្វែងរកតាមឈ្មោះ ឬចំនួនឆ្នាំ..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-1.5 bg-white dark:bg-[#131f1a] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                    className="w-full pl-9 pr-3.5 py-1.5 bg-white dark:bg-[#111c38] border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
                   {searchQuery && (
                     <button
@@ -593,8 +593,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                     onClick={() => setSelectedFilterLevel('all')}
                     className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-colors cursor-pointer ${
                       selectedFilterLevel === 'all'
-                        ? 'bg-emerald-700 text-white'
-                        : 'bg-white dark:bg-[#131f1a] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
+                        ? 'bg-blue-700 text-white'
+                        : 'bg-white dark:bg-[#111c38] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
                     }`}
                   >
                     ទាំងអស់ ({durations.length})
@@ -609,8 +609,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                         onClick={() => setSelectedFilterLevel(lvl.id)}
                         className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 transition-colors cursor-pointer ${
                           selectedFilterLevel === lvl.id
-                            ? 'bg-emerald-700 text-white'
-                            : 'bg-white dark:bg-[#131f1a] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
+                            ? 'bg-blue-700 text-white'
+                            : 'bg-white dark:bg-[#111c38] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700'
                         }`}
                       >
                         {lvl.nameKhmer.split(' ')[0]} ({count})
@@ -630,7 +630,7 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                       <button
                         type="button"
                         onClick={handleStartCreate}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>+ បង្កើតថ្មី (Create New)</span>
@@ -645,8 +645,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                         key={item.id}
                         className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 ${
                           isSelected
-                            ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/40 shadow-xs ring-2 ring-emerald-500/20'
-                            : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#182620] hover:border-emerald-300 dark:hover:border-emerald-800/60'
+                            ? 'border-blue-500 bg-blue-50/80 dark:bg-blue-950/40 shadow-xs ring-2 ring-blue-500/20'
+                            : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#182645] hover:border-blue-300 dark:hover:border-blue-800/60'
                         }`}
                       >
                         <div className="space-y-1.5 flex-1">
@@ -662,12 +662,12 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                               {item.years} ឆ្នាំ
                             </span>
                             {item.isDefault && (
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-[10px] font-bold">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700 text-[10px] font-bold">
                                 លំនាំដើម (Default)
                               </span>
                             )}
                             {isSelected && (
-                              <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
+                              <span className="px-2.5 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-bold inline-flex items-center gap-1 shadow-2xs">
                                 <Check className="w-3 h-3" />
                                 <span>កំពុងជ្រើសរើស (Selected)</span>
                               </span>
@@ -696,8 +696,8 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
                               onClick={() => handleSelect(item)}
                               className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
                                 isSelected
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
                               }`}
                               title="ជ្រើសរើសរយៈពេលសិក្សានេះសម្រាប់ជំនាញ"
                             >
@@ -760,9 +760,9 @@ export const StudyDurationsModal: React.FC<StudyDurationsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-zinc-50 dark:bg-[#182620] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="p-4 bg-zinc-50 dark:bg-[#182645] border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <Info className="w-3.5 h-3.5 text-emerald-600" />
+            <Info className="w-3.5 h-3.5 text-blue-600" />
             <span>
               សរុប {durations.length} ប្រភេទ (បរិញ្ញាបត្រ, បរិញ្ញាបត្ររង, អនុបណ្ឌិត, បណ្ឌិត, វគ្គខ្លី)
             </span>
