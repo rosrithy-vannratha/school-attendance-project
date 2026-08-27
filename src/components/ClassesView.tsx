@@ -25,17 +25,21 @@ import {
   DoorOpen,
   Clock,
   Settings,
+  Sparkles,
+  Hourglass,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight
 } from 'lucide-react';
-import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType, ShiftItem, GenerationItem, ClassType } from '../types';
+import { Classroom, Major, Teacher, Student, ShiftType, AcademicYearType, ShiftItem, GenerationItem, ClassType, StudyDurationItem, YearLevelItem } from '../types';
 import { instituteService } from '../service/instituteService';
-import { INITIAL_SHIFTS, INITIAL_GENERATIONS, CLASS_TYPE_OPTIONS } from '../data/initialData';
+import { INITIAL_SHIFTS, INITIAL_GENERATIONS, INITIAL_STUDY_DURATIONS, INITIAL_YEAR_LEVELS, CLASS_TYPE_OPTIONS } from '../data/initialData';
 import { getShiftLabel, getClassTypeLabel } from '../utils/exportUtils';
 import { ShiftsModal } from './ShiftsModal';
 import { GenerationsModal } from './GenerationsModal';
+import { StudyDurationsModal } from './StudyDurationsModal';
+import { YearLevelsModal } from './YearLevelsModal';
 
 interface ClassesViewProps {
   classes: Classroom[];
@@ -43,10 +47,15 @@ interface ClassesViewProps {
   teachers: Teacher[];
   students: Student[];
   shifts?: ShiftItem[];
+  studyDurations?: StudyDurationItem[];
+  yearLevels?: YearLevelItem[];
   generations?: GenerationItem[];
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
   onOpenGenerationsModal?: () => void;
+  onOpenShiftsModal?: () => void;
+  onOpenStudyDurationsModal?: () => void;
+  onOpenYearLevelsModal?: () => void;
   showToast: (text: string, type?: 'success' | 'info' | 'error') => void;
   isReadOnly?: boolean;
 }
@@ -57,10 +66,15 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   teachers,
   students,
   shifts = INITIAL_SHIFTS,
+  studyDurations = INITIAL_STUDY_DURATIONS,
+  yearLevels = INITIAL_YEAR_LEVELS,
   generations = INITIAL_GENERATIONS,
   isAddModalOpen = false,
   onCloseAddModal,
   onOpenGenerationsModal,
+  onOpenShiftsModal,
+  onOpenStudyDurationsModal,
+  onOpenYearLevelsModal,
   showToast,
   isReadOnly = false
 }) => {
@@ -77,6 +91,8 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const [editingClass, setEditingClass] = useState<Classroom | null>(null);
   const [isShiftsModalOpen, setIsShiftsModalOpen] = useState(false);
   const [isInternalGenModalOpen, setIsInternalGenModalOpen] = useState(false);
+  const [isStudyDurationsModalOpen, setIsStudyDurationsModalOpen] = useState(false);
+  const [isYearLevelsModalOpen, setIsYearLevelsModalOpen] = useState(false);
 
   // Form fields
   const [formClassCode, setFormClassCode] = useState('');
@@ -239,12 +255,23 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
     if (onCloseAddModal) onCloseAddModal();
   };
 
-  // Helper to generate aligned class name based on major, generation, shift, year
-  const getSuggestedClassName = (majId: string, genName: string, shiftVal: ShiftType) => {
+  // Helper to generate aligned class name based on major, generation, shift, year, classType
+  const getSuggestedClassName = (majId: string, genName: string, shiftVal: string, yearVal?: string, cType?: ClassType) => {
     const maj = majors.find((m) => m.id === majId);
-    const majShort = maj?.nameKhmer ? maj.nameKhmer.replace('ភាសាចិន', '').trim() : 'គរុកោសល្យ';
-    const shiftName = shiftVal === 'morning' ? 'ព្រឹក' : shiftVal === 'afternoon' ? 'រសៀល' : shiftVal === 'evening' ? 'យប់' : 'ចុងសប្តាហ៍';
-    return `ថ្នាក់${majShort} ${genName} (${shiftName})`;
+    let majShort = maj?.nameKhmer ? maj.nameKhmer.replace('ភាសាចិន', '').trim() : 'គរុកោសល្យ';
+    if (!majShort) majShort = maj?.nameKhmer || 'ទូទៅ';
+    
+    // Find shift Khmer name dynamically
+    const foundShift = shifts.find((s) => s.code === shiftVal || s.id === shiftVal);
+    const shiftName = foundShift?.nameKhmer ? foundShift.nameKhmer.replace('វេន', '').trim() : (shiftVal === 'morning' ? 'ព្រឹក' : shiftVal === 'afternoon' ? 'រសៀល' : shiftVal === 'evening' ? 'យប់' : 'ចុងសប្តាហ៍');
+    
+    // Optional year level tag
+    let yearTag = '';
+    if (yearVal === 'Foundation') yearTag = ' មូលដ្ឋាន';
+    else if (yearVal && yearVal.includes('Master')) yearTag = ' អនុបណ្ឌិត';
+    else if (yearVal && yearVal.includes('Bridging')) yearTag = ' បន្តវេន';
+
+    return `ថ្នាក់${majShort}${yearTag} ${genName} (${shiftName})`;
   };
 
   const getSuggestedClassCode = (majId: string, yearVal: string) => {
@@ -258,8 +285,10 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
       prefix = 'BIZ';
     } else if (majId.includes('tour')) {
       prefix = 'TOU';
+    } else if (majId.includes('pedagogy')) {
+      prefix = 'ED';
     }
-    const yearShort = yearVal === 'Foundation' ? 'FY' : yearVal.replace('Year ', 'Y') || 'Y1';
+    const yearShort = yearVal === 'Foundation' ? 'FY' : yearVal.replace('Year ', 'Y').replace('Master Y', 'MY').replace(/\s+/g, '') || 'Y1';
     const seq = classes.length + 1;
     return `${prefix}-${yearShort}-${seq}`;
   };
@@ -268,7 +297,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   const handleMajorChange = (majId: string) => {
     setFormMajorId(majId);
     if (!editingClass) {
-      setFormName(getSuggestedClassName(majId, formGeneration, formShift));
+      setFormName(getSuggestedClassName(majId, formGeneration, formShift, formYear, formClassType));
       setFormClassCode(getSuggestedClassCode(majId, formYear));
     }
   };
@@ -280,19 +309,34 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
       setFormAcademicYear(genObj.academicYear);
     }
     if (!editingClass) {
-      setFormName(getSuggestedClassName(formMajorId, genName, formShift));
+      setFormName(getSuggestedClassName(formMajorId, genName, formShift, formYear, formClassType));
     }
   };
 
   const handleShiftChange = (shiftVal: ShiftType) => {
     setFormShift(shiftVal);
     if (!editingClass) {
-      setFormName(getSuggestedClassName(formMajorId, formGeneration, shiftVal));
+      setFormName(getSuggestedClassName(formMajorId, formGeneration, shiftVal, formYear, formClassType));
+    }
+  };
+
+  const handleYearChange = (yearVal: string) => {
+    setFormYear(yearVal as AcademicYearType);
+    if (!editingClass) {
+      setFormClassCode(getSuggestedClassCode(formMajorId, yearVal));
+      setFormName(getSuggestedClassName(formMajorId, formGeneration, formShift, yearVal, formClassType));
+    }
+  };
+
+  const handleClassTypeChange = (cType: ClassType) => {
+    setFormClassType(cType);
+    if (!editingClass) {
+      setFormName(getSuggestedClassName(formMajorId, formGeneration, formShift, formYear, cType));
     }
   };
 
   const handleAutoAlignNameAndCode = () => {
-    setFormName(getSuggestedClassName(formMajorId, formGeneration, formShift));
+    setFormName(getSuggestedClassName(formMajorId, formGeneration, formShift, formYear, formClassType));
     setFormClassCode(getSuggestedClassCode(formMajorId, formYear));
     const genObj = generations.find((g) => g.nameKhmer === formGeneration || g.code === formGeneration);
     if (genObj?.academicYear) {
@@ -386,18 +430,49 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-            <span>គ្រប់គ្រងជំនាន់ (Gen: {generations.length})</span>
+            <span>ជំនាន់ ({generations.length})</span>
           </button>
 
           {/* Shifts Management Trigger */}
           <button
             id="manage-shifts-btn"
             type="button"
-            onClick={() => setIsShiftsModalOpen(true)}
+            onClick={() => {
+              if (onOpenShiftsModal) onOpenShiftsModal();
+              else setIsShiftsModalOpen(true);
+            }}
             className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-            <span>គ្រប់គ្រងវេនសិក្សា (Shifts: {shifts.length})</span>
+            <span>វេនសិក្សា ({shifts.length})</span>
+          </button>
+
+          {/* Year Levels Management Trigger */}
+          <button
+            id="manage-years-btn"
+            type="button"
+            onClick={() => {
+              if (onOpenYearLevelsModal) onOpenYearLevelsModal();
+              else setIsYearLevelsModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+            <span>កម្រិតឆ្នាំ ({yearLevels.length})</span>
+          </button>
+
+          {/* Study Durations / Programs Trigger */}
+          <button
+            id="manage-durations-btn"
+            type="button"
+            onClick={() => {
+              if (onOpenStudyDurationsModal) onOpenStudyDurationsModal();
+              else setIsStudyDurationsModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-sky-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Hourglass className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+            <span>កម្រិតសិក្សា ({studyDurations.length})</span>
           </button>
 
           {/* View Mode Toggle (Table / Grid) */}
@@ -572,11 +647,27 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
             >
               <option value="all">កម្រិតឆ្នាំទាំងអស់ (All Years)</option>
-              <option value="Foundation">ថ្នាក់មូលដ្ឋាន (Foundation)</option>
-              <option value="Year 1">ឆ្នាំទី១ (Year 1)</option>
-              <option value="Year 2">ឆ្នាំទី២ (Year 2)</option>
-              <option value="Year 3">ឆ្នាំទី៣ (Year 3)</option>
-              <option value="Year 4">ឆ្នាំទី៤ (Year 4)</option>
+              {yearLevels.map((y) => (
+                <option key={y.id} value={y.code} className="dark:bg-[#111c38]">
+                  {y.nameKhmer} ({y.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Class Type / Degree Filter */}
+          <div>
+            <select
+              value={selectedClassType}
+              onChange={(e) => setSelectedClassType(e.target.value)}
+              className="w-full px-2.5 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-800 dark:text-zinc-200 font-medium focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer"
+            >
+              <option value="all">កម្រិតសិក្សាទាំងអស់ (All Degrees)</option>
+              {CLASS_TYPE_OPTIONS.map((ct) => (
+                <option key={ct.id} value={ct.id} className="dark:bg-[#111c38]">
+                  {ct.nameKhmer}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -1102,7 +1193,21 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               {/* Shift & Year */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">វេនសិក្សា (Shift) *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-zinc-800 dark:text-zinc-200">វេនសិក្សា (Shift) *</label>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenShiftsModal) onOpenShiftsModal();
+                          else setIsShiftsModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-sky-400 cursor-pointer"
+                      >
+                        + បង្កើតវេនថ្មី
+                      </button>
+                    )}
+                  </div>
                   <select
                     id="modal-shift-select"
                     disabled={isReadOnly}
@@ -1119,18 +1224,33 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតឆ្នាំ (Year)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-zinc-800 dark:text-zinc-200">កម្រិតឆ្នាំ (Year Level) *</label>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenYearLevelsModal) onOpenYearLevelsModal();
+                          else setIsYearLevelsModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-sky-400 cursor-pointer"
+                      >
+                        + បង្កើតឆ្នាំថ្មី
+                      </button>
+                    )}
+                  </div>
                   <select
+                    id="modal-year-select"
                     disabled={isReadOnly}
                     value={formYear}
-                    onChange={(e) => setFormYear(e.target.value as AcademicYearType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                    onChange={(e) => handleYearChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <option value="Foundation">ឆ្នាំសិក្សាមូលដ្ឋាន (Foundation)</option>
-                    <option value="Year 1">ឆ្នាំទី ១ (Year 1)</option>
-                    <option value="Year 2">ឆ្នាំទី ២ (Year 2)</option>
-                    <option value="Year 3">ឆ្នាំទី ៣ (Year 3)</option>
-                    <option value="Year 4">ឆ្នាំទី ៤ (Year 4)</option>
+                    {yearLevels.map((y) => (
+                      <option key={y.id} value={y.code}>
+                        {y.nameKhmer} ({y.code})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1177,20 +1297,42 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Class Type */}
+                {/* Class Type / Degree Level */}
                 <div>
-                  <label className="block font-bold text-zinc-800 dark:text-zinc-200 mb-1">កម្រិតបណ្តុះបណ្តាល</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-zinc-800 dark:text-zinc-200">កម្រិតបណ្តុះបណ្តាល *</label>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenStudyDurationsModal) onOpenStudyDurationsModal();
+                          else setIsStudyDurationsModalOpen(true);
+                        }}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-sky-400 cursor-pointer"
+                      >
+                        + បង្កើតកម្រិតថ្មី
+                      </button>
+                    )}
+                  </div>
                   <select
+                    id="modal-classtype-select"
                     disabled={isReadOnly}
                     value={formClassType}
-                    onChange={(e) => setFormClassType(e.target.value as ClassType)}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                    onChange={(e) => handleClassTypeChange(e.target.value as ClassType)}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 font-bold focus:bg-white dark:focus:bg-[#1c2e55] focus:border-blue-500 outline-hidden cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {CLASS_TYPE_OPTIONS.map((ct) => (
                       <option key={ct.id} value={ct.id}>
                         {ct.nameKhmer}
                       </option>
                     ))}
+                    {studyDurations
+                      .filter((sd) => !CLASS_TYPE_OPTIONS.some((ct) => ct.id === sd.degreeLevel))
+                      .map((sd) => (
+                        <option key={sd.id} value={sd.degreeLevel || sd.id}>
+                          {sd.nameKhmer} ({sd.years} ឆ្នាំ)
+                        </option>
+                      ))}
                   </select>
                 </div>
 
@@ -1278,6 +1420,32 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
         shifts={shifts}
         showToast={showToast}
         isReadOnly={isReadOnly}
+      />
+
+      {/* Study Durations / Programs Management Modal */}
+      <StudyDurationsModal
+        isOpen={isStudyDurationsModalOpen}
+        onClose={() => setIsStudyDurationsModalOpen(false)}
+        durations={studyDurations}
+        showToast={showToast}
+        isReadOnly={isReadOnly}
+        onSelectDuration={(dur) => {
+          setFormClassType(dur.degreeLevel as ClassType);
+          handleClassTypeChange(dur.degreeLevel as ClassType);
+        }}
+      />
+
+      {/* Year Levels Management Modal */}
+      <YearLevelsModal
+        isOpen={isYearLevelsModalOpen}
+        onClose={() => setIsYearLevelsModalOpen(false)}
+        yearLevels={yearLevels}
+        showToast={showToast}
+        isReadOnly={isReadOnly}
+        onSelectYearLevel={(yl) => {
+          setFormYear(yl.code as AcademicYearType);
+          handleYearChange(yl.code);
+        }}
       />
     </div>
   );
