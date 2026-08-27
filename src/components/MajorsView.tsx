@@ -212,11 +212,11 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Bar */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-zinc-200 dark:border-blue-900/40 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-sm">
-              <BookOpen className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+            <span className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold text-sm">
+              <BookOpen className="w-4 h-4 text-blue-700 dark:text-blue-400" />
             </span>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
               ដេប៉ាតឺម៉ង់ & ជំនាញបណ្តុះបណ្តាល (Academic Majors)
@@ -232,10 +232,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
           <button
             type="button"
             onClick={() => setIsDurationModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs inline-flex items-center gap-1.5 border border-emerald-200/80 dark:border-emerald-800/60 transition-all cursor-pointer shadow-xs"
+            className="px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold text-xs inline-flex items-center gap-1.5 border border-blue-200/80 dark:border-blue-800/60 transition-all cursor-pointer shadow-xs"
             title="គ្រប់គ្រង កែប្រែ ឬបង្កើត រយៈពេលសិក្សា"
           >
-            <Hourglass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Hourglass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span>គ្រប់គ្រងរយៈពេលសិក្សា ({studyDurations.length})</span>
           </button>
 
@@ -246,7 +246,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
               onClick={() => setViewMode('table')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-blue-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពតារាង (Table View)"
@@ -259,7 +259,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
               onClick={() => setViewMode('grid')}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-[#182620] text-emerald-800 dark:text-emerald-300 shadow-xs border border-zinc-200/60 dark:border-emerald-800/50'
+                  ? 'bg-white dark:bg-[#182645] text-blue-800 dark:text-blue-300 shadow-xs border border-zinc-200/60 dark:border-blue-800/50'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
               title="ទិដ្ឋភាពកាត (Grid / Card View)"
@@ -272,7 +272,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
           {!isReadOnly && (
             <button
               onClick={openAddModal}
-              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
+              className="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start md:self-auto"
             >
               <Plus className="w-4 h-4" />
               <span>+ បន្ថែមជំនាញថ្មី</span>
@@ -287,7 +287,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-zinc-200 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:max-w-md">
           <Search className="w-4 h-4 text-zinc-400 dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -295,7 +295,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ស្វែងរកតាមឈ្មោះជំនាញ, កូដ, ឈ្មោះឡាតាំង..."
-            className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-hidden transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
+            className="w-full pl-9 pr-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-xl text-xs text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#111c38] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-hidden transition-all placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
           />
           {search && (
             <button
@@ -325,10 +325,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
       {/* Main Content: Table or Grid */}
       {viewMode === 'table' ? (
-        <div className="bg-white dark:bg-[#131f1a] rounded-3xl border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#111c38] rounded-3xl border border-zinc-200 dark:border-blue-900/40 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 dark:bg-[#182620] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
+              <thead className="bg-zinc-50 dark:bg-[#182645] border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3.5 px-3 w-12 text-center">ល.រ</th>
                   <th className="py-3.5 px-4">កូដ & ឈ្មោះជំនាញបណ្តុះបណ្តាល</th>
@@ -358,7 +358,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                     return (
                       <tr
                         key={maj.id}
-                        className="hover:bg-zinc-50/80 dark:hover:bg-[#182620]/60 transition-colors"
+                        className="hover:bg-zinc-50/80 dark:hover:bg-[#182645]/60 transition-colors"
                       >
                         {/* Row Number */}
                         <td className="py-3 px-3 text-center font-bold text-zinc-500 dark:text-zinc-400">
@@ -368,14 +368,14 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                         {/* Code & Name Khmer */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold shrink-0 border border-emerald-300/50">
-                              <GraduationCap className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                            <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold shrink-0 border border-blue-300/50">
+                              <GraduationCap className="w-4 h-4 text-blue-700 dark:text-blue-400" />
                             </div>
                             <div>
                               <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm block">
                                 {maj.nameKhmer}
                               </span>
-                              <span className="inline-block font-mono text-[10.5px] font-bold px-2 py-0.5 mt-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                              <span className="inline-block font-mono text-[10.5px] font-bold px-2 py-0.5 mt-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
                                 {maj.code}
                               </span>
                             </div>
@@ -389,8 +389,8 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
                         {/* Duration */}
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 font-bold text-[11px]">
-                            <Hourglass className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 font-bold text-[11px]">
+                            <Hourglass className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                             <span>{getMajorDurationLabel(maj)}</span>
                           </span>
                         </td>
@@ -405,8 +405,8 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
                         {/* Students Count */}
                         <td className="py-3.5 px-4 text-center">
-                          <div className="inline-flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300">
-                            <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <div className="inline-flex items-center gap-1.5 font-bold text-blue-700 dark:text-blue-300">
+                            <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                             <span>{studentCount} នាក់</span>
                           </div>
                         </td>
@@ -424,7 +424,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                             <button
                               onClick={() => openEditModal(maj)}
                               title={isReadOnly ? 'ពិនិត្យព័ត៌មានជំនាញ' : 'កែប្រែជំនាញ'}
-                              className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                             >
                               {isReadOnly ? <Eye className="w-4 h-4" /> : <Edit2 className="w-3.5 h-3.5" />}
                             </button>
@@ -451,7 +451,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
         /* Majors Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredMajors.length === 0 ? (
-            <div className="col-span-full bg-white dark:bg-[#131f1a] rounded-3xl p-12 text-center border border-emerald-900/10 dark:border-emerald-800/30">
+            <div className="col-span-full bg-white dark:bg-[#111c38] rounded-3xl p-12 text-center border border-zinc-200 dark:border-blue-900/40">
               <BookOpen className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
               <p className="font-bold text-zinc-700 dark:text-zinc-300 text-sm">ពុំមានទិន្នន័យជំនាញតាមការស្វែងរកទេ</p>
             </div>
@@ -463,13 +463,13 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
               return (
                 <div
                   key={maj.id}
-                  className="bg-white dark:bg-[#131f1a] rounded-3xl p-6 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-600/40 transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-[#111c38] rounded-3xl p-6 border border-zinc-200 dark:border-blue-900/40 shadow-xs hover:border-blue-500/40 dark:hover:border-blue-600/40 transition-all flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold">
-                          <GraduationCap className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                        <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 flex items-center justify-center font-bold">
+                          <GraduationCap className="w-5 h-5 text-blue-700 dark:text-blue-400" />
                         </div>
                         <div>
                           <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">{maj.nameKhmer}</h3>
@@ -478,10 +478,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                       </div>
 
                       <div className="flex flex-col items-end gap-1">
-                        <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                        <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
                           {maj.code}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 dark:text-blue-400">
                           <Hourglass className="w-3 h-3" />
                           <span>{getMajorDurationLabel(maj)}</span>
                         </span>
@@ -500,7 +500,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                         <span>{classCount} ថ្នាក់</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         <span>{studentCount} និស្សិត</span>
                       </div>
                     </div>
@@ -509,7 +509,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                       <button
                         onClick={() => openEditModal(maj)}
                         title={isReadOnly ? 'ពិនិត្យព័ត៌មានជំនាញ' : 'កែប្រែជំនាញ'}
-                        className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                       >
                         {isReadOnly ? <Eye className="w-4 h-4" /> : <Edit2 className="w-3.5 h-3.5" />}
                       </button>
@@ -532,10 +532,10 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
 
       {/* Majors Pagination Controls */}
       {filteredMajors.length > 0 && (
-        <div className="bg-white dark:bg-[#131f1a] rounded-2xl p-4 border border-emerald-900/10 dark:border-emerald-800/30 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+        <div className="bg-white dark:bg-[#111c38] rounded-2xl p-4 border border-zinc-200 dark:border-blue-900/40 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
             <span>
-              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startIndex} - {endIndex}</strong> នៃសរុប <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{filteredMajors.length}</strong> ជំនាញ
+              កំពុងបង្ហាញ <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{startIndex} - {endIndex}</strong> នៃសរុប <strong className="text-blue-700 dark:text-blue-400 font-bold">{filteredMajors.length}</strong> ជំនាញ
             </span>
 
             <div className="flex items-center gap-1.5 pl-3 border-l border-zinc-200 dark:border-zinc-800">
@@ -546,7 +546,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="px-2 py-1 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-emerald-500 outline-hidden cursor-pointer"
+                className="px-2 py-1 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 rounded-lg text-xs text-zinc-800 dark:text-zinc-200 font-bold focus:border-blue-500 outline-hidden cursor-pointer"
               >
                 <option value={25}>25</option>
                 <option value={50}>50</option>
@@ -563,7 +563,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage(1)}
                 disabled={validPage === 1}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រដំបូងបង្អស់ (First Page)"
               >
                 <ChevronsLeft className="w-3.5 h-3.5" />
@@ -572,7 +572,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={validPage === 1}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រមុន (Previous Page)"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -586,7 +586,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={validPage === totalPages}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័របន្ទាប់ (Next Page)"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -595,7 +595,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={validPage === totalPages}
-                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer transition-colors"
+                className="p-1.5 rounded-lg bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer transition-colors"
                 title="ទំព័រចុងក្រោយ (Last Page)"
               >
                 <ChevronsRight className="w-3.5 h-3.5" />
@@ -608,7 +608,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#131f1a] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-emerald-900/20 dark:border-emerald-800/50 space-y-4">
+          <div className="bg-white dark:bg-[#111c38] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 dark:border-blue-900/50 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-zinc-900 dark:text-zinc-100 text-base">
@@ -638,7 +638,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                   placeholder="EDU-CN"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#111c38] focus:border-blue-500 outline-hidden font-mono disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -651,7 +651,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   value={formNameKhmer}
                   onChange={(e) => setFormNameKhmer(e.target.value)}
                   placeholder="គរុកោសល្យភាសាចិន"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#111c38] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -663,22 +663,22 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   value={formNameLatin}
                   onChange={(e) => setFormNameLatin(e.target.value)}
                   placeholder="Chinese Language Pedagogy"
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#111c38] focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
               {/* Study Duration Selection */}
-              <div className="space-y-1.5 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+              <div className="space-y-1.5 p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40">
                 <div className="flex items-center justify-between">
                   <label className="block font-bold text-zinc-800 dark:text-zinc-200 text-xs flex items-center gap-1.5">
-                    <Hourglass className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <Hourglass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                     <span>រយៈពេលសិក្សា (Study Duration) *</span>
                   </label>
                   {!isReadOnly && (
                     <button
                       type="button"
                       onClick={() => setIsDurationModalOpen(true)}
-                      className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                      className="text-[11px] text-blue-700 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                     >
                       + គ្រប់គ្រង/បង្កើតថ្មី
                     </button>
@@ -690,7 +690,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   disabled={isReadOnly}
                   value={formDurationId}
                   onChange={(e) => handleSelectDurationFromDropdown(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-emerald-500 outline-hidden font-medium disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:border-blue-500 outline-hidden font-medium disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="">-- ជ្រើសរើសរយៈពេលសិក្សា --</option>
                   {studyDurations.map((d) => (
@@ -719,8 +719,8 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                           onClick={() => handleQuickYearsSelect(item.years)}
                           className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer border ${
                             isMatch
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                              : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-emerald-400'
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-blue-400'
                           }`}
                         >
                           {item.label}
@@ -741,7 +741,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                     disabled={isReadOnly}
                     value={formYears}
                     onChange={(e) => setFormYears(parseFloat(e.target.value) || 0)}
-                    className="w-20 px-2 py-1 bg-white dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 text-xs font-bold text-center focus:border-emerald-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="w-20 px-2 py-1 bg-white dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 text-xs font-bold text-center focus:border-blue-500 outline-hidden disabled:opacity-75 disabled:cursor-not-allowed"
                   />
                   <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">ឆ្នាំ</span>
                 </div>
@@ -755,7 +755,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="គោលបំណង និងការបណ្តុះបណ្តាល..."
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182620] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#1c2e26] focus:border-emerald-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-[#182645] border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-zinc-100 focus:bg-white dark:focus:bg-[#111c38] focus:border-blue-500 outline-hidden resize-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -770,7 +770,7 @@ export const MajorsView: React.FC<MajorsViewProps> = ({
                 {!isReadOnly && (
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
+                    className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold cursor-pointer transition-colors shadow-sm"
                   >
                     រក្សាទុក
                   </button>
