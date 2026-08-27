@@ -118,11 +118,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         nameKhmer: 'ថ្នាក់បរិញ្ញាបត្រ',
         nameLatin: "Bachelor's Degree (៤ ឆ្នាំ)",
         icon: GraduationCap,
-        bgClass: 'bg-emerald-50/60 dark:bg-emerald-950/25',
-        borderClass: 'border-emerald-200/80 dark:border-emerald-800/50',
-        badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60',
-        badgeText: 'text-emerald-800 dark:text-emerald-300',
-        accentColor: '#059669',
+        bgClass: 'bg-blue-50/60 dark:bg-blue-950/25',
+        borderClass: 'border-blue-200/80 dark:border-blue-800/50',
+        badgeBg: 'bg-blue-100 dark:bg-blue-900/60',
+        badgeText: 'text-blue-800 dark:text-blue-300',
+        accentColor: '#1d4ed8',
         description: 'កម្មវិធីបណ្តុះបណ្តាលបរិញ្ញាបត្រគរុកោសល្យ និងភាសាចិនពាណិជ្ជកម្ម',
       },
       {
@@ -206,7 +206,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const year3 = students.filter((s) => s.year === 'Year 3').length;
     const year4 = students.filter((s) => s.year === 'Year 4').length;
     return [
-      { key: 'Year 1', labelKh: 'ឆ្នាំទី ១ (Year 1)', count: year1, color: 'bg-emerald-600' },
+      { key: 'Year 1', labelKh: 'ឆ្នាំទី ១ (Year 1)', count: year1, color: 'bg-sky-600' },
       { key: 'Year 2', labelKh: 'ឆ្នាំទី ២ (Year 2)', count: year2, color: 'bg-teal-600' },
       { key: 'Year 3', labelKh: 'ឆ្នាំទី ៣ (Year 3)', count: year3, color: 'bg-blue-600' },
       { key: 'Year 4', labelKh: 'ឆ្នាំទី ៤ (Year 4)', count: year4, color: 'bg-indigo-600' },
