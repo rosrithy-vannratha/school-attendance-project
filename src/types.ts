@@ -28,6 +28,22 @@ export interface StudyDurationItem {
   isDefault?: boolean;
 }
 
+export interface GenerationItem {
+  id: string;
+  code: string; // e.g. 'Gen 1', 'Gen 2', 'gen_1'
+  nameKhmer: string; // e.g. 'ជំនាន់ទី១'
+  nameLatin: string; // e.g. 'Generation 1'
+  academicYear?: string; // e.g. '2022-2026'
+  startYear?: string; // e.g. '2022'
+  endYear?: string; // e.g. '2026'
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type Generation = GenerationItem;
+
 export interface Major {
   id: string;
   code: string;
